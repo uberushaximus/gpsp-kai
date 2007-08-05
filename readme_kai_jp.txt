@@ -268,4 +268,4 @@
 		gpSP CFGファイルのサイズが56byte -> 72byteに変更。
 
 takka takka@tfact.net
-http://www.tfact.jp/psp/wiki/
+http://sourceforge.jp/projects/gpsp-kai

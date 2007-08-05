@@ -27,10 +27,6 @@ gbc_sound_struct gbc_sound_channel[4];
 
 //u32 sound_frequency = 44100;
 
-//SDL_AudioSpec sound_settings;
-//SDL_mutex *sound_mutex;
-//SDL_cond *sound_cv;
-
 u32 audio_buffer_size_number = 1;
 u32 audio_buffer_size;
 u32 audio_buffer_size_x2;
@@ -462,15 +458,15 @@ void update_gbc_sound(u32 cpu_ticks)
     {
 //      while(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) >
 //       (audio_buffer_size_x2))
-      {
+//      {
 //        SDL_CondWait(sound_cv, sound_mutex);
-      }
-      if(game_config_frameskip_type == auto_frameskip)
-      {
+//      }
+//      if(game_config_frameskip_type == auto_frameskip)
+//      {
 //        sceDisplayWaitVblankStart();
-        real_frame_count = 0;
-        virtual_frame_count = 0;
-      }
+//        real_frame_count = 0;
+//        virtual_frame_count = 0;
+//      }
     }
   }
 
@@ -544,10 +540,6 @@ void update_gbc_sound(u32 cpu_ticks)
   }
 
   ADDRESS16(io_registers, 0x84) = sound_status;
-
-//  SDL_CondSignal(sound_cv);
-
-//  SDL_UnlockMutex(sound_mutex);
 
   gbc_sound_last_cpu_ticks = cpu_ticks;
   gbc_sound_buffer_index =
@@ -760,7 +752,7 @@ void init_sound()
     quit();
   }
 
-  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 0x1000, 0, NULL);
+  sound_thread = sceKernelCreateThread("Sound thread", sound_callback/*sound_update_thread*/, 0x08, 0x1000, 0, NULL);
   if (sound_thread < 0)
   {
     error_msg("sound thread error");
@@ -772,7 +764,8 @@ void init_sound()
   error_msg("sound set OK");
 
   //スレッドの開始
-//  sceKernelStartThread(sound_thread, 0, 0);
+  sceKernelStartThread(sound_thread, 0, 0);
+  error_msg("sound thread start");
 
 
 /*
