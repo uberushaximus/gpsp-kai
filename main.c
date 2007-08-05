@@ -24,7 +24,7 @@
 #include "common.h"
 
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 //PSP_MAIN_THREAD_ATTR(0);
 
 
@@ -156,9 +156,7 @@ int exit_callback(int arg1, int arg2, void *common);
 int power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
-
-
-
+int user_main(int argc, char *argv[]);
 
 void init_main()
 {
@@ -191,8 +189,107 @@ void init_main()
   flush_translation_cache_bios();
 }
 
-// SDL.hにより、SDL_mainとして定義される
+volatile u32 home_button;
+volatile u32 home_active;
+
+static int home_button_thread(SceSize args, void *argp)
+{
+  SceCtrlData paddata;
+
+  home_active = 1;
+
+  while (home_active)
+  {
+    sceCtrlPeekBufferPositive(&paddata, 1);
+    home_button = paddata.Buttons & PSP_CTRL_HOME;
+    sceKernelDelayThread(200);
+  }
+
+  sceKernelExitThread(0);
+
+  return 0;
+}
+int exit_callback(int arg1, int arg2, void *common)
+{
+  quit_flag = 1;
+  return 0;
+}
+
+int power_callback(int unknown, int powerInfo, void *common)
+{
+  if (powerInfo & PSP_POWER_CB_SUSPENDING) power_flag = 1;
+  return 0;
+}
+
+int CallbackThread(SceSize args, void *argp)
+{
+  int cbid, power_callback_id;
+
+  // 終了周りのコールバック 
+  cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+  sceKernelRegisterExitCallback(cbid);
+
+  // 電源周りのコールバック 
+  power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
+  scePowerRegisterCallback(0, power_callback_id);
+
+  sceKernelSleepThreadCB();
+
+  return 0;
+}
+
+int SetupCallbacks()
+{
+  int thid = 0;
+
+  thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+  if (thid >= 0)
+  {
+    sceKernelStartThread(thid, 0, 0);
+  }
+
+  return thid;
+}
+
+void quit()
+{
+//  if(!update_backup_flag)
+    update_backup_force();
+
+  sound_exit();
+  fbm_freeall();
+
+  fclose(dbg_file);
+
+  scePowerSetClockFrequency(222, 222, 111);
+  sceKernelExitThread(0);
+}
+
 int main(int argc, char *argv[])
+{
+  SceUID main_thread;
+  SceUID home_thread;
+
+  getcwd(main_path, 512);
+
+//  pspSdkLoadAdhocModules();
+
+  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 256 * 1024, PSP_THREAD_ATTR_USER, NULL);
+
+  sceKernelStartThread(home_thread, 0, 0);
+
+  sceKernelStartThread(main_thread, 0, 0);
+  sceKernelWaitThreadEnd(main_thread, NULL);
+
+  home_active = 0;
+  sceKernelWaitThreadEnd(home_thread, NULL);
+
+  sceKernelExitGame();
+  return 0;
+}
+
+int user_main(int argc, char *argv[])
 {
 //  u32 i;
 //  u32 vcount = 0;
@@ -212,8 +309,8 @@ int main(int argc, char *argv[])
   dbg_file = fopen(DBG_FILE_NAME, "awb");
 
   // Copy the directory path of the executable into main_path
-  getcwd(main_path, 512);
-
+//  getcwd(main_path, 512);
+  chdir(main_path);
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
 
   if (load_dircfg("settings/dir.cfg") != 0)
@@ -272,7 +369,7 @@ int main(int argc, char *argv[])
 
   gamepak_filename[0] = 0;
 
-  delay_us(1500000);
+//  delay_us(1500000);
 
   init_main();
   init_sound();
@@ -282,7 +379,7 @@ int main(int argc, char *argv[])
 
   video_resolution_large();
 
-  u32 bios_ret = load_bios("gba_bios.bin");
+  u32 bios_ret = load_bios("./gba_bios.bin");
 
   if(bios_ret == -1) // 読込めない場合
   {
@@ -763,20 +860,6 @@ void synchronize()
 */
 }
 
-void quit()
-{
-//  if(!update_backup_flag)
-    update_backup_force();
-
-  sound_exit();
-  fbm_freeall();
-
-  fclose(dbg_file);
-
-  scePowerSetClockFrequency(222, 222, 111);
-  sceKernelExitGame();
-}
-
 void reset_gba()
 {
   init_main();
@@ -830,49 +913,6 @@ MAIN_SAVESTATE_BODY(READ);
 
 void main_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 MAIN_SAVESTATE_BODY(WRITE_MEM);
-
-int exit_callback(int arg1, int arg2, void *common)
-{
-  quit_flag = 1;
-  return 0;
-}
-
-int power_callback(int unknown, int powerInfo, void *common)
-{
-  if (powerInfo & PSP_POWER_CB_SUSPENDING) power_flag = 1;
-  return 0;
-}
-
-int CallbackThread(SceSize args, void *argp)
-{
-  int cbid, power_callback_id;
-
-  // 終了周りのコールバック 
-  cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-  sceKernelRegisterExitCallback(cbid);
-
-  // 電源周りのコールバック 
-  power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
-  scePowerRegisterCallback(0, power_callback_id);
-
-  sceKernelSleepThreadCB();
-
-  return 0;
-}
-
-int SetupCallbacks()
-{
-  int thid = 0;
-
-  thid = sceKernelCreateThread("update_thread", CallbackThread, 
-    0x11, 0xFA0, 0, 0);
-  if (thid >= 0)
-  {
-    sceKernelStartThread(thid, 0, 0);
-  }
-
-  return thid;
-}
 
 void error_msg(char *text)
 {
