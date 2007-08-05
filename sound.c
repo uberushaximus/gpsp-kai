@@ -748,24 +748,20 @@ void init_sound()
   sound_handle = sceAudioChReserve(PSP_AUDIO_NEXT_CHANNEL, audio_buffer_size / 4, PSP_AUDIO_FORMAT_STEREO);
   if (sound_handle < 0)
   {
-    error_msg("sound channel error");
     quit();
   }
 
   sound_thread = sceKernelCreateThread("Sound thread", sound_callback/*sound_update_thread*/, 0x08, 0x1000, 0, NULL);
   if (sound_thread < 0)
   {
-    error_msg("sound thread error");
     sceAudioChRelease(sound_handle);
     sound_handle = -1;
     quit();
   }
 
-  error_msg("sound set OK");
 
   //スレッドの開始
   sceKernelStartThread(sound_thread, 0, 0);
-  error_msg("sound thread start");
 
 
 /*
