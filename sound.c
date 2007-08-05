@@ -18,7 +18,277 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/******************************************************************************
+ * sound.c
+ * サウンド周りの処理
+ ******************************************************************************/
+
+/******************************************************************************
+ * ヘッダファイルの読込み
+ ******************************************************************************/
 #include "common.h"
+
+/******************************************************************************
+ * マクロ等の定義
+ ******************************************************************************/
+
+#define SOUND_TIMER_QUEUE(size, value)                                        \
+  *((s##size *)(ds->fifo + ds->fifo_top)) = value;                            \
+  ds->fifo_top = (ds->fifo_top + 1) % 32;                                     \
+
+#define RENDER_SAMPLE_NULL()                                                  \
+
+#define RENDER_SAMPLE_LEFT()                                                  \
+  sound_buffer[buffer_index] += current_sample +                              \
+   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
+
+#define RENDER_SAMPLE_RIGHT()                                                 \
+  sound_buffer[buffer_index + 1] += current_sample +                          \
+   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
+
+#define RENDER_SAMPLE_BOTH()                                                  \
+  dest_sample = current_sample +                                              \
+   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional);          \
+  sound_buffer[buffer_index] += dest_sample;                                  \
+  sound_buffer[buffer_index + 1] += dest_sample                               \
+
+#define RENDER_SAMPLES(type)                                                  \
+  while(fifo_fractional <= 0xFFFF)                                            \
+  {                                                                           \
+    RENDER_SAMPLE_##type();                                                   \
+    fifo_fractional += frequency_step;                                        \
+    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
+  }                                                                           \
+
+#define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
+  volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
+   gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
+   gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
+
+#define UPDATE_VOLUME_CHANNEL_NOENVELOPE(channel)                             \
+  volume_##channel = gs->wave_volume *                                        \
+   gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
+   gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
+
+#define UPDATE_VOLUME(type)                                                   \
+  update_volume_channel_##type(left);                                         \
+  update_volume_channel_##type(right)                                         \
+
+#define UPDATE_TONE_SWEEP()                                                   \
+  if(gs->sweep_status)                                                        \
+  {                                                                           \
+    u32 sweep_ticks = gs->sweep_ticks - 1;                                    \
+                                                                              \
+    if(sweep_ticks == 0)                                                      \
+    {                                                                         \
+      u32 rate = gs->rate;                                                    \
+                                                                              \
+      if(gs->sweep_direction)                                                 \
+        rate = rate - (rate >> gs->sweep_shift);                              \
+      else                                                                    \
+        rate = rate + (rate >> gs->sweep_shift);                              \
+                                                                              \
+      if(rate > 2048) {                                                       \
+        rate = 0;                                                             \
+        frequency_step = 0;                                                   \
+      } else {                                                                \
+        frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)  \
+        / SOUND_FREQUENCY);                                                   \
+      }                                                                       \
+                                                                              \
+      gs->frequency_step = frequency_step;                                    \
+      gs->rate = rate;                                                        \
+                                                                              \
+      sweep_ticks = gs->sweep_initial_ticks;                                  \
+    }                                                                         \
+    gs->sweep_ticks = sweep_ticks;                                            \
+  }                                                                           \
+
+#define UPDATE_TONE_NOSWEEP()                                                 \
+
+#define UPDATE_TONE_ENVELOPE()                                                \
+  if(gs->envelope_status)                                                     \
+  {                                                                           \
+    u32 envelope_ticks = gs->envelope_ticks - 1;                              \
+    envelope_volume = gs->envelope_volume;                                    \
+                                                                              \
+    if(envelope_ticks == 0)                                                   \
+    {                                                                         \
+      if(gs->envelope_direction)                                              \
+      {                                                                       \
+        if(envelope_volume != 15)                                             \
+          envelope_volume = gs->envelope_volume + 1;                          \
+      }                                                                       \
+      else                                                                    \
+      {                                                                       \
+        if(envelope_volume != 0)                                              \
+          envelope_volume = gs->envelope_volume - 1;                          \
+      }                                                                       \
+                                                                              \
+      UPDATE_VOLUME(envelope);                                                \
+                                                                              \
+      gs->envelope_volume = envelope_volume;                                  \
+      gs->envelope_ticks = gs->envelope_initial_ticks;                        \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+      gs->envelope_ticks = envelope_ticks;                                    \
+    }                                                                         \
+  }                                                                           \
+
+#define UPDATE_TONE_NOENVELOPE()                                              \
+
+#define UPDATE_TONE_COUNTERS(envelope_op, sweep_op)                           \
+  tick_counter += gbc_sound_tick_step;                                        \
+  if(tick_counter > 0xFFFF)                                                   \
+  {                                                                           \
+    if(gs->length_status)                                                     \
+    {                                                                         \
+      u32 length_ticks = gs->length_ticks - 1;                                \
+      gs->length_ticks = length_ticks;                                        \
+                                                                              \
+      if(length_ticks == 0)                                                   \
+      {                                                                       \
+        gs->active_flag = 0;                                                  \
+        break;                                                                \
+      }                                                                       \
+    }                                                                         \
+                                                                              \
+    update_tone_##envelope_op();                                              \
+    update_tone_##sweep_op();                                                 \
+                                                                              \
+    tick_counter &= 0xFFFF;                                                   \
+  }                                                                           \
+
+#define GBC_SOUND_RENDER_SAMPLE_RIGHT()                                       \
+  sound_buffer[buffer_index + 1] += (current_sample * volume_right) >> 22     \
+
+#define GBC_SOUND_RENDER_SAMPLE_LEFT()                                        \
+  sound_buffer[buffer_index] += (current_sample * volume_left) >> 22          \
+
+#define GBC_SOUND_RENDER_SAMPLE_BOTH()                                        \
+  GBC_SOUND_RENDER_SAMPLE_RIGHT();                                            \
+  GBC_SOUND_RENDER_SAMPLE_LEFT()                                              \
+
+#define GBC_SOUND_RENDER_SAMPLES(type, sample_length, envelope_op, sweep_op)  \
+  for(i = 0; i < buffer_ticks; i++)                                           \
+  {                                                                           \
+    current_sample =                                                          \
+     sample_data[FP16_16_TO_U32(sample_index) % sample_length];               \
+    gbc_sound_render_sample_##type();                                         \
+                                                                              \
+    sample_index += frequency_step;                                           \
+    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
+                                                                              \
+    UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
+  }                                                                           \
+
+#define GBC_NOISE_WRAP_FULL 32767
+
+#define GBC_NOISE_WRAP_HALF 126
+
+#define GET_NOISE_SAMPLE_FULL()                                               \
+  current_sample =                                                            \
+   ((s32)(noise_table15[FP16_16_TO_U32(sample_index) >> 5] <<                 \
+   (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
+
+#define GET_NOISE_SAMPLE_HALF()                                               \
+  current_sample =                                                            \
+   ((s32)(noise_table7[FP16_16_TO_U32(sample_index) >> 5] <<                  \
+   (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
+
+#define GBC_SOUND_RENDER_NOISE(type, noise_type, envelope_op, sweep_op)       \
+  for(i = 0; i < buffer_ticks; i++)                                           \
+  {                                                                           \
+    get_noise_sample_##noise_type();                                          \
+    gbc_sound_render_sample_##type();                                         \
+                                                                              \
+    sample_index += frequency_step;                                           \
+                                                                              \
+    if(sample_index >= U32_TO_FP16_16(gbc_noise_wrap_##noise_type))           \
+      sample_index -= U32_TO_FP16_16(gbc_noise_wrap_##noise_type);            \
+                                                                              \
+    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
+    UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
+  }                                                                           \
+
+#define GBC_SOUND_RENDER_CHANNEL(type, sample_length, envelope_op, sweep_op)  \
+  buffer_index = gbc_sound_buffer_index;                                      \
+  sample_index = gs->sample_index;                                            \
+  frequency_step = gs->frequency_step;                                        \
+  tick_counter = gs->tick_counter;                                            \
+                                                                              \
+  UPDATE_VOLUME(envelope_op);                                                 \
+                                                                              \
+  switch(gs->status)                                                          \
+  {                                                                           \
+    case GBC_SOUND_INACTIVE:                                                  \
+      break;                                                                  \
+                                                                              \
+    case GBC_SOUND_LEFT:                                                      \
+      gbc_sound_render_##type(left, sample_length, envelope_op, sweep_op);    \
+      break;                                                                  \
+                                                                              \
+    case GBC_SOUND_RIGHT:                                                     \
+      gbc_sound_render_##type(right, sample_length, envelope_op, sweep_op);   \
+      break;                                                                  \
+                                                                              \
+    case GBC_SOUND_LEFTRIGHT:                                                 \
+      gbc_sound_render_##type(both, sample_length, envelope_op, sweep_op);    \
+      break;                                                                  \
+  }                                                                           \
+                                                                              \
+  gs->sample_index = sample_index;                                            \
+  gs->tick_counter = tick_counter;                                            \
+
+#define GBC_SOUND_LOAD_WAVE_RAM(bank)                                         \
+  wave_bank = wave_samples + (bank * 32);                                     \
+  for(i = 0, i2 = 0; i < 16; i++, i2 += 2)                                    \
+  {                                                                           \
+    current_sample = wave_ram[i];                                             \
+    wave_bank[i2] = (((current_sample >> 4) & 0x0F) - 8);                     \
+    wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
+  }                                                                           \
+
+#define SOUND_COPY_NORMAL()                                                   \
+  current_sample = source[i]                                                  \
+
+#define SOUND_COPY(source_offset, length, render_type)                        \
+  _length = (length) / 2;                                                     \
+  source = (s16 *)(sound_buffer + source_offset);                             \
+  for(i = 0; i < _length; i++)                                                \
+  {                                                                           \
+    sound_copy_##render_type();                                               \
+    if(current_sample > 2047)                                                 \
+      current_sample = 2047;                                                  \
+    if(current_sample < -2048)                                                \
+      current_sample = -2048;                                                 \
+                                                                              \
+    stream_base[i] = current_sample << 4;                                     \
+    source[i] = 0;                                                            \
+  }                                                                           \
+
+#define SOUND_COPY_NULL(source_offset, length)                                \
+  _length = (length) >> 2;                                                    \
+  source = (s16 *)(sound_buffer + source_offset);                             \
+  {                                                                           \
+    u32 *ptr1 = (u32 *) stream_base;                                          \
+    u32 *ptr2 = (u32 *) source;                                               \
+    while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
+  }                                                                           \
+
+/******************************************************************************
+ * グローバル変数の定義
+ ******************************************************************************/
+
+/******************************************************************************
+ * ローカル変数の定義
+ ******************************************************************************/
+
+/******************************************************************************
+ * ローカル関数の宣言
+ ******************************************************************************/
+
 
 u32 global_enable_audio = 1;
 
@@ -48,31 +318,28 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length);
 
 // Queue 1, 2, or 4 samples to the top of the DS FIFO, wrap around circularly
 
-#define sound_timer_queue(size, value)                                        \
-  *((s##size *)(ds->fifo + ds->fifo_top)) = value;                            \
-  ds->fifo_top = (ds->fifo_top + 1) % 32;                                     \
 
 void sound_timer_queue8(u32 channel, u8 value)
 {
   direct_sound_struct *ds = direct_sound_channel + channel;
-  sound_timer_queue(8, value);
+  SOUND_TIMER_QUEUE(8, value);
 }
 
 void sound_timer_queue16(u32 channel, u16 value)
 {
   direct_sound_struct *ds = direct_sound_channel + channel;
-  sound_timer_queue(8, value & 0xFF);
-  sound_timer_queue(8, value >> 8);
+  SOUND_TIMER_QUEUE(8, value & 0xFF);
+  SOUND_TIMER_QUEUE(8, value >> 8);
 }
 
 void sound_timer_queue32(u32 channel, u32 value)
 {
   direct_sound_struct *ds = direct_sound_channel + channel;
 
-  sound_timer_queue(8, value & 0xFF);
-  sound_timer_queue(8, (value >> 8) & 0xFF);
-  sound_timer_queue(8, (value >> 16) & 0xFF);
-  sound_timer_queue(8, value >> 24);
+  SOUND_TIMER_QUEUE(8, value & 0xFF);
+  SOUND_TIMER_QUEUE(8, (value >> 8) & 0xFF);
+  SOUND_TIMER_QUEUE(8, (value >> 16) & 0xFF);
+  SOUND_TIMER_QUEUE(8, value >> 24);
 }
 
 // Unqueue 1 sample from the base of the DS FIFO and place it on the audio
@@ -80,29 +347,6 @@ void sound_timer_queue32(u32 channel, u32 value)
 // smaller and if DMA is enabled for the sound channel initiate a DMA transfer
 // to the DS FIFO.
 
-#define render_sample_null()                                                  \
-
-#define render_sample_left()                                                  \
-  sound_buffer[buffer_index] += current_sample +                              \
-   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
-
-#define render_sample_right()                                                 \
-  sound_buffer[buffer_index + 1] += current_sample +                          \
-   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
-
-#define render_sample_both()                                                  \
-  dest_sample = current_sample +                                              \
-   FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional);          \
-  sound_buffer[buffer_index] += dest_sample;                                  \
-  sound_buffer[buffer_index + 1] += dest_sample                               \
-
-#define render_samples(type)                                                  \
-  while(fifo_fractional <= 0xFFFF)                                            \
-  {                                                                           \
-    render_sample_##type();                                                   \
-    fifo_fractional += frequency_step;                                        \
-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
-  }                                                                           \
 
 void sound_timer(FIXED16_16 frequency_step, u32 channel)
 {
@@ -127,25 +371,25 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
     switch(ds->status)
     {
       case DIRECT_SOUND_INACTIVE:
-        render_samples(null);
+        RENDER_SAMPLES(NULL);
         break;
 
       case DIRECT_SOUND_RIGHT:
-        render_samples(right);
+        RENDER_SAMPLES(RIGHT);
         break;
 
       case DIRECT_SOUND_LEFT:
-        render_samples(left);
+        RENDER_SAMPLES(LEFT);
         break;
 
       case DIRECT_SOUND_LEFTRIGHT:
-        render_samples(both);
+        RENDER_SAMPLES(BOTH);
         break;
     }
   }
   else
   {
-    render_samples(null);
+    RENDER_SAMPLES(NULL);
   }
 
   ds->buffer_index = buffer_index;
@@ -233,195 +477,6 @@ u32 gbc_sound_master_volume_left;
 u32 gbc_sound_master_volume_right;
 u32 gbc_sound_master_volume;
 
-#define update_volume_channel_envelope(channel)                               \
-  volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
-   gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
-   gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
-
-#define update_volume_channel_noenvelope(channel)                             \
-  volume_##channel = gs->wave_volume *                                        \
-   gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
-   gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
-
-#define update_volume(type)                                                   \
-  update_volume_channel_##type(left);                                         \
-  update_volume_channel_##type(right)                                         \
-
-#define update_tone_sweep()                                                   \
-  if(gs->sweep_status)                                                        \
-  {                                                                           \
-    u32 sweep_ticks = gs->sweep_ticks - 1;                                    \
-                                                                              \
-    if(sweep_ticks == 0)                                                      \
-    {                                                                         \
-      u32 rate = gs->rate;                                                    \
-                                                                              \
-      if(gs->sweep_direction)                                                 \
-        rate = rate - (rate >> gs->sweep_shift);                              \
-      else                                                                    \
-        rate = rate + (rate >> gs->sweep_shift);                              \
-                                                                              \
-      if(rate > 2048) {                                                       \
-        rate = 0;                                                             \
-        frequency_step = 0;                                                   \
-      } else {                                                                \
-        frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)  \
-        / SOUND_FREQUENCY);                                                   \
-      }                                                                       \
-                                                                              \
-      gs->frequency_step = frequency_step;                                    \
-      gs->rate = rate;                                                        \
-                                                                              \
-      sweep_ticks = gs->sweep_initial_ticks;                                  \
-    }                                                                         \
-    gs->sweep_ticks = sweep_ticks;                                            \
-  }                                                                           \
-
-#define update_tone_nosweep()                                                 \
-
-#define update_tone_envelope()                                                \
-  if(gs->envelope_status)                                                     \
-  {                                                                           \
-    u32 envelope_ticks = gs->envelope_ticks - 1;                              \
-    envelope_volume = gs->envelope_volume;                                    \
-                                                                              \
-    if(envelope_ticks == 0)                                                   \
-    {                                                                         \
-      if(gs->envelope_direction)                                              \
-      {                                                                       \
-        if(envelope_volume != 15)                                             \
-          envelope_volume = gs->envelope_volume + 1;                          \
-      }                                                                       \
-      else                                                                    \
-      {                                                                       \
-        if(envelope_volume != 0)                                              \
-          envelope_volume = gs->envelope_volume - 1;                          \
-      }                                                                       \
-                                                                              \
-      update_volume(envelope);                                                \
-                                                                              \
-      gs->envelope_volume = envelope_volume;                                  \
-      gs->envelope_ticks = gs->envelope_initial_ticks;                        \
-    }                                                                         \
-    else                                                                      \
-    {                                                                         \
-      gs->envelope_ticks = envelope_ticks;                                    \
-    }                                                                         \
-  }                                                                           \
-
-#define update_tone_noenvelope()                                              \
-
-#define update_tone_counters(envelope_op, sweep_op)                           \
-  tick_counter += gbc_sound_tick_step;                                        \
-  if(tick_counter > 0xFFFF)                                                   \
-  {                                                                           \
-    if(gs->length_status)                                                     \
-    {                                                                         \
-      u32 length_ticks = gs->length_ticks - 1;                                \
-      gs->length_ticks = length_ticks;                                        \
-                                                                              \
-      if(length_ticks == 0)                                                   \
-      {                                                                       \
-        gs->active_flag = 0;                                                  \
-        break;                                                                \
-      }                                                                       \
-    }                                                                         \
-                                                                              \
-    update_tone_##envelope_op();                                              \
-    update_tone_##sweep_op();                                                 \
-                                                                              \
-    tick_counter &= 0xFFFF;                                                   \
-  }                                                                           \
-
-#define gbc_sound_render_sample_right()                                       \
-  sound_buffer[buffer_index + 1] += (current_sample * volume_right) >> 22     \
-
-#define gbc_sound_render_sample_left()                                        \
-  sound_buffer[buffer_index] += (current_sample * volume_left) >> 22          \
-
-#define gbc_sound_render_sample_both()                                        \
-  gbc_sound_render_sample_right();                                            \
-  gbc_sound_render_sample_left()                                              \
-
-#define gbc_sound_render_samples(type, sample_length, envelope_op, sweep_op)  \
-  for(i = 0; i < buffer_ticks; i++)                                           \
-  {                                                                           \
-    current_sample =                                                          \
-     sample_data[FP16_16_TO_U32(sample_index) % sample_length];               \
-    gbc_sound_render_sample_##type();                                         \
-                                                                              \
-    sample_index += frequency_step;                                           \
-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
-                                                                              \
-    update_tone_counters(envelope_op, sweep_op);                              \
-  }                                                                           \
-
-#define gbc_noise_wrap_full 32767
-
-#define gbc_noise_wrap_half 126
-
-#define get_noise_sample_full()                                               \
-  current_sample =                                                            \
-   ((s32)(noise_table15[FP16_16_TO_U32(sample_index) >> 5] <<                 \
-   (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
-
-#define get_noise_sample_half()                                               \
-  current_sample =                                                            \
-   ((s32)(noise_table7[FP16_16_TO_U32(sample_index) >> 5] <<                  \
-   (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
-
-#define gbc_sound_render_noise(type, noise_type, envelope_op, sweep_op)       \
-  for(i = 0; i < buffer_ticks; i++)                                           \
-  {                                                                           \
-    get_noise_sample_##noise_type();                                          \
-    gbc_sound_render_sample_##type();                                         \
-                                                                              \
-    sample_index += frequency_step;                                           \
-                                                                              \
-    if(sample_index >= U32_TO_FP16_16(gbc_noise_wrap_##noise_type))           \
-      sample_index -= U32_TO_FP16_16(gbc_noise_wrap_##noise_type);            \
-                                                                              \
-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
-    update_tone_counters(envelope_op, sweep_op);                              \
-  }                                                                           \
-
-#define gbc_sound_render_channel(type, sample_length, envelope_op, sweep_op)  \
-  buffer_index = gbc_sound_buffer_index;                                      \
-  sample_index = gs->sample_index;                                            \
-  frequency_step = gs->frequency_step;                                        \
-  tick_counter = gs->tick_counter;                                            \
-                                                                              \
-  update_volume(envelope_op);                                                 \
-                                                                              \
-  switch(gs->status)                                                          \
-  {                                                                           \
-    case GBC_SOUND_INACTIVE:                                                  \
-      break;                                                                  \
-                                                                              \
-    case GBC_SOUND_LEFT:                                                      \
-      gbc_sound_render_##type(left, sample_length, envelope_op, sweep_op);    \
-      break;                                                                  \
-                                                                              \
-    case GBC_SOUND_RIGHT:                                                     \
-      gbc_sound_render_##type(right, sample_length, envelope_op, sweep_op);   \
-      break;                                                                  \
-                                                                              \
-    case GBC_SOUND_LEFTRIGHT:                                                 \
-      gbc_sound_render_##type(both, sample_length, envelope_op, sweep_op);    \
-      break;                                                                  \
-  }                                                                           \
-                                                                              \
-  gs->sample_index = sample_index;                                            \
-  gs->tick_counter = tick_counter;                                            \
-
-#define gbc_sound_load_wave_ram(bank)                                         \
-  wave_bank = wave_samples + (bank * 32);                                     \
-  for(i = 0, i2 = 0; i < 16; i++, i2 += 2)                                    \
-  {                                                                           \
-    current_sample = wave_ram[i];                                             \
-    wave_bank[i2] = (((current_sample >> 4) & 0x0F) - 8);                     \
-    wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
-  }                                                                           \
 
 void update_gbc_sound(u32 cpu_ticks)
 {
@@ -478,7 +533,7 @@ void update_gbc_sound(u32 cpu_ticks)
       sound_status |= 0x01;
       sample_data = gs->sample_data;
       envelope_volume = gs->envelope_volume;
-      gbc_sound_render_channel(samples, 8, envelope, sweep);
+      GBC_SOUND_RENDER_CHANNEL(samples, 8, envelope, sweep);
     }
 
     gs = gbc_sound_channel + 1;
@@ -487,7 +542,7 @@ void update_gbc_sound(u32 cpu_ticks)
       sound_status |= 0x02;
       sample_data = gs->sample_data;
       envelope_volume = gs->envelope_volume;
-      gbc_sound_render_channel(samples, 8, envelope, nosweep);
+      GBC_SOUND_RENDER_CHANNEL(samples, 8, envelope, nosweep);
     }
 
     gs = gbc_sound_channel + 2;
@@ -495,11 +550,11 @@ void update_gbc_sound(u32 cpu_ticks)
     {
       if(gs->wave_bank == 1)
       {
-        gbc_sound_load_wave_ram(1);
+        GBC_SOUND_LOAD_WAVE_RAM(1);
       }
       else
       {
-        gbc_sound_load_wave_ram(0);
+        GBC_SOUND_LOAD_WAVE_RAM(0);
       }
 
       gbc_sound_wave_update = 0;
@@ -514,11 +569,11 @@ void update_gbc_sound(u32 cpu_ticks)
         if(gs->wave_bank == 1)
           sample_data += 32;
 
-        gbc_sound_render_channel(samples, 32, noenvelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(samples, 32, noenvelope, nosweep);
       }
       else
       {
-        gbc_sound_render_channel(samples, 64, noenvelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(samples, 64, noenvelope, nosweep);
       }
     }
 
@@ -530,11 +585,11 @@ void update_gbc_sound(u32 cpu_ticks)
 
       if(gs->noise_type == 1)
       {
-        gbc_sound_render_channel(noise, half, envelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(noise, half, envelope, nosweep);
       }
       else
       {
-        gbc_sound_render_channel(noise, full, envelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(noise, full, envelope, nosweep);
       }
     }
   }
@@ -546,32 +601,6 @@ void update_gbc_sound(u32 cpu_ticks)
    (gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
 }
 
-#define sound_copy_normal()                                                   \
-  current_sample = source[i]                                                  \
-
-#define sound_copy(source_offset, length, render_type)                        \
-  _length = (length) / 2;                                                     \
-  source = (s16 *)(sound_buffer + source_offset);                             \
-  for(i = 0; i < _length; i++)                                                \
-  {                                                                           \
-    sound_copy_##render_type();                                               \
-    if(current_sample > 2047)                                                 \
-      current_sample = 2047;                                                  \
-    if(current_sample < -2048)                                                \
-      current_sample = -2048;                                                 \
-                                                                              \
-    stream_base[i] = current_sample << 4;                                     \
-    source[i] = 0;                                                            \
-  }                                                                           \
-
-#define sound_copy_null(source_offset, length)                                \
-  _length = (length) >> 2;                                                    \
-  source = (s16 *)(sound_buffer + source_offset);                             \
-  {                                                                           \
-    u32 *ptr1 = (u32 *) stream_base;                                          \
-    u32 *ptr2 = (u32 *) source;                                               \
-    while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
-  }                                                                           \
 
 static int sound_update_thread(SceSize args, void *argp)
   {
@@ -602,14 +631,14 @@ void sound_callback(/*void *userdata, char *stream, int length*/)
     if((sound_buffer_base + sample_length) >= BUFFER_SIZE)
     {
       u32 partial_length = (BUFFER_SIZE - sound_buffer_base) * 2;
-      sound_copy(sound_buffer_base, partial_length, normal);
+      SOUND_COPY(sound_buffer_base, partial_length, normal);
 //      source = (s16 *)sound_buffer;
-      sound_copy(0, length - partial_length, normal);
+      SOUND_COPY(0, length - partial_length, normal);
       sound_buffer_base = (length - partial_length) / 2;
     }
     else
     {
-      sound_copy(sound_buffer_base, length, normal);
+      SOUND_COPY(sound_buffer_base, length, normal);
       sound_buffer_base += sample_length;
     }
   }
@@ -618,14 +647,14 @@ void sound_callback(/*void *userdata, char *stream, int length*/)
     if((sound_buffer_base + sample_length) >= BUFFER_SIZE)
     {
       u32 partial_length = (BUFFER_SIZE - sound_buffer_base) * 2;
-      sound_copy_null(sound_buffer_base, partial_length);
+      SOUND_COPY_NULL(sound_buffer_base, partial_length);
 //      source = (s16 *)sound_buffer;
-      sound_copy_null(0, length - partial_length);
+      SOUND_COPY_NULL(0, length - partial_length);
       sound_buffer_base = (length - partial_length) / 2;
     }
     else
     {
-      sound_copy_null(sound_buffer_base, length);
+      SOUND_COPY_NULL(sound_buffer_base, length);
       sound_buffer_base += sample_length;
     }
   }
@@ -721,21 +750,6 @@ void init_sound()
   audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
   audio_buffer_size_x2 = audio_buffer_size * 2;
 
-/*
-  SDL_AudioSpec desired_spec =
-  {
-    SOUND_FREQUENCY,
-    AUDIO_S16,
-    2,
-    0,
-    audio_buffer_size / 4,
-    0,
-    0,
-    sound_callback,
-    NULL
-  };
-*/
-
   gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
 
   init_noise_table(noise_table15, 32767, 14);
@@ -762,15 +776,6 @@ void init_sound()
 
   //スレッドの開始
   sceKernelStartThread(sound_thread, 0, 0);
-
-
-/*
-  SDL_OpenAudio(&desired_spec, &sound_settings);
-//  sound_frequency = sound_settings.freq;
-  sound_mutex = SDL_CreateMutex();
-  sound_cv = SDL_CreateCond();
-  SDL_PauseAudio(0);
-*/
 
 }
 
