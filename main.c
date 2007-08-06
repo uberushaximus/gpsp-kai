@@ -18,13 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
-
 /******************************************************************************
  * ヘッダファイルの読込み
  ******************************************************************************/
 #include "common.h"
+
+PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 
 /******************************************************************************
  * 変数の定義
