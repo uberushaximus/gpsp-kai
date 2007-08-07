@@ -125,8 +125,8 @@ u32 file_length(char *filename, s32 dummy);
   if(timer[timer_number].direct_sound_channels & (0x01 << channel))           \
   {                                                                           \
     direct_sound_channel[channel].buffer_index =                              \
-     (direct_sound_channel[channel].buffer_index + buffer_adjust) %           \
-     BUFFER_SIZE;                                                             \
+     (direct_sound_channel[channel].buffer_index + buffer_adjust) % BUFFER_SIZE; /* TODO:サウンドのズレはこのあたりの処理が問題? */ \
+                                                                              \
   }                                                                           \
 
 #define trigger_timer(timer_number)                                           \
@@ -157,7 +157,7 @@ u32 file_length(char *filename, s32 dummy);
       if(timer_number < 2)                                                    \
       {                                                                       \
         u32 buffer_adjust =                                                   \
-         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
+         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *      /* TODO:サウンドのズレはこのあたりの処理が問題 */ \
          SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
                                                                               \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \

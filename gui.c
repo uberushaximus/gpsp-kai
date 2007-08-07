@@ -1331,7 +1331,7 @@ u32 menu(u16 *original_screen)
   video_resolution_large();
 
 //  SDL_LockMutex(sound_mutex);
-//  SDL_PauseAudio(1);
+    pause_sound(1);
 //  sceKernelSleepThread();
 //  SDL_UnlockMutex(sound_mutex);
 
@@ -1491,7 +1491,7 @@ u32 menu(u16 *original_screen)
 
   scePowerSetClockFrequency(game_config_clock_speed, game_config_clock_speed, game_config_clock_speed / 2);
 
-//  SDL_PauseAudio(0);
+  pause_sound(0);
   return return_value;
 }
 

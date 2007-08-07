@@ -98,7 +98,9 @@ typedef struct
   s8 *sample_data;
 } GBC_SOUND_STRUCT;
 
-#define BUFFER_SIZE 65536
+#define BUFFER_SIZE  65536                        // バッファのバイト数。
+
+#define SOUND_FREQUENCY 44100
 
 #define GBC_SOUND_TONE_CONTROL_LOW(channel, address)                          \
 {                                                                             \
@@ -134,7 +136,7 @@ typedef struct
      gbc_sound_channel[channel].envelope_initial_volume;                      \
     gbc_sound_channel[channel].sweep_ticks =                                  \
      gbc_sound_channel[channel].sweep_initial_ticks;                          \
-}                                                                           \
+}                                                                             \
                                                                               \
   gbc_sound_update = 1;                                                       \
   ADDRESS16(io_registers, address) = value;                                   \
@@ -304,8 +306,6 @@ extern u32 enable_low_pass_filter;
 extern u32 audio_buffer_size_number;
 extern u32 gbc_sound_wave_volume[4];
 
-void sound_timer_queue8(u32 channel, u8 value);
-void sound_timer_queue16(u32 channel, u16 value);
 void sound_timer_queue32(u8 channel);
 void sound_timer(FIXED16_16 frequency_step, u32 channel);
 void sound_reset_fifo(u32 channel);
@@ -313,10 +313,7 @@ void update_gbc_sound(u32 cpu_ticks);
 void init_sound();
 void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void sound_read_savestate(FILE_TAG_TYPE savestate_file);
-
-#define SOUND_FREQUENCY 44100
-
-
+void pause_sound(u32 flag);
 void reset_sound();
 void sound_exit();
 

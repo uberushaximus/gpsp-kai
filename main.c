@@ -248,7 +248,7 @@ int SetupCallbacks()
 {
   int thid = 0;
 
-  thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+  thid = sceKernelCreateThread("update_thread", CallbackThread, 0x20, 0xFA0, 0, 0);
   if (thid >= 0)
   {
     sceKernelStartThread(thid, 0, 0);
@@ -282,8 +282,8 @@ int main(int argc, char *argv[])
 
 //  pspSdkLoadAdhocModules();
 
-  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
-  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 256 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x20, 0x200, 0, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x10, 256 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(home_thread, 0, 0);
 
