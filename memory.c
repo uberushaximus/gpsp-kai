@@ -485,8 +485,8 @@ u32 read_eeprom()
                                                                               \
     case 0x04:                                                                \
       /* I/O registers */                                                     \
-      if(address < 0x04000804)                                                \  /* IOは0x803まで存在 */
-        value = ADDRESS##type(io_registers, address & 0xFFF);                 \  /* 0x800は0x800ごとにループしている:TODO */
+      if(address < 0x04000804)                                                  /* IOは0x803まで存在 */ \
+        value = ADDRESS##type(io_registers, address & 0xFFF);                   /* 0x800は0x800ごとにループしている:TODO */ \
       else                                                                    \
         read_open##type();                                                    \
       break;                                                                  \
@@ -499,7 +499,7 @@ u32 read_eeprom()
     case 0x06:                                                                \
       /* VRAM */                                                              \
       address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                  \  /* TODO:アドレス調整調査 */
+      if(address >= 0x18000)                                                    /* TODO:アドレス調整調査 */ \
         address -= 0x8000;                                                    \
                                                                               \
       value = ADDRESS##type(vram, address);                                   \
@@ -1892,8 +1892,8 @@ void write_rtc(u32 address, u32 value)
     case 0x04:                                                                \
       /* I/O registers */                                                     \
       if(address < 0x04000804)                                                \
-        return write_io_register##type(address & 0xFFF, value);               \  /* IOは0x803まで存在 */
-      break;                                                                  \  /* 0x800は0x800ごとにループしている:TODO */
+        return write_io_register##type(address & 0xFFF, value);                 /* IOは0x803まで存在 */ \
+      break;                                                                    /* 0x800は0x800ごとにループしている:TODO */ \
                                                                               \
     case 0x05:                                                                \
       /* palette RAM */                                                       \
@@ -1903,7 +1903,7 @@ void write_rtc(u32 address, u32 value)
     case 0x06:                                                                \
       /* VRAM */                                                              \
       address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                  \  /* TODO:アドレス調整調査 */
+      if(address >= 0x18000)                                                    /* TODO:アドレス調整調査 */ \
         address -= 0x8000;                                                    \
                                                                               \
       write_vram##type();                                                     \

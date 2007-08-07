@@ -285,7 +285,7 @@
 // マジカルバケーションの不具合修正
 void sound_timer_queue32(u8 channel)
 {
-  direct_sound_struct *ds = direct_sound_channel + channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
   u8 offset = channel * 4;
   u8 i;
 
@@ -345,16 +345,6 @@ void sound_timer_queue16(u32 channel, u16 value)
   DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
   SOUND_TIMER_QUEUE(8, value & 0xFF);
   SOUND_TIMER_QUEUE(8, value >> 8);
-}
-
-void sound_timer_queue32(u32 channel, u32 value)
-{
-  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
-
-  SOUND_TIMER_QUEUE(8, value & 0xFF);
-  SOUND_TIMER_QUEUE(8, (value >> 8) & 0xFF);
-  SOUND_TIMER_QUEUE(8, (value >> 16) & 0xFF);
-  SOUND_TIMER_QUEUE(8, value >> 24);
 }
 
 // Unqueue 1 sample from the base of the DS FIFO and place it on the audio
