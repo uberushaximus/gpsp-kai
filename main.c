@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 NJ
  * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +26,7 @@
 #include "common.h"
 
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
+PSP_MAIN_THREAD_ATTR(0);
 
 /******************************************************************************
  * 変数の定義
@@ -278,16 +279,24 @@ int main(int argc, char *argv[])
   SceUID main_thread;
   SceUID home_thread;
 
+  // カレントパスの取得
   getcwd(main_path, 512);
 
-//  pspSdkLoadAdhocModules();
+  // デバッグ用スクリーンの初期化
+  pspDebugScreenInit();
+  error_msg("screen init\n");
 
-  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x20, 0x200, 0, NULL);
-  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x10, 256 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  // adhoc用モジュールのロード
+  if (pspSdkLoadAdhocModules() != 0)
+    error_msg("not load inet modules\n");
+  error_msg("load network modules\n");
+
+  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(home_thread, 0, 0);
-
   sceKernelStartThread(main_thread, 0, 0);
+
   sceKernelWaitThreadEnd(main_thread, NULL);
 
   home_active = 0;
@@ -323,6 +332,8 @@ int user_main(int argc, char *argv[])
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
+  error_msg("main thread \n");
+
   if (load_dircfg("settings/dir.cfg") != 0)
   {
     error_msg("dir.cfg Error!!");
@@ -343,36 +354,24 @@ int user_main(int argc, char *argv[])
     quit();
   }
 
+  error_msg("load cfg \n");
+
   if (load_font() != 0)
   {
     error_msg("font init Error!!");
     quit();
   }
-/*
-  // adhoc用モジュールのロード
-  if(sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON) != 0)
-  {
-    error_msg("not load modules common\n");
-  }
-  if(sceUtilityLoadNetModule(PSP_NET_MODULE_INET) != 0)
-  {
-    error_msg("not load modules inet\n");
-  }
-  if(sceUtilityLoadNetModule(PSP_NET_MODULE_ADHOC) != 0)
-  {
-    error_msg("not load modules adhoc\n");
-  }
 
-  if(pspSdkInetInit() != 0)
-  {
-    error_msg("not init inet\n");
-  }
+  error_msg("load font \n");
 
+  // adhoc接続のテスト
   if (adhocInit("test") != 0)
   {
     error_msg("not use wlan!! \n");
   }
-*/
+  error_msg("OK use wlan!! \n");
+  adhocTerm();
+
   init_gamepak_buffer();
 
   load_config_file();
@@ -935,7 +934,7 @@ void error_msg(char *text)
     while(gui_action == CURSOR_NONE)
     {
       gui_action = get_gui_input();
-      delay_us(15000);
+      delay_us(15000); /* 0.0015s */
     }
 }
 
