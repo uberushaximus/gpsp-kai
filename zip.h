@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,7 +22,7 @@
 #ifndef ZIP_H
 #define ZIP_H
 
-u32 load_file_zip(char *filename);
+s32 load_file_zip(char *filename);
 
 #endif
 

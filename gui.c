@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public Licens e as
@@ -251,6 +252,7 @@ static char font8[MAX_PATH];
 static char font16[MAX_PATH];
 static u32 menu_cheat_page = 0;
 static u32 gamepad_config_line_to_button[] = { 8, 6, 7, 9, 1, 2, 3, 0, 4, 5, 11, 10 };
+static u32 clock_speed_number;
 
 /******************************************************************************
  * ローカル関数の宣言
@@ -761,6 +763,8 @@ s32 load_game_config_file()
       if(game_config_clock_speed < 33)
         game_config_clock_speed = 33;
 
+      clock_speed_number = (game_config_clock_speed / 33) - 1;
+
       if(game_config_frameskip_value < 0)
         game_config_frameskip_value = 0;
 
@@ -780,9 +784,10 @@ s32 load_game_config_file()
 
   // 読み込めなかった場合の初期値の設定
   game_config_frameskip_type = auto_frameskip;
-  game_config_frameskip_value = 4;
+  game_config_frameskip_value = 9;
   game_config_random_skip = 0;
   game_config_clock_speed = 333;
+  clock_speed_number = 9;
 
   for(i = 0; i < MAX_CHEATS; i++)
   {
@@ -823,9 +828,7 @@ s32 load_config_file()
       audio_buffer_size_number = file_options[3] % 11;
       update_backup_flag = file_options[4] % 2;
       global_enable_analog = file_options[5] % 2;
-      analog_sensitivity_level = file_options[6] % 8;
-
-      scePowerSetClockFrequency(game_config_clock_speed, game_config_clock_speed, game_config_clock_speed / 2);
+      analog_sensitivity_level = file_options[6] % 10;
 
       // Sanity check: Make sure there's a MENU or FRAMESKIP
       // key, if not assign to triangle
@@ -857,7 +860,6 @@ s32 load_config_file()
 
 u32 menu(u16 *original_screen)
 {
-  u32 clock_speed_number = (game_config_clock_speed / 33) - 1;
   char print_buffer[81];
 //  u32 _current_option = 0;
   gui_action_type gui_action;
@@ -978,7 +980,8 @@ u32 menu(u16 *original_screen)
 
   void menu_save_ss()
   {
-    save_ss_bmp(original_screen);
+    if(!first_load)
+      save_ss_bmp(original_screen);
   }
 
   void menu_change_state()
@@ -1170,7 +1173,7 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &global_enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &audio_buffer_size_number, 10, msg[MSG_G_S_MENU_HELP_6], 11),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
 
@@ -1331,6 +1334,10 @@ u32 menu(u16 *original_screen)
 //  SDL_PauseAudio(1);
 //  sceKernelSleepThread();
 //  SDL_UnlockMutex(sound_mutex);
+
+  clock_speed_number = (game_config_clock_speed / 33) - 1;
+  // MENU時は222MHz
+  set_cpu_clock(222);
 
   if(gamepak_filename[0] == 0)
   {
@@ -1910,15 +1917,13 @@ static void print_status()
 
 static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u16 day, u16 wday, u16 hour, u16 min, u16 sec, u32 msec)
 {
-  int id;
   char *weekday_strings[] =
   {
     msg[MSG_WDAY_0], msg[MSG_WDAY_1], msg[MSG_WDAY_2], msg[MSG_WDAY_3],
     msg[MSG_WDAY_4], msg[MSG_WDAY_5], msg[MSG_WDAY_6], ""
   };
 
-  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&id);
-  switch(id)
+  switch(date_format)
   {
     case PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD:
       sprintf(buffer, msg[msg_id    ], year, mon, day, weekday_strings[wday], hour, min, sec, msec / 1000);

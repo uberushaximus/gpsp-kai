@@ -23,8 +23,9 @@ VERSION_OPT = test ${VERSION_BUILD}
 PSP_EBOOT_TITLE = UnOfficial_gpSP_kai_${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT}
 
 VPATH           += ..
-CFLAGS          += -O3 -DPSP_BUILD -G0 -Wall -Wredundant-decls -Wmissing-declarations -funsigned-char -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
-#CFLAGS          += -Wredundant-decls -Wmissing-declarations
+CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
+CFLAGS          += -Wall -Wredundant-decls -Wmissing-declarations
+CFLAGS          += -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
 #CFLAGS          += ${shell ${PREFIX}/bin/sdl-config --cflags}
 
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}

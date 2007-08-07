@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -821,12 +822,12 @@ u32 arm_to_mips_reg[] =
 
 #define generate_shift_reg_lsr_flags(_rm, _rs)                                \
   generate_load_reg_pc(reg_a0, _rm, 12);                                      \
-  generate_load_reg_pc(reg_a1, _rs, 8)                                        \
+  generate_load_reg_pc(reg_a1, _rs, 8);                                       \
   generate_function_call_swap_delay(execute_lsr_flags_reg)                    \
 
 #define generate_shift_reg_asr_flags(_rm, _rs)                                \
   generate_load_reg_pc(reg_a0, _rm, 12);                                      \
-  generate_load_reg_pc(reg_a1, _rs, 8)                                        \
+  generate_load_reg_pc(reg_a1, _rs, 8);                                       \
   generate_function_call_swap_delay(execute_asr_flags_reg)                    \
 
 #define generate_shift_reg_ror_flags(_rm, _rs)                                \
@@ -949,7 +950,7 @@ u32 generate_load_rm_sh_##flags_op(u32 rm)                                    \
   u32 _address = (u32)(address);                                              \
   u32 _address_hi = (_address + 0x8000) >> 16;                                \
   generate_load_imm(ireg, address);                                           \
-  mips_emit_lui(ireg, _address_hi >> 16)                                      \
+  mips_emit_lui(ireg, _address_hi >> 16);                                     \
   generate_load_memory_##type(ireg, _address - (_address_hi << 16));          \
 }                                                                             \
 
@@ -1410,7 +1411,8 @@ typedef enum
 
 #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
   mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-  generate_add_flags_prologue(_rn, _rm);                                      \
+/*  generate_add_flags_prologue(_rn, _rm); */                                 \
+  generate_add_flags_prologue(_rn, reg_temp);                                 \
   mips_emit_addu(_rd, _rn, reg_temp);                                         \
   generate_add_flags_epilogue(_rd)                                            \
 
@@ -1537,20 +1539,54 @@ typedef enum
   arm_generate_op_imm(name, load_op)                                          \
 
 
+/* 1S+x+y */
+/* x=1I cycles if Op2 shifted-by-register. y=1S+1N cycles if Rd=R15. */
+#define cycle_arm_data_proc_reg()                                             \
+  cycle_count++;                                                              \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2                                                          \
+
+#define cycle_arm_data_proc_reg_flags()                                       \
+  cycle_arm_data_proc_reg()                                                   \
+
+#define cycle_arm_data_proc_imm()                                             \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2                                                          \
+
+#define cycle_arm_data_proc_imm_flags()                                       \
+  cycle_arm_data_proc_imm()                                                   \
+
+/* 1S+x */
+#define cycle_arm_data_proc_test_reg()                                        \
+  cycle_count++                                                               \
+
+#define cycle_arm_data_proc_test_reg_flags()                                  \
+  cycle_arm_data_proc_test_reg()                                              \
+
+#define cycle_arm_data_proc_test_imm()                                        \
+
+#define cycle_arm_data_proc_test_imm_flags()                                  \
+
+/* AND, EOR, SUB, RSB, ADD, ADC, SBC, RSC, ORR, BIC  1S+x+y */
 #define arm_data_proc(name, type, flags_op)                                   \
 {                                                                             \
   arm_generate_op_##type(name, yes);                                          \
+  cycle_arm_data_proc_##type();                                               \
   check_store_reg_pc_##flags_op(rd);                                          \
 }                                                                             \
 
+/* TST, TEQ, CMP, CMN  1S+x */
 #define arm_data_proc_test(name, type)                                        \
 {                                                                             \
   arm_generate_op_##type(name, yes);                                          \
+  cycle_arm_data_proc_test_##type();                                          \
 }                                                                             \
 
+/* MOV, MVN  1S+x+y */
 #define arm_data_proc_unary(name, type, flags_op)                             \
 {                                                                             \
   arm_generate_op_##type(name, no);                                           \
+  cycle_arm_data_proc_##type();                                               \
   check_store_reg_pc_##flags_op(rd);                                          \
 }                                                                             \
 
@@ -1566,9 +1602,36 @@ typedef enum
   mips_emit_mflo(reg_temp);                                                   \
   mips_emit_addu(arm_to_mips_reg[rd], reg_temp, arm_to_mips_reg[rn])          \
 
+u32 cycle_multiply(_rs)
+{
+  u32 mult_rs = arm_to_mips_reg[_rs];
+  if(((s32)mult_rs) < 0)
+    mult_rs = ~mult_rs;
+
+  if((mult_rs & 0xFFFFFF00) == 0)  /* m=1 for Bit 31-8 */
+    return 1;
+  else
+  if((mult_rs & 0xFFFF0000) == 0)  /* m=2 for Bit 31-16 */
+    return 2;
+  else
+  if((mult_rs & 0xFF000000) == 0)  /* m=3 for Bit 31-24 */
+    return 3;
+  else                             /* m=4 otherwise */
+    return 4;
+}
+
+/* 1S+mI */
+#define cycle_arm_multiply_add_no()                                           \
+  cycle_count += cycle_multiply(rs)                                           \
+
+/* 1S+mI+1I */
+#define cycle_arm_multiply_add_yes()                                          \
+  cycle_count += 1 + cycle_multiply(rs)                                       \
+
 #define arm_multiply(add_op, flags)                                           \
 {                                                                             \
   arm_decode_multiply();                                                      \
+  cycle_arm_multiply_add_##add_op();                                          \
   mips_emit_multu(arm_to_mips_reg[rm], arm_to_mips_reg[rs]);                  \
   arm_multiply_add_##add_op();                                                \
   arm_multiply_flags_##flags(arm_to_mips_reg[rd]);                            \
@@ -1590,9 +1653,18 @@ typedef enum
 #define arm_multiply_long_add_no(name)                                        \
   generate_multiply_##name()                                                  \
 
+/* 1S+mI+1I */
+#define cycle_arm_multiply_long_add_no()                                      \
+  cycle_count += 1 + cycle_multiply(rs)                                       \
+
+/* 1S+mI+2I */
+#define cycle_arm_multiply_long_add_yes()                                     \
+  cycle_count += 2 + cycle_multiply(rs)                                       \
+
 #define arm_multiply_long(name, add_op, flags)                                \
 {                                                                             \
   arm_decode_multiply_long();                                                 \
+  cycle_arm_multiply_long_add_##add_op();                                     \
   arm_multiply_long_add_##add_op(name);                                       \
   mips_emit_mflo(arm_to_mips_reg[rdlo]);                                      \
   mips_emit_mfhi(arm_to_mips_reg[rdhi]);                                      \
@@ -1642,15 +1714,50 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   arm_psr_##transfer_type(op_type, psr_reg);                                  \
 }                                                                             \
 
+/* LDR: 1S+1N+1I. LDR PC: 2S+2N+1I. STR: 2N. */
+#define cycle_arm_access_memory_load_u32()                                    \
+  cycle_count += 1 + waitstate_cycles_non_seq[1][reg_a0 >> 24];               \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2                                                          \
+
+#define cycle_arm_access_memory_load_u16()                                    \
+  cycle_count += 1 + waitstate_cycles_non_seq[0][reg_a0 >> 24];               \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2                                                          \
+
+#define cycle_arm_access_memory_load_s16()                                    \
+  cycle_arm_access_memory_load_u16()                                          \
+
+#define cycle_arm_access_memory_load_u8()                                     \
+  cycle_arm_access_memory_load_u16()                                          \
+
+#define cycle_arm_access_memory_load_s8()                                     \
+  cycle_arm_access_memory_load_u16()                                          \
+
+#define cycle_arm_access_memory_store_u32()                                   \
+  cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24]                    \
+
+#define cycle_arm_access_memory_store_u16()                                   \
+  cycle_count += waitstate_cycles_non_seq[0][reg_a0 >> 24]                    \
+
+#define cycle_arm_access_memory_store_s16()                                   \
+  cycle_arm_access_memory_store_u16()                                         \
+
+#define cycle_arm_access_memory_store_u8()                                    \
+  cycle_arm_access_memory_store_u16()                                         \
+
+#define cycle_arm_access_memory_store_s8()                                    \
+  cycle_arm_access_memory_store_u16()                                         \
+
 #define arm_access_memory_load(mem_type)                                      \
-  cycle_count += 2;                                                           \
+  cycle_arm_access_memory_load_##mem_type();                                  \
   mips_emit_jal(mips_absolute_offset(execute_load_##mem_type));               \
   generate_load_pc(reg_a1, (pc + 8));                                         \
   generate_store_reg(reg_rv, rd);                                             \
   check_store_reg_pc_no_flags(rd)                                             \
 
 #define arm_access_memory_store(mem_type)                                     \
-  cycle_count++;                                                              \
+  cycle_arm_access_memory_store_##mem_type();                                 \
   generate_load_pc(reg_a2, (pc + 4));                                         \
   generate_load_reg_pc(reg_a1, rd, 12);                                       \
   generate_function_call_swap_delay(execute_store_##mem_type)                 \
@@ -1737,11 +1844,22 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 #define sprint_yes(access_type, pre_op, post_op, wb)                          \
   printf("sbit on %s %s %s %s\n", #access_type, #pre_op, #post_op, #wb)       \
 
+/* LDM, nS+1N+1I. LDM PC, (n+1)S+2N+1I. STM (n-1)S+2N. */
 #define arm_block_memory_load()                                               \
+  if(offset)                                                                  \
+    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
+  else                                                                        \
+    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
+                                                                              \
   generate_function_call_swap_delay(execute_aligned_load32);                  \
   generate_store_reg(reg_rv, i)                                               \
 
 #define arm_block_memory_store()                                              \
+  if(offset)                                                                  \
+    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
+  else                                                                        \
+    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
+                                                                              \
   generate_load_reg_pc(reg_a1, i, 8);                                         \
   generate_function_call_swap_delay(execute_aligned_store32)                  \
 
@@ -1754,10 +1872,13 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   generate_load_reg(reg_a1, i)                                                \
 
 #define arm_block_memory_adjust_pc_store()                                    \
+  cycle_count++;                                                              \
 
 #define arm_block_memory_adjust_pc_load()                                     \
+  cycle_count++;                                                              \
   if(reg_list & 0x8000)                                                       \
   {                                                                           \
+    cycle_count += 2;                                                         \
     generate_mov(reg_a0, reg_rv);                                             \
     generate_indirect_branch_arm();                                           \
   }                                                                           \
@@ -1775,8 +1896,10 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 #define arm_block_memory_sp_adjust_pc_store()                                 \
 
 #define arm_block_memory_sp_adjust_pc_load()                                  \
+  cycle_count++;                                                              \
   if(reg_list & 0x8000)                                                       \
   {                                                                           \
+    cycle_count += 2;                                                         \
     generate_indirect_branch_arm();                                           \
   }                                                                           \
 
@@ -1847,7 +1970,6 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
     {                                                                         \
       if((reg_list >> i) & 0x01)                                              \
       {                                                                       \
-        cycle_count++;                                                        \
         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
         if(reg_list & ~((2 << i) - 1))                                        \
         {                                                                     \
@@ -1865,149 +1987,6 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
     arm_block_memory_adjust_pc_##access_type();                               \
   }                                                                           \
 }                                                                             \
-
-#define arm_block_writeback_no()
-
-#define arm_block_writeback_yes()                                             \
-  mips_emit_addu(arm_to_mips_reg[rn], reg_a2, reg_zero)                       \
-
-#define arm_block_address_preadjust_up_full(wb)                               \
-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
-   ((word_bit_count(reg_list)) * 4));                                         \
-  arm_block_writeback_##wb()                                                  \
-
-#define arm_block_address_preadjust_up(wb)                                    \
-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn], 4);                            \
-  arm_block_writeback_##wb()                                                  \
-
-#define arm_block_address_preadjust_down_full(wb)                             \
-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
-   -((word_bit_count(reg_list)) * 4));                                        \
-  arm_block_writeback_##wb()                                                  \
-
-#define arm_block_address_preadjust_down(wb)                                  \
-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
-   -(((word_bit_count(reg_list)) * 4) - 4));                                  \
-  arm_block_writeback_##wb()
-
-#define arm_block_address_preadjust_no(wb)                                    \
-  mips_emit_addu(reg_a2, arm_to_mips_reg[rn], reg_zero)                       \
-
-#define arm_block_address_postadjust_no()                                     \
-
-#define arm_block_address_postadjust_up()                                     \
-  mips_emit_addiu(arm_to_mips_reg[rn], reg_a2,                                \
-   ((word_bit_count(reg_list)) * 4))                                          \
-
-#define arm_block_address_postadjust_down()                                   \
-  mips_emit_addiu(arm_to_mips_reg[rn], reg_a2,                                \
-   -((word_bit_count(reg_list)) * 4))                                         \
-
-#define sprint_no(access_type, pre_op, post_op, wb)                           \
-
-#define sprint_yes(access_type, pre_op, post_op, wb)                          \
-  printf("sbit on %s %s %s %s\n", #access_type, #pre_op, #post_op, #wb)       \
-
-#define arm_block_memory_load()                                               \
-  generate_function_call_swap_delay(execute_aligned_load32);                  \
-  generate_store_reg(reg_rv, i)                                               \
-
-#define arm_block_memory_store()                                              \
-  generate_load_reg_pc(reg_a1, i, 8);                                         \
-  generate_function_call_swap_delay(execute_aligned_store32)                  \
-
-#define arm_block_memory_final_load()                                         \
-  arm_block_memory_load()                                                     \
-
-#define arm_block_memory_final_store()                                        \
-  generate_load_pc(reg_a2, (pc + 4));                                         \
-  mips_emit_jal(mips_absolute_offset(execute_store_u32));                     \
-  generate_load_reg(reg_a1, i)                                                \
-
-#define arm_block_memory_adjust_pc_store()                                    \
-
-#define arm_block_memory_adjust_pc_load()                                     \
-  if(reg_list & 0x8000)                                                       \
-  {                                                                           \
-    generate_mov(reg_a0, reg_rv);                                             \
-    generate_indirect_branch_arm();                                           \
-  }                                                                           \
-
-#define arm_block_memory_sp_load()                                            \
-  mips_emit_lw(arm_to_mips_reg[i], reg_a1, offset);                           \
-
-#define arm_block_memory_sp_store()                                           \
-{                                                                             \
-  u32 store_reg = i;                                                          \
-  check_load_reg_pc(arm_reg_a0, store_reg, 8);                                \
-  mips_emit_sw(arm_to_mips_reg[store_reg], reg_a1, offset);                   \
-}                                                                             \
-
-#define arm_block_memory_sp_adjust_pc_store()                                 \
-
-#define arm_block_memory_sp_adjust_pc_load()                                  \
-  if(reg_list & 0x8000)                                                       \
-  {                                                                           \
-    generate_indirect_branch_arm();                                           \
-  }                                                                           \
-
-#define old_arm_block_memory(access_type, pre_op, post_op, wb, s_bit)         \
-{                                                                             \
-  arm_decode_block_trans();                                                   \
-  u32 i;                                                                      \
-  u32 offset = 0;                                                             \
-  u32 base_reg = arm_to_mips_reg[rn];                                         \
-                                                                              \
-  arm_block_address_preadjust_##pre_op(wb);                                   \
-  arm_block_address_postadjust_##post_op();                                   \
-                                                                              \
-  sprint_##s_bit(access_type, pre_op, post_op, wb);                           \
-                                                                              \
-  if((rn == REG_SP) && iwram_stack_optimize)                                  \
-  {                                                                           \
-    mips_emit_andi(reg_a1, reg_a2, 0x7FFC);                                   \
-    generate_load_imm(reg_a0, ((u32)(iwram + 0x8000)));                       \
-    mips_emit_addu(reg_a1, reg_a1, reg_a0);                                   \
-                                                                              \
-    for(i = 0; i < 16; i++)                                                   \
-    {                                                                         \
-      if((reg_list >> i) & 0x01)                                              \
-      {                                                                       \
-        cycle_count++;                                                        \
-        arm_block_memory_sp_##access_type();                                  \
-        offset += 4;                                                          \
-      }                                                                       \
-    }                                                                         \
-                                                                              \
-    arm_block_memory_sp_adjust_pc_##access_type();                            \
-  }                                                                           \
-  else                                                                        \
-  {                                                                           \
-    mips_emit_ins(reg_a2, reg_zero, 0, 2);                                    \
-                                                                              \
-    for(i = 0; i < 16; i++)                                                   \
-    {                                                                         \
-      if((reg_list >> i) & 0x01)                                              \
-      {                                                                       \
-        cycle_count++;                                                        \
-        mips_emit_addiu(reg_a0, reg_a2, offset);                              \
-        if(reg_list & ~((2 << i) - 1))                                        \
-        {                                                                     \
-          arm_block_memory_##access_type();                                   \
-          offset += 4;                                                        \
-        }                                                                     \
-        else                                                                  \
-        {                                                                     \
-          arm_block_memory_final_##access_type();                             \
-          break;                                                              \
-        }                                                                     \
-      }                                                                       \
-    }                                                                         \
-                                                                              \
-    arm_block_memory_adjust_pc_##access_type();                               \
-  }                                                                           \
-}
-
 
 
 // This isn't really a correct implementation, may have to fix later.
@@ -2047,6 +2026,13 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   thumb_generate_op_##rn_type(name, _rd, _rs, _rn);                           \
 }                                                                             \
 
+#define thumb_data_proc_muls(type, rn_type, _rd, _rs, _rn)                    \
+{                                                                             \
+  thumb_decode_##type();                                                      \
+  cycle_count += cycle_multiply(_rs); /* 1S+mI */                             \
+  thumb_generate_op_##rn_type(muls, _rd, _rs, _rn);                           \
+}                                                                             \
+
 #define thumb_data_proc_test(type, name, rn_type, _rs, _rn)                   \
 {                                                                             \
   thumb_decode_##type();                                                      \
@@ -2068,6 +2054,8 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 #define thumb_data_proc_hi(name)                                              \
 {                                                                             \
   thumb_decode_hireg_op();                                                    \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2;                                                         \
   u32 dest_rd = rd;                                                           \
   check_load_reg_pc(arm_reg_a0, rs, 4);                                       \
   check_load_reg_pc(arm_reg_a1, rd, 4);                                       \
@@ -2102,6 +2090,8 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 #define thumb_data_proc_mov_hi()                                              \
 {                                                                             \
   thumb_decode_hireg_op();                                                    \
+  if(rd == reg_pc)                                                            \
+    cycle_count += 2;                                                         \
   check_load_reg_pc(arm_reg_a0, rs, 4);                                       \
   mips_emit_addu(arm_to_mips_reg[rd], arm_to_mips_reg[rs], reg_zero);         \
   check_store_reg_pc_thumb(rd);                                               \
@@ -2157,8 +2147,15 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   mips_emit_addu(arm_to_mips_reg[original_rd], reg_a0, reg_zero);             \
 }                                                                             \
 
+#define cycle_thumb_shift_shift()                                             \
+
+/* ALU operations LSL,LSR,ASR,ROR  1S+1I */
+#define cycle_thumb_shift_alu_op()                                            \
+  cycle_count++                                                               \
+
 #define thumb_shift(decode_type, op_type, value_type)                         \
 {                                                                             \
+  cycle_thumb_shift_##decode_type();                                          \
   thumb_decode_##decode_type();                                               \
   thumb_generate_shift_##value_type(op_type);                                 \
   generate_op_logic_flags(arm_to_mips_reg[rd]);                               \
@@ -2166,14 +2163,45 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 
 // Operation types: imm, mem_reg, mem_imm
 
+/* LDR 1S+1N+1I, STR 2N */
+#define cycle_thumb_access_memory_load_u32()                                  \
+  cycle_count += 1 + waitstate_cycles_non_seq[1][reg_a0 >> 24]                \
+
+#define cycle_thumb_access_memory_load_u16()                                  \
+  cycle_count += 1 + waitstate_cycles_non_seq[0][reg_a0 >> 24]                \
+
+#define cycle_thumb_access_memory_load_s16()                                  \
+  cycle_thumb_access_memory_load_u16()                                        \
+
+#define cycle_thumb_access_memory_load_u8()                                   \
+  cycle_thumb_access_memory_load_u16()                                        \
+
+#define cycle_thumb_access_memory_load_s8()                                   \
+  cycle_thumb_access_memory_load_u16()                                        \
+
+#define cycle_thumb_access_memory_store_u32()                                 \
+  cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24]                    \
+
+#define cycle_thumb_access_memory_store_u16()                                 \
+  cycle_count += waitstate_cycles_non_seq[0][reg_a0 >> 24]                    \
+
+#define cycle_thumb_access_memory_store_s16()                                 \
+  cycle_thumb_access_memory_store_u16()                                       \
+
+#define cycle_thumb_access_memory_store_u8()                                  \
+  cycle_thumb_access_memory_store_u16()                                       \
+
+#define cycle_thumb_access_memory_store_s8()                                  \
+  cycle_thumb_access_memory_store_u16()                                       \
+
 #define thumb_access_memory_load(mem_type, reg_rd)                            \
-  cycle_count += 2;                                                           \
+  cycle_thumb_access_memory_load_##mem_type();                                \
   mips_emit_jal(mips_absolute_offset(execute_load_##mem_type));               \
   generate_load_pc(reg_a1, (pc + 4));                                         \
   generate_store_reg(reg_rv, reg_rd)                                          \
 
 #define thumb_access_memory_store(mem_type, reg_rd)                           \
-  cycle_count++;                                                              \
+  cycle_thumb_access_memory_store_##mem_type();                               \
   generate_load_pc(reg_a2, (pc + 2));                                         \
   mips_emit_jal(mips_absolute_offset(execute_store_##mem_type));              \
   generate_load_reg(reg_a1, reg_rd)                                           \
@@ -2236,10 +2264,20 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 #define thumb_block_address_postadjust_push_lr(base_reg)                      \
 
 #define thumb_block_memory_load()                                             \
+  if(offset)                                                                  \
+    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
+  else                                                                        \
+    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
+                                                                              \
   generate_function_call_swap_delay(execute_aligned_load32);                  \
   generate_store_reg(reg_rv, i)                                               \
 
 #define thumb_block_memory_store()                                            \
+  if(offset)                                                                  \
+    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
+  else                                                                        \
+    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
+                                                                              \
   mips_emit_jal(mips_absolute_offset(execute_aligned_store32));               \
   generate_load_reg(reg_a1, i)                                                \
 
@@ -2300,7 +2338,16 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   generate_indirect_branch_cycle_update(thumb)                                \
 
 #define thumb_block_memory_sp_extra_push_lr()                                 \
+  cycle_count--;                                                              \
   mips_emit_sw(reg_r14, reg_a1, (bit_count[reg_list] * 4))                    \
+
+#define cycle_thumb_block_memory_load()                                       \
+  cycle_count++;                                                              \
+  if(reg_list & 0x8000)                                                       \
+    cycle_count += 2                                                          \
+
+#define cycle_thumb_block_memory_store()                                      \
+  cycle_count++                                                               \
 
 #define thumb_block_memory(access_type, pre_op, post_op, base_reg)            \
 {                                                                             \
@@ -2310,6 +2357,8 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
                                                                               \
   thumb_block_address_preadjust_##pre_op(base_reg);                           \
   thumb_block_address_postadjust_##post_op(base_reg);                         \
+                                                                              \
+  cycle_thumb_block_memory_##access_type();                                   \
                                                                               \
   if((base_reg == REG_SP) && iwram_stack_optimize)                            \
   {                                                                           \
@@ -2337,7 +2386,6 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
     {                                                                         \
       if((reg_list >> i) & 0x01)                                              \
       {                                                                       \
-        cycle_count++;                                                        \
         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
         if(reg_list & ~((2 << i) - 1))                                        \
         {                                                                     \
@@ -2354,10 +2402,11 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
                                                                               \
     thumb_block_memory_extra_##post_op();                                     \
   }                                                                           \
-}
+}                                                                             \
 
 #define thumb_conditional_branch(condition)                                   \
 {                                                                             \
+  cycle_count +=2;                                                            \
   condition_check_type condition_check;                                       \
   generate_condition_##condition();                                           \
   generate_branch_no_cycle_update(                                            \
@@ -2368,35 +2417,42 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 }                                                                             \
 
 #define arm_conditional_block_header()                                        \
-  generate_condition();                                                       \
+  generate_condition()                                                        \
 
 #define arm_b()                                                               \
+  cycle_count += 2;                                                           \
   generate_branch()                                                           \
 
 #define arm_bl()                                                              \
+  cycle_count += 2;                                                           \
   generate_load_pc(reg_r14, (pc + 4));                                        \
   generate_branch()                                                           \
 
 #define arm_bx()                                                              \
+  cycle_count += 2;                                                           \
   arm_decode_branchx();                                                       \
   generate_load_reg(reg_a0, rn);                                              \
   /*generate_load_pc(reg_a2, pc);*/                                           \
   generate_indirect_branch_dual()                                             \
 
 #define arm_swi()                                                             \
-  if (((opcode >> 16) &0xFF) >= 0x2B) break;                                  \
+  if(((opcode >> 16) & 0xFF) > 0x2A)                                          \
+    break;                                                                    \
+  cycle_count += 2;                                                           \
   generate_swi_hle_handler((opcode >> 16) & 0xFF);                            \
   generate_load_pc(reg_a0, (pc + 4));                                         \
   generate_function_call_swap_delay(execute_swi);                             \
-  generate_branch();                                                          \
+  generate_branch()                                                           \
 
 #define thumb_b()                                                             \
+  cycle_count += 2;                                                           \
   generate_branch_cycle_update(                                               \
    block_exits[block_exit_position].branch_source,                            \
    block_exits[block_exit_position].branch_target);                           \
   block_exit_position++                                                       \
 
 #define thumb_bl()                                                            \
+  cycle_count += 2;                                                           \
   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
   generate_branch_cycle_update(                                               \
    block_exits[block_exit_position].branch_source,                            \
@@ -2408,12 +2464,13 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   thumb_decode_branch();                                                      \
   generate_alu_imm(addiu, addu, reg_a0, reg_r14, (offset * 2));               \
   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
-  generate_indirect_branch_cycle_update(dual);                                \
+  generate_indirect_branch_cycle_update(thumb);                               \
   break;                                                                      \
 }                                                                             \
 
 #define thumb_bx()                                                            \
 {                                                                             \
+  cycle_count += 2;                                                           \
   thumb_decode_hireg_op();                                                    \
   generate_load_reg_pc(reg_a0, rs, 4);                                        \
   /*generate_load_pc(reg_a2, pc);*/                                           \
@@ -2421,14 +2478,16 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 }                                                                             \
 
 #define thumb_swi()                                                           \
-  if ((opcode & 0xFF) >= 0x2B) break;                                         \
+  if((opcode & 0xFF) > 0x2A)                                                  \
+    break;                                                                    \
+  cycle_count += 2;                                                           \
   generate_swi_hle_handler(opcode & 0xFF);                                    \
   generate_load_pc(reg_a0, (pc + 2));                                         \
   generate_function_call_swap_delay(execute_swi);                             \
   generate_branch_cycle_update(                                               \
    block_exits[block_exit_position].branch_source,                            \
    block_exits[block_exit_position].branch_target);                           \
-  block_exit_position++;                                                      \
+  block_exit_position++                                                       \
 
 u8 swi_hle_handle[256][2] =
 { /* use bios , emu bios */

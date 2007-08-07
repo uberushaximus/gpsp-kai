@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -2173,7 +2174,6 @@ void order_obj(u32 video_mode)
     obj_attribute_0 = oam_ptr[0];
     obj_attribute_2 = oam_ptr[2];
     obj_size = obj_attribute_0 & 0xC000;
-    obj_priority = (obj_attribute_2 >> 10) & 0x03;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
     if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
@@ -2186,6 +2186,7 @@ void order_obj(u32 video_mode)
 
       obj_attribute_1 = oam_ptr[1];
       obj_size = ((obj_size >> 12) & 0x0C) | (obj_attribute_1 >> 14);
+      obj_priority = (obj_attribute_2 >> 10) & 0x03;
       obj_height = obj_height_table[obj_size];
       obj_width = obj_width_table[obj_size];
 
@@ -3399,16 +3400,16 @@ void init_video()
   gecb.finish_arg = NULL;
   gecbid = sceGeSetCallback(&gecb);
 
-  screen_vertex[0] = 0 + 0.5;
-  screen_vertex[1] = 0 + 0.5;
-  screen_vertex[2] = 0 + 0.5;
-  screen_vertex[3] = 0 + 0.5;
-  screen_vertex[4] = 0;
+  screen_vertex[0] = 0.0 + 0.5;
+  screen_vertex[1] = 0.0 + 0.5;
+  screen_vertex[2] = 0.0 + 0.5;
+  screen_vertex[3] = 0.0 + 0.5;
+  screen_vertex[4] = 0.0;
   screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
   screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
   screen_vertex[7] = PSP_SCREEN_WIDTH - 0.5;
   screen_vertex[8] = PSP_SCREEN_HEIGHT - 0.5;
-  screen_vertex[9] = 0;
+  screen_vertex[9] = 0.0;
 
   // Set framebuffer to PSP VRAM
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
@@ -3466,29 +3467,40 @@ void video_resolution_large()
 
 void set_gba_resolution(video_scale_type scale)
 {
-//  u32 filter_linear = 0;
   screen_scale = scale;
   switch(scale)
   {
     case unscaled:
-      screen_vertex[2] = 120 + 0.5;
-      screen_vertex[3] = 56 + 0.5;
-      screen_vertex[7] = GBA_SCREEN_WIDTH + 120 - 0.5;
-      screen_vertex[8] = GBA_SCREEN_HEIGHT + 56 - 0.5;
+      screen_vertex[0] = 0.0;
+      screen_vertex[1] = 0.0;
+      screen_vertex[2] = 120.0;
+      screen_vertex[3] = 56.0;
+      screen_vertex[5] = (float)GBA_SCREEN_WIDTH;
+      screen_vertex[6] = (float)GBA_SCREEN_HEIGHT;
+      screen_vertex[7] = GBA_SCREEN_WIDTH + 120.0;
+      screen_vertex[8] = GBA_SCREEN_HEIGHT + 56.0;
       break;
 
     case scaled_aspect:
-      screen_vertex[2] = 36 + 0.5;
-      screen_vertex[3] = 0 + 0.5;
-      screen_vertex[7] = 408 + 36 - 0.5;
-      screen_vertex[8] = PSP_SCREEN_HEIGHT - 0.5;
+      screen_vertex[0] = 0.0 + 0.5;
+      screen_vertex[1] = 0.0 + 0.5;
+      screen_vertex[2] = 36.0;
+      screen_vertex[3] = 0.0;
+      screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
+      screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
+      screen_vertex[7] = 408.0 + 36.0;
+      screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
       break;
 
     case fullscreen:
-      screen_vertex[2] = 0;
-      screen_vertex[3] = 0;
-      screen_vertex[7] = PSP_SCREEN_WIDTH;
-      screen_vertex[8] = PSP_SCREEN_HEIGHT;
+      screen_vertex[0] = 0.0 + 0.5;
+      screen_vertex[1] = 0.0 + 0.5;
+      screen_vertex[2] = 0.0;
+      screen_vertex[3] = 0.0;
+      screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
+      screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
+      screen_vertex[7] = (float)PSP_SCREEN_WIDTH;
+      screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
       break;
   }
 

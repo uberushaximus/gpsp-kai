@@ -3,6 +3,7 @@
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2006 SiberianSTAR
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -44,7 +45,7 @@ struct SZIPFileHeader
   s16 ExtraFieldLength;
 }  __attribute__((packed));
 
-u32 load_file_zip(char *filename)
+s32 load_file_zip(char *filename)
 {
   struct SZIPFileHeader data;
   char tmp[1024];
@@ -123,6 +124,7 @@ u32 load_file_zip(char *filename)
 
           stream.zalloc = (alloc_func)0;
           stream.zfree = (free_func)0;
+          stream.opaque = (voidpf)0;
 
           err = inflateInit2(&stream, -MAX_WBITS);
 

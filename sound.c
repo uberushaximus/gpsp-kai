@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -71,8 +72,8 @@
    gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
 
 #define UPDATE_VOLUME(type)                                                   \
-  update_volume_channel_##type(left);                                         \
-  update_volume_channel_##type(right)                                         \
+  UPDATE_VOLUME_CHANNEL_##type(left);                                         \
+  UPDATE_VOLUME_CHANNEL_##type(right)                                         \
 
 #define UPDATE_TONE_SWEEP()                                                   \
   if(gs->sweep_status)                                                        \
@@ -88,8 +89,7 @@
       else                                                                    \
         rate = rate + (rate >> gs->sweep_shift);                              \
                                                                               \
-      if(rate > 2048) {                                                       \
-        rate = 0;                                                             \
+      if(rate > 2047) {                                                       \
         frequency_step = 0;                                                   \
       } else {                                                                \
         frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)  \
@@ -125,7 +125,7 @@
           envelope_volume = gs->envelope_volume - 1;                          \
       }                                                                       \
                                                                               \
-      UPDATE_VOLUME(envelope);                                                \
+      UPDATE_VOLUME(ENVELOPE);                                                \
                                                                               \
       gs->envelope_volume = envelope_volume;                                  \
       gs->envelope_ticks = gs->envelope_initial_ticks;                        \
@@ -142,6 +142,8 @@
   tick_counter += gbc_sound_tick_step;                                        \
   if(tick_counter > 0xFFFF)                                                   \
   {                                                                           \
+    tick_counter &= 0xFFFF;                                                   \
+                                                                              \
     if(gs->length_status)                                                     \
     {                                                                         \
       u32 length_ticks = gs->length_ticks - 1;                                \
@@ -154,10 +156,8 @@
       }                                                                       \
     }                                                                         \
                                                                               \
-    update_tone_##envelope_op();                                              \
-    update_tone_##sweep_op();                                                 \
-                                                                              \
-    tick_counter &= 0xFFFF;                                                   \
+    UPDATE_TONE_##envelope_op();                                              \
+    UPDATE_TONE_##sweep_op();                                                 \
   }                                                                           \
 
 #define GBC_SOUND_RENDER_SAMPLE_RIGHT()                                       \
@@ -175,7 +175,7 @@
   {                                                                           \
     current_sample =                                                          \
      sample_data[FP16_16_TO_U32(sample_index) % sample_length];               \
-    gbc_sound_render_sample_##type();                                         \
+    GBC_SOUND_RENDER_SAMPLE_##type();                                         \
                                                                               \
     sample_index += frequency_step;                                           \
     buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
@@ -200,13 +200,13 @@
 #define GBC_SOUND_RENDER_NOISE(type, noise_type, envelope_op, sweep_op)       \
   for(i = 0; i < buffer_ticks; i++)                                           \
   {                                                                           \
-    get_noise_sample_##noise_type();                                          \
-    gbc_sound_render_sample_##type();                                         \
+    GET_NOISE_SAMPLE_##noise_type();                                          \
+    GBC_SOUND_RENDER_SAMPLE_##type();                                         \
                                                                               \
     sample_index += frequency_step;                                           \
                                                                               \
-    if(sample_index >= U32_TO_FP16_16(gbc_noise_wrap_##noise_type))           \
-      sample_index -= U32_TO_FP16_16(gbc_noise_wrap_##noise_type);            \
+    if(sample_index >= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type))           \
+      sample_index -= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type);            \
                                                                               \
     buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
@@ -226,15 +226,15 @@
       break;                                                                  \
                                                                               \
     case GBC_SOUND_LEFT:                                                      \
-      gbc_sound_render_##type(left, sample_length, envelope_op, sweep_op);    \
+      GBC_SOUND_RENDER_##type(LEFT, sample_length, envelope_op, sweep_op);    \
       break;                                                                  \
                                                                               \
     case GBC_SOUND_RIGHT:                                                     \
-      gbc_sound_render_##type(right, sample_length, envelope_op, sweep_op);   \
+      GBC_SOUND_RENDER_##type(RIGHT, sample_length, envelope_op, sweep_op);   \
       break;                                                                  \
                                                                               \
     case GBC_SOUND_LEFTRIGHT:                                                 \
-      gbc_sound_render_##type(both, sample_length, envelope_op, sweep_op);    \
+      GBC_SOUND_RENDER_##type(BOTH, sample_length, envelope_op, sweep_op);    \
       break;                                                                  \
   }                                                                           \
                                                                               \
@@ -258,7 +258,7 @@
   source = (s16 *)(sound_buffer + source_offset);                             \
   for(i = 0; i < _length; i++)                                                \
   {                                                                           \
-    sound_copy_##render_type();                                               \
+    SOUND_COPY_##render_type();                                               \
     if(current_sample > 2047)                                                 \
       current_sample = 2047;                                                  \
     if(current_sample < -2048)                                                \
@@ -277,9 +277,24 @@
     while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
   }                                                                           \
 
+#define SOUND_BUFFER_SIZE 4096
+
 /******************************************************************************
  * グローバル変数の定義
  ******************************************************************************/
+// マジカルバケーションの不具合修正
+void sound_timer_queue32(u8 channel)
+{
+  direct_sound_struct *ds = direct_sound_channel + channel;
+  u8 offset = channel * 4;
+  u8 i;
+
+  for(i = 0xA0; i <= 0xA3; i++)
+  {
+    ds->fifo[ds->fifo_top] = ADDRESS8(io_registers, i + offset);
+    ds->fifo_top = (ds->fifo_top + 1) % 32;
+  }
+}
 
 /******************************************************************************
  * ローカル変数の定義
@@ -292,8 +307,8 @@
 
 u32 global_enable_audio = 1;
 
-direct_sound_struct direct_sound_channel[2];
-gbc_sound_struct gbc_sound_channel[4];
+DIRECT_SOUND_STRUCT direct_sound_channel[2];
+GBC_SOUND_STRUCT gbc_sound_channel[4];
 
 //u32 sound_frequency = 44100;
 
@@ -321,20 +336,20 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length);
 
 void sound_timer_queue8(u32 channel, u8 value)
 {
-  direct_sound_struct *ds = direct_sound_channel + channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
   SOUND_TIMER_QUEUE(8, value);
 }
 
 void sound_timer_queue16(u32 channel, u16 value)
 {
-  direct_sound_struct *ds = direct_sound_channel + channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
   SOUND_TIMER_QUEUE(8, value & 0xFF);
   SOUND_TIMER_QUEUE(8, value >> 8);
 }
 
 void sound_timer_queue32(u32 channel, u32 value)
 {
-  direct_sound_struct *ds = direct_sound_channel + channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
 
   SOUND_TIMER_QUEUE(8, value & 0xFF);
   SOUND_TIMER_QUEUE(8, (value >> 8) & 0xFF);
@@ -350,7 +365,7 @@ void sound_timer_queue32(u32 channel, u32 value)
 
 void sound_timer(FIXED16_16 frequency_step, u32 channel)
 {
-  direct_sound_struct *ds = direct_sound_channel + channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
 
   FIXED16_16 fifo_fractional = ds->fifo_fractional;
   u32 buffer_index = ds->buffer_index;
@@ -395,6 +410,16 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
   ds->buffer_index = buffer_index;
   ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
 
+// マジカルバケーションで動作が遅くなるのが改善される
+  u8 fifo_length;
+
+  if(ds->fifo_top > ds->fifo_base)
+    fifo_length = ds->fifo_top - ds->fifo_base;
+  else
+    fifo_length = ds->fifo_top + (32 - ds->fifo_base);
+
+  if(fifo_length <= 16)
+
   if(((ds->fifo_top - ds->fifo_base) % 32) <= 16)
   {
     if(dma[1].direct_sound_channel == channel)
@@ -407,7 +432,7 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
 
 void sound_reset_fifo(u32 channel)
 {
-  direct_sound_struct *ds = direct_sound_channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
 
   memset(ds->fifo, 0, 32);
 }
@@ -483,7 +508,7 @@ void update_gbc_sound(u32 cpu_ticks)
   FIXED16_16 buffer_ticks = FLOAT_TO_FP16_16(((float)(cpu_ticks -
    gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / 16777216.0);
   u32 i, i2;
-  gbc_sound_struct *gs = gbc_sound_channel;
+  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
   FIXED16_16 sample_index, frequency_step;
   FIXED16_16 tick_counter;
   u32 buffer_index;
@@ -533,7 +558,7 @@ void update_gbc_sound(u32 cpu_ticks)
       sound_status |= 0x01;
       sample_data = gs->sample_data;
       envelope_volume = gs->envelope_volume;
-      GBC_SOUND_RENDER_CHANNEL(samples, 8, envelope, sweep);
+      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP);
     }
 
     gs = gbc_sound_channel + 1;
@@ -542,21 +567,13 @@ void update_gbc_sound(u32 cpu_ticks)
       sound_status |= 0x02;
       sample_data = gs->sample_data;
       envelope_volume = gs->envelope_volume;
-      GBC_SOUND_RENDER_CHANNEL(samples, 8, envelope, nosweep);
+      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP);
     }
 
     gs = gbc_sound_channel + 2;
     if(gbc_sound_wave_update)
     {
-      if(gs->wave_bank == 1)
-      {
-        GBC_SOUND_LOAD_WAVE_RAM(1);
-      }
-      else
-      {
-        GBC_SOUND_LOAD_WAVE_RAM(0);
-      }
-
+      GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank);
       gbc_sound_wave_update = 0;
     }
 
@@ -569,11 +586,11 @@ void update_gbc_sound(u32 cpu_ticks)
         if(gs->wave_bank == 1)
           sample_data += 32;
 
-        GBC_SOUND_RENDER_CHANNEL(samples, 32, noenvelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP);
       }
       else
       {
-        GBC_SOUND_RENDER_CHANNEL(samples, 64, noenvelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP);
       }
     }
 
@@ -585,11 +602,11 @@ void update_gbc_sound(u32 cpu_ticks)
 
       if(gs->noise_type == 1)
       {
-        GBC_SOUND_RENDER_CHANNEL(noise, half, envelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP);
       }
       else
       {
-        GBC_SOUND_RENDER_CHANNEL(noise, full, envelope, nosweep);
+        GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP);
       }
     }
   }
@@ -700,8 +717,8 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 
 void reset_sound()
 {
-  direct_sound_struct *ds = direct_sound_channel;
-  gbc_sound_struct *gs = gbc_sound_channel;
+  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
+  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
   u32 i;
 
   sound_on = 0;

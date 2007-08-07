@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -106,17 +107,22 @@ gui_action_type get_gui_input()
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
   ctrl_data.Buttons &= PSP_ALL_BUTTON_MASK;
 
-  if(ctrl_data.Lx < analog_sensitivity)
-    ctrl_data.Buttons = PSP_CTRL_LEFT;
+  if(!(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  {
+    if(ctrl_data.Lx < analog_sensitivity)
+      ctrl_data.Buttons = PSP_CTRL_LEFT;
 
-  if(ctrl_data.Lx > inv_analog_sensitivity)
-    ctrl_data.Buttons = PSP_CTRL_RIGHT;
+    if(ctrl_data.Lx > inv_analog_sensitivity)
+      ctrl_data.Buttons = PSP_CTRL_RIGHT;
 
-  if(ctrl_data.Ly < analog_sensitivity)
-    ctrl_data.Buttons = PSP_CTRL_UP;
+    if(ctrl_data.Ly < analog_sensitivity)
+      ctrl_data.Buttons = PSP_CTRL_UP;
 
-  if(ctrl_data.Ly > inv_analog_sensitivity)
-    ctrl_data.Buttons = PSP_CTRL_DOWN;
+    if(ctrl_data.Ly > inv_analog_sensitivity)
+      ctrl_data.Buttons = PSP_CTRL_DOWN;
+  }
+
+  ctrl_data.Buttons &= PSP_ALL_BUTTON_MASK;
 
   new_buttons = (last_buttons ^ ctrl_data.Buttons) & ctrl_data.Buttons;
   last_buttons = ctrl_data.Buttons;
@@ -260,7 +266,7 @@ u32 update_input()
 
   buttons = ctrl_data.Buttons;
 
-  if(global_enable_analog)
+  if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
     if(ctrl_data.Lx < analog_sensitivity)
       buttons |= PSP_CTRL_ANALOG_LEFT;

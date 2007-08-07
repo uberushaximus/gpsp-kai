@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -459,7 +460,7 @@ const u8 bit_count[256] =
   n_flag = reg[REG_CPSR] >> 31;                                               \
   z_flag = (reg[REG_CPSR] >> 30) & 0x01;                                      \
   c_flag = (reg[REG_CPSR] >> 29) & 0x01;                                      \
-  v_flag = (reg[REG_CPSR] >> 28) & 0x01;                                      \
+  v_flag = (reg[REG_CPSR] >> 28) & 0x01                                       \
 
 #define collapse_flags()                                                      \
   reg[REG_CPSR] = (n_flag << 31) | (z_flag << 30) | (c_flag << 29) |          \
@@ -467,7 +468,7 @@ const u8 bit_count[256] =
 
 #define memory_region(r_dest, l_dest, address)                                \
   r_dest = memory_regions[(address) >> 24];                                   \
-  l_dest = memory_limits[(address) >> 24];                                    \
+  l_dest = memory_limits[(address) >> 24]                                     \
 
 
 #define pc_region()                                                           \
@@ -638,7 +639,7 @@ u32 high_frequency_branch_targets = 0;
 
 #define arm_multiply_flags_yes(_dest)                                         \
   calculate_z_flag(_dest);                                                    \
-  calculate_n_flag(_dest);                                                    \
+  calculate_n_flag(_dest)                                                     \
 
 #define arm_multiply_flags_no(_dest)                                          \
 
@@ -659,7 +660,7 @@ u32 high_frequency_branch_targets = 0;
 }                                                                             \
 
 #define arm_multiply_long_addop(type)                                         \
-  + ((type##64)((((type##64)reg[rdhi]) << 32) | reg[rdlo]));                  \
+  + ((type##64)((((type##64)reg[rdhi]) << 32) | reg[rdlo]))                   \
 
 #define arm_multiply_long(add_op, flags, type)                                \
 {                                                                             \
@@ -1390,13 +1391,13 @@ u32 reg_mode[7][7];
 
 u32 cpu_modes[32] =
 {
-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
-  MODE_INVALID, MODE_USER, MODE_FIQ, MODE_IRQ, MODE_SUPERVISOR, MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_ABORT, MODE_INVALID, MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED, MODE_INVALID, MODE_INVALID,
-  MODE_USER
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_USER   , MODE_FIQ    , MODE_IRQ      , MODE_SUPERVISOR,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_ABORT    , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_UNDEFINED, MODE_INVALID,
+  MODE_INVALID, MODE_USER
 };
 
 u32 cpu_modes_cpsr[7] = { 0x10, 0x11, 0x12, 0x13, 0x17, 0x1B, 0x1F };
@@ -1888,7 +1889,7 @@ char *reg_names[16] =
       else                                                                    \
       {                                                                       \
         /* RSC rd, rn, reg_op */                                              \
-        arm_data_proc(reg_sh - reg[rn] + c_flag - 1, reg);                    \
+        arm_data_proc(reg_sh - (reg[rn] + (c_flag ^ 1)), reg);                \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -1921,7 +1922,7 @@ char *reg_names[16] =
       else                                                                    \
       {                                                                       \
         /* RSCS rd, rn, reg_op */                                             \
-        arm_data_proc_sub_flags((reg_sh + c_flag - 1), reg[rn], reg);         \
+        arm_data_proc_sub_flags(reg_sh, reg[rn] + (c_flag ^ 1), reg);         \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -2351,7 +2352,7 @@ char *reg_names[16] =
                                                                               \
     case 0x2C:                                                                \
       /* SBC rd, rn, imm */                                                   \
-      arm_data_proc(reg[rn] - imm + c_flag - 1, imm);                         \
+      arm_data_proc(reg[rn] - (imm + (c_flag ^ 1)), imm);                     \
       break;                                                                  \
                                                                               \
     case 0x2D:                                                                \
@@ -2361,12 +2362,12 @@ char *reg_names[16] =
                                                                               \
     case 0x2E:                                                                \
       /* RSC rd, rn, imm */                                                   \
-      arm_data_proc(imm - reg[rn] + c_flag - 1, imm);                         \
+      arm_data_proc(imm - (reg[rn] + (c_flag ^ 1)), imm);                     \
       break;                                                                  \
                                                                               \
     case 0x2F:                                                                \
       /* RSCS rd, rn, imm */                                                  \
-      arm_data_proc_sub_flags((imm + c_flag - 1), reg[rn], imm);              \
+      arm_data_proc_sub_flags(imm, reg[rn] + (c_flag ^ 1), imm);              \
       break;                                                                  \
                                                                               \
     case 0x30 ... 0x31:                                                       \
@@ -2919,22 +2920,7 @@ char *reg_names[16] =
       arm_block_memory(load, up, up, yes);                                    \
       break;                                                                  \
                                                                               \
-    case 0xA0:                                                                \
-    case 0xA1:                                                                \
-    case 0xA2:                                                                \
-    case 0xA3:                                                                \
-    case 0xA4:                                                                \
-    case 0xA5:                                                                \
-    case 0xA6:                                                                \
-    case 0xA7:                                                                \
-    case 0xA8:                                                                \
-    case 0xA9:                                                                \
-    case 0xAA:                                                                \
-    case 0xAB:                                                                \
-    case 0xAC:                                                                \
-    case 0xAD:                                                                \
-    case 0xAE:                                                                \
-    case 0xAF:                                                                \
+    case 0xA0 ... 0xAF:                                                       \
     {                                                                         \
       /* B offset */                                                          \
       arm_decode_branch();                                                    \
@@ -2963,13 +2949,13 @@ char *reg_names[16] =
       switch(swi_comment >> 16)                                               \
       {                                                                       \
         /* Jump to BIOS SWI handler */                                        \
-        case 0x00 ... 0x2b:                                                   \
+        case 0x00 ... 0x2A:                                                   \
           reg_mode[MODE_SUPERVISOR][6] = pc + 4;                              \
           collapse_flags();                                                   \
           spsr[MODE_SUPERVISOR] = reg[REG_CPSR];                              \
           reg[REG_PC] = 0x00000008;                                           \
           arm_update_pc();                                                    \
-          reg[REG_CPSR] = (reg[REG_CPSR] & ~0x3F) | 0x13;                     \
+          reg[REG_CPSR] = (reg[REG_CPSR] & ~0x1F) | 0x13;                     \
           set_cpu_mode(MODE_SUPERVISOR);                                      \
           break;                                                              \
       }                                                                       \
@@ -3596,7 +3582,7 @@ char *reg_names[16] =
       thumb_add_noflags(imm, 7, reg[REG_SP], (imm * 4));                      \
       break;                                                                  \
                                                                               \
-    case 0xB0 ... 0xB3:                                                       \
+    case 0xB0:                                                                \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \

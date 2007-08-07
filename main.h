@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -92,7 +93,9 @@ extern u32 virtual_frame_count;
 extern u32 max_frameskip;
 extern u32 num_skipped_frames;
 extern u64 frame_count_initial_timestamp;
+extern int date_format;
 
+void set_cpu_clock(u32 clock);
 u32 update_gba();
 void reset_gba();
 void synchronize();
@@ -108,13 +111,14 @@ void raise_interrupt(irq_type irq_raised);
 void change_ext(char *src, char *buffer, char *extension);
 u32 file_length(char *filename, s32 dummy);
 
+// TODO:タイマーカウンタ周りの処理は再検討
 #define count_timer(timer_number)                                             \
   timer[timer_number].reload = 0x10000 - value;                               \
   if(timer_number < 2)                                                        \
   {                                                                           \
     u32 timer_reload =                                                        \
      timer[timer_number].reload << timer[timer_number].prescale;              \
-    sound_update_frequency_step(timer_number);                                \
+    SOUND_UPDATE_FREQUENCY_STEP(timer_number);                                \
   }                                                                           \
 
 #define adjust_sound_buffer(timer_number, channel)                            \
@@ -156,7 +160,7 @@ u32 file_length(char *filename, s32 dummy);
          (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
          SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
                                                                               \
-        sound_update_frequency_step(timer_number);                            \
+        SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
         adjust_sound_buffer(timer_number, 0);                                 \
         adjust_sound_buffer(timer_number, 1);                                 \
       }                                                                       \

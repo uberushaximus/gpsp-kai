@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -49,7 +50,10 @@ u32 iwram_stack_optimize = 1;
 u32 allow_smc_ram_u8 = 1;
 u32 allow_smc_ram_u16 = 1;
 u32 allow_smc_ram_u32 = 1;
-u32 waitstate_cycles_sequential[16][3];
+//u32 waitstate_cycles_sequential[16][3];
+u8 waitstate_cycles_seq[2][16];
+u8 waitstate_cycles_non_seq[2][16];
+u8 cpu_waitstate_cycles_seq[2][16];
 
 u32 bios_mode;
 
@@ -78,7 +82,7 @@ typedef struct
   u32 rn = (opcode >> 16) & 0x0F;                                             \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
   u32 imm;                                                                    \
-  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2);                        \
+  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2)                         \
 
 #define arm_decode_psr_reg()                                                  \
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
@@ -89,7 +93,7 @@ typedef struct
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
   u32 imm;                                                                    \
-  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2);                        \
+  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2)                         \
 
 #define arm_decode_branchx()                                                  \
   u32 rn = opcode & 0x0F                                                      \
@@ -1931,7 +1935,8 @@ typedef struct
                                                                               \
         case 0x01:                                                            \
           /* MUL rd, rs */                                                    \
-          thumb_data_proc(alu_op, muls, reg, rd, rd, rs);                     \
+          /*thumb_data_proc(alu_op, muls, reg, rd, rd, rs);*/                 \
+          thumb_data_proc_muls(alu_op, reg, rd, rd, rs);                      \
           break;                                                              \
                                                                               \
         case 0x02:                                                            \
@@ -2246,7 +2251,7 @@ typedef struct
       thumb_load_sp(7);                                                       \
       break;                                                                  \
                                                                               \
-    case 0xB0 ... 0xB3:                                                       \
+    case 0xB0:                                                                \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \
@@ -2579,7 +2584,16 @@ typedef struct
                                                                               \
     /* TST, NEG, CMP, CMN */                                                  \
     case 0x42:                                                                \
-      thumb_flag_modifies_all();                                              \
+      if((opcode >> 6) & 0x03)                                                \
+      {                                                                       \
+        /* NEG, CMP, CMN */                                                   \
+        thumb_flag_modifies_all();                                            \
+      }                                                                       \
+      else                                                                    \
+      {                                                                       \
+        /* TST rd, rs */                                                      \
+        thumb_flag_modifies_zn();                                             \
+      }                                                                       \
       break;                                                                  \
                                                                               \
     /* ORR, MUL, BIC, MVN */                                                  \
@@ -2937,7 +2951,7 @@ block_lookup_address_body(dual);
 #define arm_instruction_width 4
 
 #define arm_base_cycles()                                                     \
-  cycle_count += waitstate_cycles_sequential[pc >> 24][2]                     \
+  cycle_count += cpu_waitstate_cycles_seq[1][pc >> 24]                        \
 
 // For now this just sets a variable that says flags should always be
 // computed.
@@ -2952,7 +2966,7 @@ block_lookup_address_body(dual);
 #define thumb_exit_point                                                      \
   (((opcode >= 0xD000) && (opcode < 0xDF00)) ||                               \
    (((opcode & 0xFF00) == 0xDF00) &&                                          \
-    (!swi_hle_handle[opcode & 0xFF][bios_mode])) ||                                      \
+    (!swi_hle_handle[opcode & 0xFF][bios_mode])) ||                           \
    ((opcode >= 0xE000) && (opcode < 0xE800)) ||                               \
    ((opcode & 0xFF00) == 0x4700) ||                                           \
    ((opcode & 0xFF00) == 0xBD00) ||                                           \
@@ -2983,16 +2997,16 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xF800)                                                         \
+  if(opcode < 0xE800)                                                         \
   {                                                                           \
-    branch_target = block_end_pc + 2 + ((s32)((opcode & 0x7FF) << 21) >> 20); \
+    branch_target = block_end_pc + 2 + (((s32)(opcode & 0x7FF) << 21) >> 20); \
   }                                                                           \
   else                                                                        \
   {                                                                           \
     if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                     \
     {                                                                         \
       branch_target =                                                         \
-       (block_end_pc + ((s32)((last_opcode & 0x07FF) << 21) >> 9) +           \
+       (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +           \
        ((opcode & 0x07FF) * 2));                                              \
     }                                                                         \
     else                                                                      \
@@ -3012,7 +3026,7 @@ block_lookup_address_body(dual);
 #define thumb_instruction_width 2
 
 #define thumb_base_cycles()                                                   \
-  cycle_count += waitstate_cycles_sequential[pc >> 24][1]                     \
+  cycle_count += cpu_waitstate_cycles_seq[0][pc >> 24]                        \
 
 // Here's how this works: each instruction has three different sets of flag
 // attributes, each consisiting of a 4bit mask describing how that instruction
@@ -3150,7 +3164,7 @@ block_exit_type block_exits[MAX_EXITS];
     block_data[block_data_position].update_cycles = 0;                        \
     block_data_position++;                                                    \
     if((block_data_position == MAX_BLOCK_SIZE) ||                             \
-     (block_end_pc == 0x3007FF0) || (block_end_pc == 0x203FFFF0))             \
+     (block_end_pc == 0x3007FF0) || (block_end_pc == 0x203FFF0))              \
     {                                                                         \
       break;                                                                  \
     }                                                                         \

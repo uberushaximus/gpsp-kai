@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
+ * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -32,7 +33,7 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 
 TIMER_TYPE timer[4];                              // タイマー
 u32 game_config_frameskip_type = auto_frameskip;  // フレームスキップの種類
-u32 game_config_frameskip_value = 4;              // フレームスキップ数
+u32 game_config_frameskip_value = 9;              // フレームスキップ数
 u32 game_config_random_skip = 0;                  // ランダムスキップのon/off
 u32 game_config_clock_speed = 333;                // クロック数
 
@@ -87,6 +88,7 @@ char *lang[9] =
     };
 
 int lang_num;
+int date_format;
 
 u32 prescale_table[] = { 0, 6, 8, 10 };
 
@@ -104,6 +106,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
   if(timer[timer_number].status == TIMER_PRESCALE)                            \
     CHECK_COUNT(timer[timer_number].count);                                   \
 
+// TODO:タイマーカウンタ周りの処理は再検討
 #define update_timer(timer_number)                                            \
   if(timer[timer_number].status != TIMER_INACTIVE)                            \
   {                                                                           \
@@ -155,6 +158,11 @@ int power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
 int user_main(int argc, char *argv[]);
+
+void set_cpu_clock(u32 clock)
+{
+  scePowerSetClockFrequency(clock, clock, clock / 2);
+}
 
 void init_main()
 {
@@ -259,10 +267,12 @@ void quit()
 
   fclose(dbg_file);
 
-  scePowerSetClockFrequency(222, 222, 111);
+  set_cpu_clock(222);
   sceKernelExitThread(0);
 }
 
+//  XBMから呼び出されるmain
+//    HOMEボタン用のスレッドと本来んのmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
 int main(int argc, char *argv[])
 {
   SceUID main_thread;
@@ -309,7 +319,9 @@ int user_main(int argc, char *argv[])
   // Copy the directory path of the executable into main_path
 //  getcwd(main_path, 512);
   chdir(main_path);
+
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
+  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
   if (load_dircfg("settings/dir.cfg") != 0)
   {
@@ -377,7 +389,7 @@ int user_main(int argc, char *argv[])
 
   video_resolution_large();
 
-  u32 bios_ret = load_bios("./gba_bios.bin");
+  u32 bios_ret = load_bios("gba_bios.bin");
 
   if(bios_ret == -1) // 読込めない場合
   {
@@ -406,6 +418,7 @@ int user_main(int argc, char *argv[])
 
     init_cpu();
     init_memory();
+//    reset_sound();
   }
   else
   {
@@ -432,6 +445,7 @@ int user_main(int argc, char *argv[])
   }
 
   last_frame = 0;
+  set_cpu_clock(game_config_clock_speed);
 
   // We'll never actually return from here.
 

@@ -3,12 +3,16 @@
 -- Release log --
 -UnOfficial gpSP kai 3.1 test 05 svn rev.**
 	カーネルモードで動作するように変更
-		カーネルモードにするため、改変SDLを使用
+		adhoc用、サウンド周りを非SDLにする(変更中)
 	statesaveの日付表示を修正
 		pspsdkのtime()関数が時刻しか返さないため
-	上記に伴い、satesaveファイルのサイズを506947 -> 506951に変更
+	上記に伴い、statesaveファイルのサイズを506947 -> 506951に変更
 		古いファイルも読込み時に自動判別して読み込みます
 		保存時に新しい形式で保存されます
+	デフォルトディレクトリの変更
+	分割EBOOT.PBPの廃止
+		DEVHOOKやFW1.0~1.5を使用している方は各自対応して下さい
+	フォーラムからのソースを元に多数修正 thanks ?????
 
 -UnOfficial gpSP kai 3.1 test 04 svn rev.65
 	プチノイズの低減
