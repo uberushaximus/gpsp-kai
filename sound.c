@@ -629,7 +629,6 @@ void init_sound()
     quit();
   }
 
-
   //スレッドの開始
   sceKernelStartThread(sound_thread, 0, 0);
 
