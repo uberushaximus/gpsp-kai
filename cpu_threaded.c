@@ -50,7 +50,6 @@ u32 iwram_stack_optimize = 1;
 u32 allow_smc_ram_u8 = 1;
 u32 allow_smc_ram_u16 = 1;
 u32 allow_smc_ram_u32 = 1;
-//u32 waitstate_cycles_sequential[16][3];
 u8 waitstate_cycles_seq[2][16];
 u8 waitstate_cycles_non_seq[2][16];
 u8 cpu_waitstate_cycles_seq[2][16];
@@ -2997,22 +2996,15 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xE800)                                                         \
+  if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                       \
   {                                                                           \
-    branch_target = block_end_pc + 2 + (((s32)(opcode & 0x7FF) << 21) >> 20); \
+    branch_target =                                                           \
+     (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +             \
+     ((s32)(opcode & 0x07FF) * 2));                                           \
   }                                                                           \
   else                                                                        \
   {                                                                           \
-    if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                     \
-    {                                                                         \
-      branch_target =                                                         \
-       (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +           \
-       ((opcode & 0x07FF) * 2));                                              \
-    }                                                                         \
-    else                                                                      \
-    {                                                                         \
-      goto no_direct_branch;                                                  \
-    }                                                                         \
+    goto no_direct_branch;                                                    \
   }                                                                           \
 
 #define thumb_set_condition(_condition)                                       \

@@ -1,0 +1,3275 @@
+Only in 30_new/: #sound.c#
+Only in gpsp-kai-test/: .cproject
+Only in gpsp-kai-test/: .project
+Only in gpsp-kai-test/: .settings
+Only in gpsp-kai-test/: .svn
+Only in gpsp-kai-test/: comment.txt
+diff -ru 30_new/common.h gpsp-kai-test/common.h
+--- 30_new/common.h	2007-08-05 23:04:12.000000000 +0900
++++ gpsp-kai-test/common.h	2007-08-08 09:30:06.854000000 +0900
+@@ -157,7 +157,6 @@
+ #define DBGOUT(...) fprintf(dbg_file, __VA_ARGS__)
+ FILE *dbg_file;
+ 
+-#include "SDL.h"
+ #include "cpu.h"
+ #include "memory.h"
+ #include "video.h"
+diff -ru 30_new/cpu.c gpsp-kai-test/cpu.c
+--- 30_new/cpu.c	2007-08-06 23:46:02.000000000 +0900
++++ gpsp-kai-test/cpu.c	2007-08-09 07:07:14.501000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -467,8 +468,7 @@
+ 
+ #define memory_region(r_dest, l_dest, address)                                \
+   r_dest = memory_regions[(address) >> 24];                                   \
+-  l_dest = memory_limits[(address) >> 24];                                    \
+-
++  l_dest = memory_limits[(address) >> 24]                                     \
+ 
+ #define pc_region()                                                           \
+   memory_region(pc_region, pc_limit, pc)                                      \
+@@ -1390,12 +1390,12 @@
+ 
+ u32 cpu_modes[32] =
+ {
+-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+-  MODE_INVALID, MODE_USER,    MODE_FIQ,     MODE_IRQ,     MODE_SUPERVISOR,
+-  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_ABORT,   MODE_INVALID,
+-  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,MODE_INVALID,MODE_INVALID,
++  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
++  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
++  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID,
++  MODE_INVALID, MODE_USER   , MODE_FIQ    , MODE_IRQ      , MODE_SUPERVISOR,
++  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_ABORT    , MODE_INVALID,
++  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_UNDEFINED, MODE_INVALID,
+   MODE_INVALID, MODE_USER
+ };
+ 
+diff -ru 30_new/cpu_threaded.c gpsp-kai-test/cpu_threaded.c
+--- 30_new/cpu_threaded.c	2007-08-06 23:45:56.000000000 +0900
++++ gpsp-kai-test/cpu_threaded.c	2007-08-09 07:10:57.782000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -1933,7 +1934,7 @@
+                                                                               \
+         case 0x01:                                                            \
+           /* MUL rd, rs */                                                    \
+-       /* thumb_data_proc(alu_op, muls, reg, rd, rd, rs); */                  \
++          /*thumb_data_proc(alu_op, muls, reg, rd, rd, rs);*/                 \
+           thumb_data_proc_muls(alu_op, reg, rd, rd, rs);                      \
+           break;                                                              \
+                                                                               \
+@@ -2580,6 +2581,7 @@
+       }                                                                       \
+       break;                                                                  \
+                                                                               \
++    /* TST, NEG, CMP, CMN */                                                  \
+     case 0x42:                                                                \
+       if((opcode >> 6) & 0x03)                                                \
+       {                                                                       \
+@@ -2963,7 +2965,7 @@
+ #define thumb_exit_point                                                      \
+   (((opcode >= 0xD000) && (opcode < 0xDF00)) ||                               \
+    (((opcode & 0xFF00) == 0xDF00) &&                                          \
+-    (!swi_hle_handle[opcode & 0xFF][bios_mode])) ||                                      \
++    (!swi_hle_handle[opcode & 0xFF][bios_mode])) ||                           \
+    ((opcode >= 0xE000) && (opcode < 0xE800)) ||                               \
+    ((opcode & 0xFF00) == 0x4700) ||                                           \
+    ((opcode & 0xFF00) == 0xBD00) ||                                           \
+@@ -2999,16 +3001,17 @@
+     branch_target = block_end_pc + 2 + (((s32)(opcode & 0x7FF) << 21) >> 20); \
+   }                                                                           \
+   else                                                                        \
+-                                                                              \
+-  if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                       \
+   {                                                                           \
+-    branch_target =                                                           \
+-     (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +             \
+-     ((s32)(opcode & 0x07FF) * 2));                                           \
+-  }                                                                           \
+-  else                                                                        \
+-  {                                                                           \
+-    goto no_direct_branch;                                                    \
++    if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                     \
++    {                                                                         \
++      branch_target =                                                         \
++       (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +           \
++       ((s32)(opcode & 0x07FF) * 2));                                         \
++    }                                                                         \
++    else                                                                      \
++    {                                                                         \
++      goto no_direct_branch;                                                  \
++    }                                                                         \
+   }                                                                           \
+ 
+ #define thumb_set_condition(_condition)                                       \
+diff -ru 30_new/fbm_print.c gpsp-kai-test/fbm_print.c
+--- 30_new/fbm_print.c	2007-08-06 23:47:04.000000000 +0900
++++ gpsp-kai-test/fbm_print.c	2007-08-01 21:09:20.353000000 +0900
+@@ -301,7 +301,7 @@
+ 
+ 
+ 	sceDisplayGetMode(&unk, &pwidth, &pheight);
+-	sceDisplayGetFrameBuf(&vram, &bufferwidth, &pixelformat, &unk);
++	sceDisplayGetFrameBuf(&vram, &bufferwidth, &pixelformat, unk);
+ 
+ 	return fbm_printVRAM(vram, bufferwidth, pixelformat, x, y, str, color, back, fill, rate, 0);
+ }
+diff -ru 30_new/gui.c gpsp-kai-test/gui.c
+--- 30_new/gui.c	2007-08-06 23:47:38.000000000 +0900
++++ gpsp-kai-test/gui.c	2007-08-08 17:01:56.438000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public Licens e as
+@@ -762,8 +763,6 @@
+       if(game_config_clock_speed < 33)
+         game_config_clock_speed = 33;
+ 
+-      /* メニュー終了時は clock_speed_number を元にクロックが変更される */
+-      /* 起動時のファイルリストからの場合は、game_config_clock_speed */
+       clock_speed_number = (game_config_clock_speed / 33) - 1;
+ 
+       if(game_config_frameskip_value < 0)
+@@ -785,7 +784,6 @@
+ 
+   // 読み込めなかった場合の初期値の設定
+   game_config_frameskip_type = auto_frameskip;
+-  /* 一瞬負荷が上がる場合、スキップを増やした方がスムーズに動作する。 */
+   game_config_frameskip_value = 9;
+   game_config_random_skip = 0;
+   game_config_clock_speed = 333;
+@@ -832,10 +830,6 @@
+       global_enable_analog = file_options[5] % 2;
+       analog_sensitivity_level = file_options[6] % 10;
+ 
+-      /* 何故ここで変更しているのか不明。*/
+-      /* config_fileが存在しないとクロックは変更されない。*/
+-//      scePowerSetClockFrequency(game_config_clock_speed, game_config_clock_speed, game_config_clock_speed / 2);
+-
+       // Sanity check: Make sure there's a MENU or FRAMESKIP
+       // key, if not assign to triangle
+ 
+@@ -986,7 +980,6 @@
+ 
+   void menu_save_ss()
+   {
+-    /* 「未ロード．」のスクリーンショットが出来上がります。 */
+     if(!first_load)
+       save_ss_bmp(original_screen);
+   }
+@@ -1021,7 +1014,6 @@
+   {
+     char *file_ext[] = { ".svs", NULL };
+     char load_filename[512];
+-
+     if(load_file(file_ext, load_filename, DEFAULT_SAVE_DIR) != -1)
+     {
+       load_state(load_filename);
+@@ -1039,7 +1031,7 @@
+   {
+     char *file_ext[] = { ".cht", NULL };
+     char load_filename[MAX_FILE];
+-//    u32 i;
++    u32 i;
+     
+     if(load_file(file_ext, load_filename, DEFAULT_CHEAT_DIR) != -1)
+     {
+@@ -1338,11 +1330,13 @@
+ 
+   video_resolution_large();
+ 
+-  SDL_LockMutex(sound_mutex);
+-  SDL_PauseAudio(1);
+-  SDL_UnlockMutex(sound_mutex);
++//  SDL_LockMutex(sound_mutex);
++    pause_sound(1);
++//  sceKernelSleepThread();
++//  SDL_UnlockMutex(sound_mutex);
+ 
+   clock_speed_number = (game_config_clock_speed / 33) - 1;
++  // MENU時は222MHz
+   set_cpu_clock(222);
+ 
+   if(gamepak_filename[0] == 0)
+@@ -1352,12 +1346,6 @@
+     print_string_ext(msg[MSG_NON_LOAD_GAME], 0xFFFF, 0x0000, 60, 75,original_screen, 240, 0);
+   }
+ 
+-  if(FILE_CHECK_VALID(gamepak_file_large))
+-  {
+-    FILE_CLOSE(gamepak_file_large);
+-    gamepak_file_large = -2;
+-  }
+-
+   choose_menu(&main_menu);
+ 
+   for(i = 0; i < MAX_CHEATS; i++)
+@@ -1494,29 +1482,6 @@
+ 
+ // menu終了時の処理
+ 
+-  /* スリープから復帰直後にはファイルを開けない。*/
+-  /* タイミングによって、開ける様になるまでの時間にばらつきがある。 */
+-  /* すぐにファイル開けるようなら即復帰させたいので、ウェイトは短め */
+-  /* でリトライさせる。 */
+-  if(gamepak_file_large == -2)
+-  {
+-    for(i = 0; i < 5; i++)
+-    {
+-      FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+-
+-      if(gamepak_file_large < 0)
+-        delay_us(500000);
+-      else
+-        goto success_open_gamepak;
+-    }
+-
+-    printf("Failed to load gemepak.\n");
+-    delay_us(3000000);
+-    quit();
+-
+-    success_open_gamepak:;
+-  }
+-
+   while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ctrl_data.Buttons != 0);
+ 
+   set_gba_resolution(screen_scale);
+@@ -1525,8 +1490,7 @@
+   game_config_clock_speed = (clock_speed_number + 1) * 333 / 10;
+   set_cpu_clock(game_config_clock_speed);
+ 
+-  SDL_PauseAudio(0);
+-
++  pause_sound(0);
+   return return_value;
+ }
+ 
+@@ -1952,16 +1916,12 @@
+ 
+ static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u16 day, u16 wday, u16 hour, u16 min, u16 sec, u32 msec)
+ {
+-//  int id;
+   char *weekday_strings[] =
+   {
+     msg[MSG_WDAY_0], msg[MSG_WDAY_1], msg[MSG_WDAY_2], msg[MSG_WDAY_3],
+     msg[MSG_WDAY_4], msg[MSG_WDAY_5], msg[MSG_WDAY_6], ""
+   };
+ 
+-  /* 表示更新の度にフラッシュから設定を読み込んでいるためメニューの動作が遅い。*/
+-//  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&id);
+-//  switch(id)
+   switch(date_format)
+   {
+     case PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD:
+diff -ru 30_new/input.c gpsp-kai-test/input.c
+--- 30_new/input.c	2007-08-06 23:46:08.000000000 +0900
++++ gpsp-kai-test/input.c	2007-08-09 03:06:14.576000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -105,7 +106,6 @@
+ 
+   sceCtrlPeekBufferPositive(&ctrl_data, 1);
+ 
+-  /* HOLD時アナログPADも動作しないようにする */
+   if(!(ctrl_data.Buttons & PSP_CTRL_HOLD))
+   {
+     if(ctrl_data.Lx < analog_sensitivity)
+@@ -265,7 +265,6 @@
+ 
+   buttons = ctrl_data.Buttons;
+ 
+-  /* HOLD時アナログPADも動作しないようにする */
+   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
+   {
+     if(ctrl_data.Lx < analog_sensitivity)
+diff -ru 30_new/main.c gpsp-kai-test/main.c
+--- 30_new/main.c	2007-08-06 23:47:24.000000000 +0900
++++ gpsp-kai-test/main.c	2007-08-09 06:53:32.912000000 +0900
+@@ -2,6 +2,8 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 NJ
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -23,11 +25,8 @@
+  ******************************************************************************/
+ #include "common.h"
+ 
+-// 改造SDLを使用し、カーネルモードに設定
+-// PSP_MODULE_INFO("gpSP", 0x1000, VERSION_MAJOR, VERSION_MINOR);
+-//PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
+-// PSP_MAIN_THREAD_ATTR(0);
+-
++PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
++PSP_MAIN_THREAD_ATTR(0);
+ 
+ /******************************************************************************
+  * 変数の定義
+@@ -75,8 +74,7 @@
+ char main_path[MAX_PATH];
+ 
+ u32 quit_flag;
+-// u32 power_flag;
+-u8 sleep_flag;
++u32 power_flag;
+ 
+ char *lang[9] =
+   { "japanese",   // 0
+@@ -109,6 +107,7 @@
+   if(timer[timer_number].status == TIMER_PRESCALE)                            \
+     CHECK_COUNT(timer[timer_number].count);                                   \
+ 
++// TODO:タイマーカウンタ周りの処理は再検討
+ #define update_timer(timer_number)                                            \
+   if(timer[timer_number].status != TIMER_INACTIVE)                            \
+   {                                                                           \
+@@ -116,7 +115,7 @@
+     {                                                                         \
+       timer[timer_number].count -= execute_cycles;                            \
+       io_registers[REG_TM##timer_number##D] =                                 \
+-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
++       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
+     }                                                                         \
+                                                                               \
+     if(timer[timer_number].count <= 0)                                        \
+@@ -129,12 +128,9 @@
+       {                                                                       \
+         timer[timer_number + 1].count--;                                      \
+         io_registers[REG_TM0D + (timer_number + 1) * 2] =                     \
+-         0xFFFF   - (timer[timer_number + 1].count);                          \
++        0xFFFF   - (timer[timer_number + 1].count);                          \
+       }                                                                       \
+                                                                               \
+-      u32 timer_reload                                                        \
+-           = timer[timer_number].reload << timer[timer_number].prescale;      \
+-                                                                              \
+       if(timer_number < 2)                                                    \
+       {                                                                       \
+         if(timer[timer_number].direct_sound_channels & 0x01)                  \
+@@ -142,21 +138,12 @@
+                                                                               \
+         if(timer[timer_number].direct_sound_channels & 0x02)                  \
+           sound_timer(timer[timer_number].frequency_step, 1);                 \
+-                                                                              \
+-        /* 新しいリロード値は、オーバーフロー後カウンタの値に適用される。*/   \
+-        /* リロード値とカウンター値にずれが生じるがどちらを使えばいい  */     \
+-        /* のだろうか？ */                                                    \
+-        if(timer[timer_number].reload_update)                                 \
+-        {                                                                     \
+-          sound_update_frequency_step(timer_number);                          \
+-          timer[timer_number].reload_update = 0;                              \
+-        }                                                                     \
+       }                                                                       \
+                                                                               \
+-      timer[timer_number].count += timer_reload;                              \
+-                                                                              \
++      timer[timer_number].count +=                                            \
++       (timer[timer_number].reload << timer[timer_number].prescale);          \
+       io_registers[REG_TM##timer_number##D] =                                 \
+-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
++       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
+     }                                                                         \
+   }                                                                           \
+ 
+@@ -166,21 +153,18 @@
+ int main(int argc, char *argv[]);
+ void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
+ void trigger_ext_event();
+-// u32 check_power();
+-void loop_sleep();
++u32 check_power();
+ int exit_callback(int arg1, int arg2, void *common);
+ int power_callback(int unknown, int powerInfo, void *common);
+ int CallbackThread(SceSize args, void *argp);
+ int SetupCallbacks();
+-
+-
++int user_main(SceSize args, char *argp);
+ 
+ void set_cpu_clock(u32 clock)
+ {
+   scePowerSetClockFrequency(clock, clock, clock / 2);
+ }
+ 
+-
+ void init_main()
+ {
+   u32 i;
+@@ -212,9 +196,119 @@
+   flush_translation_cache_bios();
+ }
+ 
+-// SDL.hにより、SDL_mainとして定義される
++volatile u32 home_button;
++volatile u32 home_active;
++
++static int home_button_thread(SceSize args, void *argp)
++{
++  SceCtrlData paddata;
++
++  home_active = 1;
++
++  while (home_active)
++  {
++    sceCtrlPeekBufferPositive(&paddata, 1);
++    home_button = paddata.Buttons & PSP_CTRL_HOME;
++    sceKernelDelayThread(500);
++  }
++
++  sceKernelExitThread(0);
++
++  return 0;
++}
++int exit_callback(int arg1, int arg2, void *common)
++{
++  quit_flag = 1;
++  sceKernelDelayThread(500);
++  return 0;
++}
++
++int power_callback(int unknown, int powerInfo, void *common)
++{
++  if (powerInfo & PSP_POWER_CB_SUSPENDING) power_flag = 1;
++  return 0;
++}
++
++int CallbackThread(SceSize args, void *argp)
++{
++  int cbid, power_callback_id;
++
++  // 終了周りのコールバック 
++  cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
++  sceKernelRegisterExitCallback(cbid);
++
++  // 電源周りのコールバック 
++  power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
++  scePowerRegisterCallback(0, power_callback_id);
++
++  sceKernelSleepThreadCB();
++
++  return 0;
++}
++
++int SetupCallbacks()
++{
++  int thid = 0;
++
++  thid = sceKernelCreateThread("update_thread", CallbackThread, 0x20, 0xFA0, 0, 0);
++  if (thid >= 0)
++  {
++    sceKernelStartThread(thid, 0, 0);
++  }
++
++  return thid;
++}
++
++void quit()
++{
++//  if(!update_backup_flag)
++    update_backup_force();
++
++  sound_exit();
++  fbm_freeall();
++
++  fclose(dbg_file);
++
++  set_cpu_clock(222);
++  sceKernelExitThread(0);
++}
++
++//  XBMから呼び出されるmain
++//    HOMEボタン用のスレッドと本来んのmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
+ int main(int argc, char *argv[])
+ {
++  SceUID main_thread;
++  SceUID home_thread;
++
++  // カレントパスの取得
++  getcwd(main_path, 512);
++
++  // デバッグ用スクリーンの初期化
++  pspDebugScreenInit();
++  printf("screen init\n");
++
++  // adhoc用モジュールのロード
++//  if (pspSdkLoadAdhocModules() != 0)
++//    error_msg("not load inet modules\n");
++//  printf("load network modules\n");
++
++  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
++  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
++
++  sceKernelStartThread(home_thread, 0, 0);
++  sceKernelStartThread(main_thread, 0, 0);
++
++  sceKernelWaitThreadEnd(main_thread, NULL);
++
++  home_active = 0;
++  sceKernelWaitThreadEnd(home_thread, NULL);
++
++  sceKernelExitGame();
++  return 0;
++}
++
++int user_main(SceSize argc, char *argv)
++{
+ //  u32 i;
+ //  u32 vcount = 0;
+ //  u32 ticks;
+@@ -223,8 +317,7 @@
+   char filename[512];
+ 
+   quit_flag = 0;
+-//  power_flag = 0;
+-  sleep_flag = 0;
++  power_flag = 0;
+   SetupCallbacks();
+ 
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
+@@ -234,11 +327,14 @@
+   dbg_file = fopen(DBG_FILE_NAME, "awb");
+ 
+   // Copy the directory path of the executable into main_path
+-  getcwd(main_path, 512);
++//  getcwd(main_path, 512);
++  chdir(main_path);
+ 
+   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
+   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
+ 
++  printf("main thread \n");
++
+   if (load_dircfg("settings/dir.cfg") != 0)
+   {
+     error_msg("dir.cfg Error!!");
+@@ -259,18 +355,18 @@
+     quit();
+   }
+ 
++  printf("load cfg \n");
++
+   if (load_font() != 0)
+   {
+     error_msg("font init Error!!");
+     quit();
+   }
+-/* 起動できないので一時削除
+-  // adhoc用モジュールのロード
+-  if(pspSdkLoadAdhocModules() != 0)
+-  {
+-    error_msg("not use wlan!!");
+-  } */
+-//  u32 test = adhocInit("test");
++
++  printf("load font \n");
++
++  // adhoc接続のテスト
++  printf("OK use wlan!! \n");
+ 
+   init_gamepak_buffer();
+ 
+@@ -344,8 +440,6 @@
+   }
+ 
+   last_frame = 0;
+-  /* 起動時のファイルリストからromをロードした場合、メニュー終了時の */
+-  /* クロック変更が適用されないので、ここでクロック変更。 */
+   set_cpu_clock(game_config_clock_speed);
+ 
+   // We'll never actually return from here.
+@@ -476,7 +570,6 @@
+   event_number++;
+ }
+ 
+-/*
+ u32 check_power()
+   {
+     if (power_flag == 0) return 0;
+@@ -488,46 +581,6 @@
+     FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+     return ret_val;
+   }
+-*/
+-/* スリープ時にファイルを閉じて、復帰後開き直す。 */
+-/* 再び開けるようになるまでには、タイミングによってばらつきがある。*/
+-
+-void loop_sleep()
+-{
+-  SDL_PauseAudio(1);
+-
+-  if(FILE_CHECK_VALID(gamepak_file_large))
+-  {
+-    FILE_CLOSE(gamepak_file_large);
+-
+-    while(sleep_flag)
+-      delay_us(500000);
+-
+-    u8 i;
+-    for(i = 0; i < 5; i++)
+-    {
+-      FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+-
+-      if(gamepak_file_large < 0)
+-        delay_us(500000);
+-      else
+-        goto success_open_gamepak;
+-    }
+-
+-    printf("Failed to load gemepak.\n");
+-    delay_us(3000000);
+-    quit_flag = 1;
+-
+-    success_open_gamepak:;
+-  }
+-  else
+-  {
+-    while(sleep_flag)
+-      delay_us(500000);
+-  }
+-
+-  SDL_PauseAudio(0);
+-}
+ 
+ u32 update_gba()
+ {
+@@ -620,15 +673,12 @@
+           dispstat &= ~0x01;
+ //          frame_ticks++;
+ 
+-          if(sleep_flag)
+-            loop_sleep();
+-
+           if (update_input())
+             continue;
+-/*
++
+           if (check_power())
+             continue;
+-*/
++
+           if (quit_flag == 1)
+             quit();
+ 
+@@ -817,20 +867,6 @@
+ */
+ }
+ 
+-void quit()
+-{
+-//  if(!update_backup_flag)
+-    update_backup_force();
+-
+-  sound_exit();
+-  fbm_freeall();
+-
+-  fclose(dbg_file);
+-
+-  set_cpu_clock(222);
+-  sceKernelExitGame();
+-}
+-
+ void reset_gba()
+ {
+   init_main();
+@@ -885,57 +921,6 @@
+ void main_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+ MAIN_SAVESTATE_BODY(WRITE_MEM);
+ 
+-int exit_callback(int arg1, int arg2, void *common)
+-{
+-  quit_flag = 1;
+-  return 0;
+-}
+-
+-int power_callback(int unknown, int powerInfo, void *common)
+-{
+-  if(powerInfo & PSP_POWER_CB_SUSPENDING)
+-  {
+-    sleep_flag = 1;
+-  }
+-  else
+-  if(powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
+-  {
+-    sleep_flag = 0;
+-  }
+-  return 0;
+-}
+-
+-int CallbackThread(SceSize args, void *argp)
+-{
+-  int cbid, power_callback_id;
+-
+-  // 終了周りのコールバック 
+-  cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+-  sceKernelRegisterExitCallback(cbid);
+-
+-  // 電源周りのコールバック 
+-  power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
+-  scePowerRegisterCallback(0, power_callback_id);
+-
+-  sceKernelSleepThreadCB();
+-
+-  return 0;
+-}
+-
+-int SetupCallbacks()
+-{
+-  int thid = 0;
+-
+-  thid = sceKernelCreateThread("update_thread", CallbackThread, 
+-    0x11, 0xFA0, 0, 0);
+-  if (thid >= 0)
+-  {
+-    sceKernelStartThread(thid, 0, 0);
+-  }
+-
+-  return thid;
+-}
+-
+ void error_msg(char *text)
+ {
+     gui_action_type gui_action = CURSOR_NONE;
+@@ -945,7 +930,7 @@
+     while(gui_action == CURSOR_NONE)
+     {
+       gui_action = get_gui_input();
+-      delay_us(15000);
++      delay_us(15000); /* 0.0015s */
+     }
+ }
+ 
+diff -ru 30_new/main.h gpsp-kai-test/main.h
+--- 30_new/main.h	2007-08-06 23:46:36.000000000 +0900
++++ gpsp-kai-test/main.h	2007-08-08 03:58:25.186400700 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -46,7 +47,6 @@
+ {
+   s32 count;
+   u32 reload;
+-  u8 reload_update;
+   u32 prescale;
+   u32 stop_cpu_ticks;
+   FIXED16_16 frequency_step;
+@@ -93,10 +93,9 @@
+ extern u32 max_frameskip;
+ extern u32 num_skipped_frames;
+ extern u64 frame_count_initial_timestamp;
+-
+ extern int date_format;
+-void set_cpu_clock(u32 clock);
+ 
++void set_cpu_clock(u32 clock);
+ u32 update_gba();
+ void reset_gba();
+ void synchronize();
+@@ -112,16 +111,22 @@
+ void change_ext(char *src, char *buffer, char *extension);
+ u32 file_length(char *filename, s32 dummy);
+ 
++// TODO:タイマーカウンタ周りの処理は再検討
+ #define count_timer(timer_number)                                             \
+   timer[timer_number].reload = 0x10000 - value;                               \
+-  timer[timer_number].reload_update = 1                                       \
++  if(timer_number < 2)                                                        \
++  {                                                                           \
++    u32 timer_reload =                                                        \
++     timer[timer_number].reload << timer[timer_number].prescale;              \
++    SOUND_UPDATE_FREQUENCY_STEP(timer_number);                                \
++  }                                                                           \
+ 
+ #define adjust_sound_buffer(timer_number, channel)                            \
+   if(timer[timer_number].direct_sound_channels & (0x01 << channel))           \
+   {                                                                           \
+     direct_sound_channel[channel].buffer_index =                              \
+-     (direct_sound_channel[channel].buffer_index + buffer_adjust) %           \
+-     BUFFER_SIZE;                                                             \
++     (direct_sound_channel[channel].buffer_index + buffer_adjust) % BUFFER_SIZE; /* TODO:サウンドのズレはこのあたりの処理が問題? */ \
++                                                                              \
+   }                                                                           \
+ 
+ #define trigger_timer(timer_number)                                           \
+@@ -152,10 +157,10 @@
+       if(timer_number < 2)                                                    \
+       {                                                                       \
+         u32 buffer_adjust =                                                   \
+-         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
+-         sound_frequency) / 16777216.0) * 2;                                  \
++         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *      /* TODO:サウンドのズレはこのあたりの処理が問題 */ \
++         SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
+                                                                               \
+-        sound_update_frequency_step(timer_number);                            \
++        SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
+         adjust_sound_buffer(timer_number, 0);                                 \
+         adjust_sound_buffer(timer_number, 1);                                 \
+       }                                                                       \
+diff -ru 30_new/memory.c gpsp-kai-test/memory.c
+--- 30_new/memory.c	2007-08-06 23:47:14.000000000 +0900
++++ gpsp-kai-test/memory.c	2007-08-09 02:35:01.625000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -68,7 +69,6 @@
+ 
+ // This table is configured for sequential access on system defaults
+ 
+-// read data (sequential)
+ u8 waitstate_cycles_seq[2][16] =
+ {
+  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
+@@ -76,7 +76,6 @@
+   { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
+ };
+ 
+-// read data (non sequential)
+ u8 waitstate_cycles_non_seq[2][16] =
+ {
+  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
+@@ -92,7 +91,6 @@
+   {{ 2, 2, 2 }, { 3, 3, 3 }}
+ };
+ 
+-// read opecode
+ u8 cpu_waitstate_cycles_seq[2][16] =
+ {
+  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
+@@ -100,7 +98,6 @@
+   { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
+ };
+ 
+-
+ u16 palette_ram[512];
+ u16 oam_ram[512];
+ u16 palette_ram_converted[512];
+@@ -488,8 +485,8 @@
+                                                                               \
+     case 0x04:                                                                \
+       /* I/O registers */                                                     \
+-      if(address < 0x04000400)                                                \
+-        value = ADDRESS##type(io_registers, address & 0x3FF);                 \
++      if(address < 0x04000400)                                                  /* IOは0x803まで存在 */ \
++        value = ADDRESS##type(io_registers, address & 0x3FF);                   /* 0x800は0x800ごとにループしている:TODO */ \
+       else                                                                    \
+         read_open##type();                                                    \
+       break;                                                                  \
+@@ -512,7 +509,11 @@
+       value = ADDRESS##type(oam_ram, address & 0x3FF);                        \
+       break;                                                                  \
+                                                                               \
+-    case 0x08 ... 0x0C:                                                       \
++    case 0x08:                                                                \
++    case 0x09:                                                                \
++    case 0x0A:                                                                \
++    case 0x0B:                                                                \
++    case 0x0C:                                                                \
+       /* gamepak ROM */                                                       \
+       if((address & 0x1FFFFFF) >= gamepak_size)                               \
+       {                                                                       \
+@@ -615,7 +616,6 @@
+     ADDRESS16(io_registers, (dma_number * 12) + 0xBA) = value;                \
+   }                                                                           \
+ 
+-
+ // configure game pak access timings
+ #define waitstate_control()                                                   \
+ {                                                                             \
+@@ -676,7 +676,6 @@
+    (ADDRESS16(io_registers, 0x204) & 0x8000) | (value & 0x7FFF);              \
+ }                                                                             \
+ 
+-
+ #define access_register8_high(address)                                        \
+   value = (value << 8) | (ADDRESS8(io_registers, address))                    \
+ 
+@@ -713,7 +712,6 @@
+     // VCOUNT
+     case 0x06:
+     case 0x07:
+-      /* Read only */
+       break;
+ 
+     // BG2 reference X
+@@ -835,138 +833,138 @@
+     // Sound 1 control sweep
+     case 0x60:
+       access_register8_low(0x60);
+-      gbc_sound_tone_control_sweep();
++      GBC_SOUND_TONE_CONTROL_SWEEP();
+       break;
+ 
+     case 0x61:
+       access_register8_high(0x60);
+-      gbc_sound_tone_control_sweep();
++      GBC_SOUND_TONE_CONTROL_SWEEP();
+       break;
+ 
+     // Sound 1 control duty/length/envelope
+     case 0x62:
+       access_register8_low(0x62);
+-      gbc_sound_tone_control_low(0, 0x62);
++      GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
+       break;
+ 
+     case 0x63:
+       access_register8_high(0x62);
+-      gbc_sound_tone_control_low(0, 0x62);
++      GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
+       break;
+ 
+     // Sound 1 control frequency
+     case 0x64:
+       access_register8_low(0x64);
+-      gbc_sound_tone_control_high(0, 0x64);
++      GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
+       break;
+ 
+     case 0x65:
+       access_register8_high(0x64);
+-      gbc_sound_tone_control_high(0, 0x64);
++      GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
+       break;
+ 
+     // Sound 2 control duty/length/envelope
+     case 0x68:
+       access_register8_low(0x68);
+-      gbc_sound_tone_control_low(1, 0x68);
++      GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
+       break;
+ 
+     case 0x69:
+       access_register8_high(0x68);
+-      gbc_sound_tone_control_low(1, 0x68);
++      GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
+       break;
+ 
+     // Sound 2 control frequency
+     case 0x6C:
+       access_register8_low(0x6C);
+-      gbc_sound_tone_control_high(1, 0x6C);
++      GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
+       break;
+ 
+     case 0x6D:
+       access_register8_high(0x6C);
+-      gbc_sound_tone_control_high(1, 0x6C);
++      GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
+       break;
+ 
+     // Sound 3 control wave
+     case 0x70:
+       access_register8_low(0x70);
+-      gbc_sound_wave_control();
++      GBC_SOUND_WAVE_CONTROL();
+       break;
+ 
+     case 0x71:
+       access_register8_high(0x70);
+-      gbc_sound_wave_control();
++      GBC_SOUND_WAVE_CONTROL();
+       break;
+ 
+     // Sound 3 control length/volume
+     case 0x72:
+       access_register8_low(0x72);
+-      gbc_sound_tone_control_low_wave();
++      GBC_SOUND_TONE_CONTROL_LOW_WAVE();
+       break;
+ 
+     case 0x73:
+       access_register8_high(0x72);
+-      gbc_sound_tone_control_low_wave();
++      GBC_SOUND_TONE_CONTROL_LOW_WAVE();
+       break;
+ 
+     // Sound 3 control frequency
+     case 0x74:
+       access_register8_low(0x74);
+-      gbc_sound_tone_control_high_wave();
++      GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
+       break;
+ 
+     case 0x75:
+       access_register8_high(0x74);
+-      gbc_sound_tone_control_high_wave();
++      GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
+       break;
+ 
+     // Sound 4 control length/envelope
+     case 0x78:
+       access_register8_low(0x78);
+-      gbc_sound_tone_control_low(3, 0x78);
++      GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
+       break;
+ 
+     case 0x79:
+       access_register8_high(0x78);
+-      gbc_sound_tone_control_low(3, 0x78);
++      GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
+       break;
+ 
+     // Sound 4 control frequency
+     case 0x7C:
+       access_register8_low(0x7C);
+-      gbc_sound_noise_control();
++      GBC_SOUND_NOISE_CONTROL();
+       break;
+ 
+     case 0x7D:
+       access_register8_high(0x7C);
+-      gbc_sound_noise_control();
++      GBC_SOUND_NOISE_CONTROL();
+       break;
+ 
+     // Sound control L
+     case 0x80:
+       access_register8_low(0x80);
+-      gbc_trigger_sound();
++      GBC_TRIGGER_SOUND();
+       break;
+ 
+     case 0x81:
+       access_register8_high(0x80);
+-      gbc_trigger_sound();
++      GBC_TRIGGER_SOUND();
+       break;
+ 
+     // Sound control H
+     case 0x82:
+       access_register8_low(0x82);
+-      trigger_sound();
++      TRIGGER_SOUND();
+       break;
+ 
+     case 0x83:
+       access_register8_high(0x82);
+-      trigger_sound();
++      TRIGGER_SOUND();
+       break;
+ 
+     // Sound control X
+     case 0x84:
+-      sound_on();
++      SOUND_ON();
+       break;
+ 
+     // Sound wave RAM
+@@ -1083,8 +1081,11 @@
+ 
+     // IF
+     case 0x202:
++      ADDRESS8(io_registers, 0x202) &= ~value;
++      break;
++
+     case 0x203:
+-      ADDRESS8(io_registers, address) &= ~value;
++      ADDRESS8(io_registers, 0x203) &= ~value;
+       break;
+ 
+     // WAITCNT
+@@ -1104,8 +1105,8 @@
+         reg[CPU_HALT_STATE] = CPU_STOP;
+       else
+         reg[CPU_HALT_STATE] = CPU_HALT;
+-
+       return CPU_ALERT_HALT;
++      break;
+ 
+     default:
+       ADDRESS8(io_registers, address) = value;
+@@ -1137,7 +1138,6 @@
+ 
+     // VCOUNT
+     case 0x06:
+-      /* Read only */
+       break;
+ 
+     // BG2 reference X
+@@ -1195,67 +1195,67 @@
+ 
+     // Sound 1 control sweep
+     case 0x60:
+-      gbc_sound_tone_control_sweep();
++      GBC_SOUND_TONE_CONTROL_SWEEP();
+       break;
+ 
+     // Sound 1 control duty/length/envelope
+     case 0x62:
+-      gbc_sound_tone_control_low(0, 0x62);
++      GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
+       break;
+ 
+     // Sound 1 control frequency
+     case 0x64:
+-      gbc_sound_tone_control_high(0, 0x64);
++      GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
+       break;
+ 
+     // Sound 2 control duty/length/envelope
+     case 0x68:
+-      gbc_sound_tone_control_low(1, 0x68);
++      GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
+       break;
+ 
+     // Sound 2 control frequency
+     case 0x6C:
+-      gbc_sound_tone_control_high(1, 0x6C);
++      GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
+       break;
+ 
+     // Sound 3 control wave
+     case 0x70:
+-      gbc_sound_wave_control();
++      GBC_SOUND_WAVE_CONTROL();
+       break;
+ 
+     // Sound 3 control length/volume
+     case 0x72:
+-      gbc_sound_tone_control_low_wave();
++      GBC_SOUND_TONE_CONTROL_LOW_WAVE();
+       break;
+ 
+     // Sound 3 control frequency
+     case 0x74:
+-      gbc_sound_tone_control_high_wave();
++      GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
+       break;
+ 
+     // Sound 4 control length/envelope
+     case 0x78:
+-      gbc_sound_tone_control_low(3, 0x78);
++      GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
+       break;
+ 
+     // Sound 4 control frequency
+     case 0x7C:
+-      gbc_sound_noise_control();
++      GBC_SOUND_NOISE_CONTROL();
+       break;
+ 
+     // Sound control L
+     case 0x80:
+-      gbc_trigger_sound();
++      GBC_TRIGGER_SOUND();
+       break;
+ 
+     // Sound control H
+     case 0x82:
+-      trigger_sound();
++      TRIGGER_SOUND();
+       break;
+ 
+     // Sound control X
+     case 0x84:
+-      sound_on();
++      SOUND_ON();
+       break;
+ 
+     // Sound wave RAM
+@@ -1331,7 +1331,6 @@
+ 
+     // P1
+     case 0x130:
+-      /* Read only */
+       break;
+ 
+     // RCNT
+@@ -1607,7 +1606,6 @@
+   else                                                                        \
+     ADDRESS32(vram, address & 0x1FFFF) = value                                \
+ 
+-
+ #define write_oam_ram8()                                                      \
+ /*  Write 8bit data is ignore */                                              \
+ 
+@@ -1619,7 +1617,6 @@
+   oam_update = 1;                                                             \
+   ADDRESS32(oam_ram, address & 0x3FF) = value                                 \
+ 
+-
+ // RTC code derived from VBA's (due to lack of any real publically available
+ // documentation...)
+ 
+@@ -1902,8 +1899,8 @@
+     case 0x04:                                                                \
+       /* I/O registers */                                                     \
+       if(address < 0x04000400)                                                \
+-        return write_io_register##type(address & 0x3FF, value);               \
+-      break;                                                                  \
++        return write_io_register##type(address & 0x3FF, value);                 /* IOは0x803まで存在 */ \
++      break;                                                                    /* 0x800は0x800ごとにループしている:TODO */ \
+                                                                               \
+     case 0x05:                                                                \
+       /* palette RAM */                                                       \
+@@ -1925,6 +1922,10 @@
+       write_rtc##type();                                                      \
+       break;                                                                  \
+                                                                               \
++    case 0x09 ... 0x0C:                                                       \
++      /* gamepak ROM space */                                                 \
++      break;                                                                  \
++                                                                              \
+     case 0x0D:                                                                \
+       write_eeprom(address, value);                                           \
+       break;                                                                  \
+@@ -2220,6 +2221,7 @@
+   flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
+   backup_type = BACKUP_NONE;
+ 
++
+   sprintf(config_path, "%s/%s", main_path, CONFIG_FILENAME);
+ 
+   config_file = fopen(config_path, "rb");
+@@ -2292,10 +2294,8 @@
+               flash_device_id = FLASH_DEVICE_MACRONIX_128KB;
+             }
+ 
+-            /* eepromだけでも良いのですが、なんとなく全部指定できるように。 */
+-            /* DBZLGCYGOKU2 のプロテクト回避。 */
+-            /* EEPROM_V124で特殊な物(現在判別不可) で指定すれば動作可。*/
+-
++            // DBZLGCYGOKU2 のプロテクト回避
++            // EEPROM_V124で特殊な物(現在判別不可) で指定すれば動作可
+             if(!strcasecmp(current_variable, "save_type"))
+             {
+               if(!strcasecmp(current_value, "sram"))
+@@ -2348,6 +2348,8 @@
+     {
+       FILE_READ(gamepak_file, gamepak_rom, gamepak_size);
+       FILE_CLOSE(gamepak_file);
++
++      gamepak_file_large = -1;
+     }
+     else
+     {
+@@ -2356,12 +2358,11 @@
+       gamepak_file_large = gamepak_file;
+ //      strcpy(gamepak_filename_raw, name);
+ //      FILE_CLOSE(gamepak_file);
+-      /* ファイルリストでカレントディレクトリを変更された場合 */
+-      /* ファイルが読めなくなるので、フルパス指定。*/
+-      /* 適当なのが無かったのですが、こんなコードで良いのかは？？ */
+-      getcwd(gamepak_filename_raw, 512);
+-      strcat(gamepak_filename_raw, "/");
+-      strcat(gamepak_filename_raw, name);
++      // ファイルリストでカレントディレクトリを変更された場合
++      // ファイルが読めなくなるので、フルパス指定
++      char temp_path[MAX_PATH];
++      getcwd(temp_path, 512);
++      sprintf(gamepak_filename_raw, "%s/%s", temp_path, name);
+     }
+ 
+     return gamepak_size;
+@@ -2376,19 +2377,14 @@
+   s32 file_size;
+   char cheats_filename[256];
+ 
+-/* zip romをロードする場合、オープンのままなのでここへ。*/
+-/* 今は、メニューに入るときにクローズしているので不要。*/
+-  // First, close the last one if it was open, we won't
+-  // be needing it anymore.
+-//  if(FILE_CHECK_VALID(gamepak_file_large))
+-//    FILE_CLOSE(gamepak_file_large);
++  // ファイルが開いていたら閉じる
++  if(FILE_CHECK_VALID(gamepak_file_large))
++    FILE_CLOSE(gamepak_file_large);
+ 
+   gamepak_file_large = -1;
+ 
+   if(!strcasecmp(dot_position, ".zip"))
+   {
+-    /* メニューで222Mに変更したので333Mへ。変更しないのであれば不要 */
+-    /* rom 16Mだと数秒展開の時間が違います。*/
+     set_cpu_clock(333); 
+     file_size = load_file_zip(name);
+   }
+@@ -2529,9 +2525,6 @@
+ #define dma_vars_vram(type)                                                   \
+   if(type##_ptr & 0x10000)                                                    \
+     type##_ptr &= ~0x08000                                                    \
+-/* vramのread,writeでアドレスを変更するとスプライトが表示されないことがある */
+-/* とりあえず、ここで変更。*/
+-/* 例）逆転裁判のいとのこさん、腕とか頭が欠ける。 */
+ 
+ #define dma_vars_palette_ram(type)                                            \
+ 
+@@ -3048,6 +3041,7 @@
+   {
+     src_ptr &= ~0x01;
+     dest_ptr &= ~0x01;
++    // TODO:???
+ //    cycle_dma16_words += length;
+     dma_transfer_expand(16);
+   }
+@@ -3055,6 +3049,7 @@
+   {
+     src_ptr &= ~0x03;
+     dest_ptr &= ~0x03;
++    // TODO:???
+ //    cycle_dma32_words += length;
+     dma_transfer_expand(32);
+   }
+@@ -3283,7 +3278,6 @@
+   map_ram_region(read, 0x3000000, 0x4000000, 1, iwram);
+   map_region(read, 0x4000000, 0x5000000, 1, io_registers);
+   map_null(read, 0x5000000, 0x6000000);
+-//  map_null(read, 0x6000000, 0x7000000);
+   map_vram(read);
+   map_null(read, 0x7000000, 0x8000000);
+   init_memory_gamepak();
+@@ -3336,8 +3330,6 @@
+   io_registers[REG_BG3PD] = 0x100;
+   io_registers[REG_RCNT] = 0x8000;
+ 
+-//  backup_type = BACKUP_NONE;
+-
+   sram_size = SRAM_SIZE_32KB;
+   flash_size = FLASH_SIZE_64KB;
+ 
+@@ -3395,7 +3387,7 @@
+     u32 i;
+     u32 current_color;
+ 
+-    u32 file_size = file_length(savestate_path, savestate_file);
++    u32 file_size = file_length(savestate_path, (s32)NULL);
+     if (file_size == SAVESTATE_SIZE)
+       FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u64), SEEK_SET);
+     else
+diff -ru 30_new/memory.h gpsp-kai-test/memory.h
+--- 30_new/memory.h	2007-08-06 23:46:28.000000000 +0900
++++ gpsp-kai-test/memory.h	2007-08-07 12:49:44.026400700 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+diff -ru 30_new/mips_emit.h gpsp-kai-test/mips_emit.h
+--- 30_new/mips_emit.h	2007-08-06 23:45:02.000000000 +0900
++++ gpsp-kai-test/mips_emit.h	2007-08-07 12:49:38.984400700 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+diff -ru 30_new/mips_stub.S gpsp-kai-test/mips_stub.S
+--- 30_new/mips_stub.S	2007-08-06 23:46:18.000000000 +0900
++++ gpsp-kai-test/mips_stub.S	2007-08-09 03:03:51.005000000 +0900
+@@ -2,6 +2,7 @@
+ #
+ # Copyright (C) 2006 Exophase <exophase@gmail.com>
+ # Copyright (C) 2007 takka <takka@tfact.net>
++# Copyright (C) 2007 ????? <?????>
+ #
+ # This program is free software; you can redistribute it and/or
+ # modify it under the terms of the GNU General Public License as
+Only in gpsp-kai-test/psp: .svn
+Files 30_new/psp/EBOOT.PBP and gpsp-kai-test/psp/EBOOT.PBP differ
+diff -ru 30_new/psp/Makefile gpsp-kai-test/psp/Makefile
+--- 30_new/psp/Makefile	2007-08-06 23:10:24.000000000 +0900
++++ gpsp-kai-test/psp/Makefile	2007-08-09 02:45:10.093000000 +0900
+@@ -23,11 +23,10 @@
+ PSP_EBOOT_TITLE = UnOfficial_gpSP_kai_${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT}
+ 
+ VPATH           += ..
+-CFLAGS          += -O3 -G0 -funsigned-char
++CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
++CFLAGS          += -Wall -Wredundant-decls -Wmissing-declarations
+ #CFLAGS          += -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
+-#CFLAGS          +=  -Wall -fno-exceptions -Wredundant-decls -Wmissing-declarations
+-#CFLAGS          += -Wredundant-decls -Wmissing-declarations
+-CFLAGS          += ${shell ${PREFIX}/bin/sdl-config --cflags}
++#CFLAGS          += ${shell ${PREFIX}/bin/sdl-config --cflags}
+ 
+ CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
+ CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
+@@ -36,7 +35,9 @@
+ ASFLAGS         = ${CFLAGS}
+ EXTRA_TARGETS   = EBOOT.PBP
+ 
+-LIBS            += ${shell ${PREFIX}/bin/sdl-config --libs} -lz -lpsppower -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
++LIBS            += -lpspgu -lpsprtc -lpspaudio
++LIBS            += -lz -lpsppower -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
++#LIBS            += ${shell ${PREFIX}/bin/sdl-config --libs}
+ 
+ include ${PSPSDK}/lib/build.mak
+ 
+Files 30_new/psp/UO_gpSP_kai.elf and gpsp-kai-test/psp/UO_gpSP_kai.elf differ
+Files 30_new/psp/cheats.o and gpsp-kai-test/psp/cheats.o differ
+Files 30_new/psp/cpu.o and gpsp-kai-test/psp/cpu.o differ
+Files 30_new/psp/cpu_threaded.o and gpsp-kai-test/psp/cpu_threaded.o differ
+Files 30_new/psp/fbm_print.o and gpsp-kai-test/psp/fbm_print.o differ
+Files 30_new/psp/gui.o and gpsp-kai-test/psp/gui.o differ
+Files 30_new/psp/main.o and gpsp-kai-test/psp/main.o differ
+Files 30_new/psp/memory.o and gpsp-kai-test/psp/memory.o differ
+Files 30_new/psp/sound.o and gpsp-kai-test/psp/sound.o differ
+Files 30_new/psp/video.o and gpsp-kai-test/psp/video.o differ
+diff -ru 30_new/readme_kai_jp.txt gpsp-kai-test/readme_kai_jp.txt
+--- 30_new/readme_kai_jp.txt	2007-08-05 23:04:12.000000000 +0900
++++ gpsp-kai-test/readme_kai_jp.txt	2007-08-08 23:19:54.997000000 +0900
+@@ -3,12 +3,15 @@
+ -- Release log --
+ -UnOfficial gpSP kai 3.1 test 05 svn rev.**
+ 	カーネルモードで動作するように変更
+-		カーネルモードにするため、改変SDLを使用
++	SDLなしでビルドするようにした
+ 	statesaveの日付表示を修正
+-		pspsdkのtime()関数が時刻しか返さないため
+-	上記に伴い、satesaveファイルのサイズを506947 -> 506951に変更
++	上記に伴い、statesaveファイルのサイズを506947 -> 506951に変更
+ 		古いファイルも読込み時に自動判別して読み込みます
+ 		保存時に新しい形式で保存されます
++	デフォルトディレクトリの変更
++	分割EBOOT.PBPの廃止
++		DEVHOOKやFW1.0~1.5を使用している方は各自対応して下さい
++	フォーラムからのソースを元に多数修正 thanks ?????
+ 
+ -UnOfficial gpSP kai 3.1 test 04 svn rev.65
+ 	プチノイズの低減
+@@ -268,4 +271,4 @@
+ 		gpSP CFGファイルのサイズが56byte -> 72byteに変更。
+ 
+ takka takka@tfact.net
+-http://www.tfact.jp/psp/wiki/
++http://sourceforge.jp/projects/gpsp-kai
+Only in gpsp-kai-test/settings: .svn
+diff -ru 30_new/settings/Russia.fnt gpsp-kai-test/settings/Russia.fnt
+--- 30_new/settings/Russia.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/Russia.fnt	2007-08-07 08:03:33.748400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/dir.cfg gpsp-kai-test/settings/dir.cfg
+--- 30_new/settings/dir.cfg	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/dir.cfg	2007-08-07 08:05:07.346400700 +0900
+@@ -1,16 +1,16 @@
+ # dir config
+ 
+ # default rom dir
+-!ms0:/PSP/gba/rom
++!ms0:/PSP/GAME150/UO_gpSP_kai/GBA/ROM
+ 
+ # default save dir
+-!ms0:/PSP/gba/save
++!ms0:/PSP/GAME150/UO_gpSP_kai/GBA/SAVE
+ 
+ # default cfg dir
+-!ms0:/PSP/gba/cfg
++!ms0:/PSP/GAME150/UO_gpSP_kai/GBA/CFG
+ 
+ # default screen shot dir
+ !ms0:/PSP/PHOTO
+ 
+ # default cheat dir
+-!ms0:/PSP/gba/cht
++!ms0:/PSP/GAME150/UO_gpSP_kai/GBA/CHT
+diff -ru 30_new/settings/dutch.fnt gpsp-kai-test/settings/dutch.fnt
+--- 30_new/settings/dutch.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/dutch.fnt	2007-08-07 08:03:32.138400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/english.fnt gpsp-kai-test/settings/english.fnt
+--- 30_new/settings/english.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/english.fnt	2007-08-07 08:03:29.733400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/french.fnt gpsp-kai-test/settings/french.fnt
+--- 30_new/settings/french.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/french.fnt	2007-08-07 08:03:27.409400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/german.fnt gpsp-kai-test/settings/german.fnt
+--- 30_new/settings/german.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/german.fnt	2007-08-07 08:03:24.674400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/italian.fnt gpsp-kai-test/settings/italian.fnt
+--- 30_new/settings/italian.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/italian.fnt	2007-08-07 08:03:22.614400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/japanese.fnt gpsp-kai-test/settings/japanese.fnt
+--- 30_new/settings/japanese.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/japanese.fnt	2007-08-07 08:03:20.545400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/portuguese.fnt gpsp-kai-test/settings/portuguese.fnt
+--- 30_new/settings/portuguese.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/portuguese.fnt	2007-08-07 08:03:18.768400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/settings/spanish.fnt gpsp-kai-test/settings/spanish.fnt
+--- 30_new/settings/spanish.fnt	2007-08-05 23:02:52.000000000 +0900
++++ gpsp-kai-test/settings/spanish.fnt	2007-08-07 08:03:16.164400700 +0900
+@@ -1,7 +1,7 @@
+ # font file
+ 
+ # 1 byte font
+-!ms0:/fbm/1/5x10rk.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/5x10rk.fbm
+ 
+ # 2 byte font
+-!ms0:/fbm/2/knj10.fbm
++!ms0:/PSP/GAME150/UO_gpSP_kai/FONT/knj10.fbm
+diff -ru 30_new/sound.c gpsp-kai-test/sound.c
+--- 30_new/sound.c	2007-08-06 23:47:50.000000000 +0900
++++ gpsp-kai-test/sound.c	2007-08-09 07:02:51.450000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -18,232 +19,74 @@
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+  */
+ 
++/******************************************************************************
++ * sound.c
++ * サウンド周りの処理
++ ******************************************************************************/
++
++/******************************************************************************
++ * ヘッダファイルの読込み
++ ******************************************************************************/
+ #include "common.h"
+ 
+-u32 global_enable_audio = 1;
+-
+-direct_sound_struct direct_sound_channel[2];
+-gbc_sound_struct gbc_sound_channel[4];
+-
+-u32 sound_frequency = 44100;
+-
+-SDL_AudioSpec sound_settings;
+-SDL_mutex *sound_mutex;
+-SDL_cond *sound_cv;
+-
+-u32 audio_buffer_size_number = 1;
+-u32 audio_buffer_size;
+-u32 audio_buffer_size_x2;
+-u32 sound_on = 0;
+-s16 sound_buffer[BUFFER_SIZE];
+-u32 sound_buffer_base = 0;
+-
+-u32 sound_last_cpu_ticks = 0;
+-FIXED16_16 gbc_sound_tick_step;
+-
+-u32 gbc_sound_wave_update;
+-
+-// u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
+-
+-void sound_callback(void *userdata, Uint8 *stream, int length);
+-void init_noise_table(u32 *table, u32 period, u32 bit_length);
+-
+-
+-/* マジカルバケーションの不具合修正 */
+-void sound_timer_queue32(u8 channel)
+-{
+-  direct_sound_struct *ds = direct_sound_channel + channel;
+-  u8 offset = channel * 4;
+-  u8 i;
+-
+-  for(i = 0xA0; i <= 0xA3; i++)
+-  {
+-    ds->fifo[ds->fifo_top] = ADDRESS8(io_registers, i + offset);
+-    ds->fifo_top = (ds->fifo_top + 1) % 32;
+-  }
+-}
+-
+-// Unqueue 1 sample from the base of the DS FIFO and place it on the audio
+-// buffer for as many samples as necessary. If the DS FIFO is 16 bytes or
+-// smaller and if DMA is enabled for the sound channel initiate a DMA transfer
+-// to the DS FIFO.
+-
+-#define render_sample_null()                                                  \
+-
+-#define render_sample_left()                                                  \
+-  sound_buffer[buffer_index] += current_sample +                              \
++/******************************************************************************
++ * マクロ等の定義
++ ******************************************************************************/
++// TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
++#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(128) // サンプル数
++#define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
++
++#define GBC_NOISE_WRAP_FULL 32767
++#define GBC_NOISE_WRAP_HALF 126
++
++#define RENDER_SAMPLE_NULL()                                                  \
++
++// サウンドバッファにLEFT CHANNELのデータを書込む
++#define RENDER_SAMPLE_LEFT()                                                  \
++  sound_buffer[sound_write_offset] += current_sample +                        \
+    FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
+ 
+-#define render_sample_right()                                                 \
+-  sound_buffer[buffer_index + 1] += current_sample +                          \
++// サウンドバッファにRIGHT CHANNELのデータを書込む
++#define RENDER_SAMPLE_RIGHT()                                                 \
++  sound_buffer[sound_write_offset + 1] += current_sample +                    \
+    FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional)           \
+ 
+-#define render_sample_both()                                                  \
++// サウンドバッファにLEFT/RIGHT CHANNELのデータを書込む
++#define RENDER_SAMPLE_BOTH()                                                  \
+   dest_sample = current_sample +                                              \
+    FP16_16_TO_U32((next_sample - current_sample) * fifo_fractional);          \
+-  sound_buffer[buffer_index] += dest_sample;                                  \
+-  sound_buffer[buffer_index + 1] += dest_sample                               \
++  sound_buffer[sound_write_offset] += dest_sample;                            \
++  sound_buffer[sound_write_offset + 1] += dest_sample                         \
+ 
+-#define render_samples(type)                                                  \
++#define RENDER_SAMPLES(type)                                                  \
+   while(fifo_fractional <= 0xFFFF)                                            \
+   {                                                                           \
+-    render_sample_##type();                                                   \
++    RENDER_SAMPLE_##type();                                                   \
+     fifo_fractional += frequency_step;                                        \
+-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
++    /* indexを進める */                                                       \
++    OFFSET_INC();                                                             \
+   }                                                                           \
+ 
+-void sound_timer(FIXED16_16 frequency_step, u32 channel)
+-{
+-  direct_sound_struct *ds = direct_sound_channel + channel;
+-
+-  FIXED16_16 fifo_fractional = ds->fifo_fractional;
+-  u32 buffer_index = ds->buffer_index;
+-  s16 current_sample, next_sample, dest_sample;
+-
+-  current_sample = ds->fifo[ds->fifo_base] << 4;
+-  ds->fifo_base = (ds->fifo_base + 1) % 32;
+-  next_sample = ds->fifo[ds->fifo_base] << 4;
+-
+-  if(sound_on == 1)
+-  {
+-    if(ds->volume == DIRECT_SOUND_VOLUME_50)
+-    {
+-      current_sample >>= 1;
+-      next_sample >>= 1;
+-    }
+-
+-    switch(ds->status)
+-    {
+-      case DIRECT_SOUND_INACTIVE:
+-        render_samples(null);
+-        break;
+-
+-      case DIRECT_SOUND_RIGHT:
+-        render_samples(right);
+-        break;
+-
+-      case DIRECT_SOUND_LEFT:
+-        render_samples(left);
+-        break;
+-
+-      case DIRECT_SOUND_LEFTRIGHT:
+-        render_samples(both);
+-        break;
+-    }
+-  }
+-  else
+-  {
+-    render_samples(null);
+-  }
+-
+-  ds->buffer_index = buffer_index;
+-  ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
+-
+-  /* マジカルバケーションで動作が遅くなるのが改善される */
+-  u8 fifo_length;
+-
+-  if(ds->fifo_top > ds->fifo_base)
+-    fifo_length = ds->fifo_top - ds->fifo_base;
+-  else
+-    fifo_length = ds->fifo_top + (32 - ds->fifo_base);
+-
+-  if(fifo_length <= 16)
+-  {
+-    if(dma[1].direct_sound_channel == channel)
+-      dma_transfer(dma + 1);
+-
+-    if(dma[2].direct_sound_channel == channel)
+-      dma_transfer(dma + 2);
+-  }
+-}
+-
+-void sound_reset_fifo(u32 channel)
+-{
+-  direct_sound_struct *ds = direct_sound_channel + channel;
+-
+-  memset(ds->fifo, 0, 32);
+-}
+-
+-// Initial pattern data = 4bits (signed)
+-// Channel volume = 12bits
+-// Envelope volume = 14bits
+-// Master volume = 2bits
++#define OFFSET_INC()                                                          \
++  /* indexを進める */                                                         \
++  sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;                \
++  sound_write_count += 2;                                                     \
+ 
+-// Recalculate left and right volume as volume changes.
+-// To calculate the current sample, use (sample * volume) >> 16
+-
+-// Square waves range from -8 (low) to 7 (high)
+-
+-s8 square_pattern_duty[4][8] =
+-{
+-  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0xF8, 0xF8, 0xF8 },
+-  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
+-  { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
+-  { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 }
+-};
+-
+-s8 wave_samples[64];
+-
+-u32 noise_table15[1024];
+-u32 noise_table7[4];
+-
+-u32 gbc_sound_master_volume_table[4] = { 1, 2, 4, 0 };
+-
+-u32 gbc_sound_channel_volume_table[8] =
+-{
+-  FIXED_DIV(0, 7, 12),
+-  FIXED_DIV(1, 7, 12),
+-  FIXED_DIV(2, 7, 12),
+-  FIXED_DIV(3, 7, 12),
+-  FIXED_DIV(4, 7, 12),
+-  FIXED_DIV(5, 7, 12),
+-  FIXED_DIV(6, 7, 12),
+-  FIXED_DIV(7, 7, 12)
+-};
+-
+-u32 gbc_sound_envelope_volume_table[16] =
+-{
+-  FIXED_DIV(0, 15, 14),
+-  FIXED_DIV(1, 15, 14),
+-  FIXED_DIV(2, 15, 14),
+-  FIXED_DIV(3, 15, 14),
+-  FIXED_DIV(4, 15, 14),
+-  FIXED_DIV(5, 15, 14),
+-  FIXED_DIV(6, 15, 14),
+-  FIXED_DIV(7, 15, 14),
+-  FIXED_DIV(8, 15, 14),
+-  FIXED_DIV(9, 15, 14),
+-  FIXED_DIV(10, 15, 14),
+-  FIXED_DIV(11, 15, 14),
+-  FIXED_DIV(12, 15, 14),
+-  FIXED_DIV(13, 15, 14),
+-  FIXED_DIV(14, 15, 14),
+-  FIXED_DIV(15, 15, 14)
+-};
+-
+-u32 gbc_sound_buffer_index = 0;
+-u32 gbc_sound_last_cpu_ticks = 0;
+-u32 gbc_sound_partial_ticks = 0;
+-
+-u32 gbc_sound_master_volume_left;
+-u32 gbc_sound_master_volume_right;
+-u32 gbc_sound_master_volume;
+-
+-#define update_volume_channel_envelope(channel)                               \
++#define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
+   volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
+    gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
+    gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
+ 
+-#define update_volume_channel_noenvelope(channel)                             \
++#define UPDATE_VOLUME_CHANNEL_NOENVELOPE(channel)                             \
+   volume_##channel = gs->wave_volume *                                        \
+    gbc_sound_channel_volume_table[gbc_sound_master_volume_##channel] *        \
+    gbc_sound_master_volume_table[gbc_sound_master_volume]                     \
+ 
+-#define update_volume(type)                                                   \
+-  update_volume_channel_##type(left);                                         \
+-  update_volume_channel_##type(right)                                         \
++#define UPDATE_VOLUME(type)                                                   \
++  UPDATE_VOLUME_CHANNEL_##type(left);                                         \
++  UPDATE_VOLUME_CHANNEL_##type(right)                                         \
+ 
+-#define update_tone_sweep()                                                   \
++#define UPDATE_TONE_SWEEP()                                                   \
+   if(gs->sweep_status)                                                        \
+   {                                                                           \
+     u32 sweep_ticks = gs->sweep_ticks - 1;                                    \
+@@ -257,15 +100,13 @@
+       else                                                                    \
+         rate = rate + (rate >> gs->sweep_shift);                              \
+                                                                               \
+-      if(rate > 2047)                                                         \
+-      {                                                                       \
+-        gs->active_flag = 0;                                                  \
+-        break;                                                                \
++      if(rate > 2047) {                                                       \
++        frequency_step = 0;                                                   \
++      } else {                                                                \
++        frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)  \
++        / SOUND_FREQUENCY);                                                   \
+       }                                                                       \
+                                                                               \
+-      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)    \
+-       / sound_frequency);                                                    \
+-                                                                              \
+       gs->frequency_step = frequency_step;                                    \
+       gs->rate = rate;                                                        \
+                                                                               \
+@@ -274,9 +115,9 @@
+     gs->sweep_ticks = sweep_ticks;                                            \
+   }                                                                           \
+ 
+-#define update_tone_nosweep()                                                 \
++#define UPDATE_TONE_NOSWEEP()                                                 \
+ 
+-#define update_tone_envelope()                                                \
++#define UPDATE_TONE_ENVELOPE()                                                \
+   if(gs->envelope_status)                                                     \
+   {                                                                           \
+     u32 envelope_ticks = gs->envelope_ticks - 1;                              \
+@@ -295,7 +136,7 @@
+           envelope_volume = gs->envelope_volume - 1;                          \
+       }                                                                       \
+                                                                               \
+-      update_volume(envelope);                                                \
++      UPDATE_VOLUME(ENVELOPE);                                                \
+                                                                               \
+       gs->envelope_volume = envelope_volume;                                  \
+       gs->envelope_ticks = gs->envelope_initial_ticks;                        \
+@@ -306,9 +147,9 @@
+     }                                                                         \
+   }                                                                           \
+ 
+-#define update_tone_noenvelope()                                              \
++#define UPDATE_TONE_NOENVELOPE()                                              \
+ 
+-#define update_tone_counters(envelope_op, sweep_op)                           \
++#define UPDATE_TONE_COUNTERS(envelope_op, sweep_op)                           \
+   tick_counter += gbc_sound_tick_step;                                        \
+   if(tick_counter > 0xFFFF)                                                   \
+   {                                                                           \
+@@ -326,69 +167,71 @@
+       }                                                                       \
+     }                                                                         \
+                                                                               \
+-    update_tone_##envelope_op();                                              \
+-    update_tone_##sweep_op();                                                 \
++    UPDATE_TONE_##envelope_op();                                              \
++    UPDATE_TONE_##sweep_op();                                                 \
+   }                                                                           \
+ 
+-#define gbc_sound_render_sample_right()                                       \
+-  sound_buffer[buffer_index + 1] += (current_sample * volume_right) >> 22     \
+-
+-#define gbc_sound_render_sample_left()                                        \
+-  sound_buffer[buffer_index] += (current_sample * volume_left) >> 22          \
+-
+-#define gbc_sound_render_sample_both()                                        \
+-  gbc_sound_render_sample_right();                                            \
+-  gbc_sound_render_sample_left()                                              \
++// サウンドバッファにLEFT CHANNELのデータを書込む
++#define GBC_SOUND_RENDER_SAMPLE_LEFT()                                        \
++  sound_buffer[sound_write_offset] += (current_sample * volume_left) >> 22    \
++
++// サウンドバッファにRIGHT CHANNELのデータを書込む
++#define GBC_SOUND_RENDER_SAMPLE_RIGHT()                                       \
++  sound_buffer[sound_write_offset + 1] += (current_sample * volume_right) >> 22 \
++
++// サウンドバッファにLEFT/RIGHT CHANNELのデータを書込む
++#define GBC_SOUND_RENDER_SAMPLE_BOTH()                                        \
++  GBC_SOUND_RENDER_SAMPLE_RIGHT();                                            \
++  GBC_SOUND_RENDER_SAMPLE_LEFT()                                              \
+ 
+-#define gbc_sound_render_samples(type, sample_length, envelope_op, sweep_op)  \
++#define GBC_SOUND_RENDER_SAMPLES(type, sample_length, envelope_op, sweep_op)  \
+   for(i = 0; i < buffer_ticks; i++)                                           \
+   {                                                                           \
+     current_sample =                                                          \
+      sample_data[FP16_16_TO_U32(sample_index) % sample_length];               \
+-    gbc_sound_render_sample_##type();                                         \
++    GBC_SOUND_RENDER_SAMPLE_##type();                                         \
+                                                                               \
+     sample_index += frequency_step;                                           \
+-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
++    /* indexを進める */                                                       \
++    OFFSET_INC();                                                             \
+                                                                               \
+-    update_tone_counters(envelope_op, sweep_op);                              \
++    UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
+   }                                                                           \
+ 
+-#define gbc_noise_wrap_full 32767
+-
+-#define gbc_noise_wrap_half 126
+-
+-#define get_noise_sample_full()                                               \
++#define GET_NOISE_SAMPLE_FULL()                                               \
+   current_sample =                                                            \
+    ((s32)(noise_table15[FP16_16_TO_U32(sample_index) >> 5] <<                 \
+    (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
+ 
+-#define get_noise_sample_half()                                               \
++#define GET_NOISE_SAMPLE_HALF()                                               \
+   current_sample =                                                            \
+    ((s32)(noise_table7[FP16_16_TO_U32(sample_index) >> 5] <<                  \
+    (FP16_16_TO_U32(sample_index) & 0x1F)) >> 31) & 0x0F                       \
+ 
+-#define gbc_sound_render_noise(type, noise_type, envelope_op, sweep_op)       \
++#define GBC_SOUND_RENDER_NOISE(type, noise_type, envelope_op, sweep_op)       \
+   for(i = 0; i < buffer_ticks; i++)                                           \
+   {                                                                           \
+-    get_noise_sample_##noise_type();                                          \
+-    gbc_sound_render_sample_##type();                                         \
++    GET_NOISE_SAMPLE_##noise_type();                                          \
++    GBC_SOUND_RENDER_SAMPLE_##type();                                         \
+                                                                               \
+     sample_index += frequency_step;                                           \
+                                                                               \
+-    if(sample_index >= U32_TO_FP16_16(gbc_noise_wrap_##noise_type))           \
+-      sample_index -= U32_TO_FP16_16(gbc_noise_wrap_##noise_type);            \
++    if(sample_index >= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type))           \
++      sample_index -= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type);            \
+                                                                               \
+-    buffer_index = (buffer_index + 2) % BUFFER_SIZE;                          \
+-    update_tone_counters(envelope_op, sweep_op);                              \
++    /* indexを進める */                                                       \
++    OFFSET_INC();                                                             \
++                                                                              \
++    UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
+   }                                                                           \
+ 
+-#define gbc_sound_render_channel(type, sample_length, envelope_op, sweep_op)  \
+-  buffer_index = gbc_sound_buffer_index;                                      \
++#define GBC_SOUND_RENDER_CHANNEL(type, sample_length, envelope_op, sweep_op)  \
++  sound_write_offset = gbc_sound_buffer_index;                                \
+   sample_index = gs->sample_index;                                            \
+   frequency_step = gs->frequency_step;                                        \
+   tick_counter = gs->tick_counter;                                            \
+                                                                               \
+-  update_volume(envelope_op);                                                 \
++  UPDATE_VOLUME(envelope_op);                                                 \
+                                                                               \
+   switch(gs->status)                                                          \
+   {                                                                           \
+@@ -396,22 +239,22 @@
+       break;                                                                  \
+                                                                               \
+     case GBC_SOUND_LEFT:                                                      \
+-      gbc_sound_render_##type(left, sample_length, envelope_op, sweep_op);    \
++      GBC_SOUND_RENDER_##type(LEFT, sample_length, envelope_op, sweep_op);    \
+       break;                                                                  \
+                                                                               \
+     case GBC_SOUND_RIGHT:                                                     \
+-      gbc_sound_render_##type(right, sample_length, envelope_op, sweep_op);   \
++      GBC_SOUND_RENDER_##type(RIGHT, sample_length, envelope_op, sweep_op);   \
+       break;                                                                  \
+                                                                               \
+     case GBC_SOUND_LEFTRIGHT:                                                 \
+-      gbc_sound_render_##type(both, sample_length, envelope_op, sweep_op);    \
++      GBC_SOUND_RENDER_##type(BOTH, sample_length, envelope_op, sweep_op);    \
+       break;                                                                  \
+   }                                                                           \
+                                                                               \
+   gs->sample_index = sample_index;                                            \
+-  gs->tick_counter = tick_counter                                             \
++  gs->tick_counter = tick_counter;                                            \
+ 
+-#define gbc_sound_load_wave_ram(bank)                                         \
++#define GBC_SOUND_LOAD_WAVE_RAM(bank)                                         \
+   wave_bank = wave_samples + (bank * 32);                                     \
+   for(i = 0, i2 = 0; i < 16; i++, i2 += 2)                                    \
+   {                                                                           \
+@@ -420,15 +263,247 @@
+     wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
+   }                                                                           \
+ 
++#define SOUND_COPY_NORMAL()                                                   \
++  current_sample = source[i]                                                  \
++
++#define SOUND_COPY(source_offset, length, render_type)                        \
++  _length = (length) / 2;                                                     \
++  source = (s16 *)(sound_buffer + source_offset);                             \
++  for(i = 0; i < _length; i++)                                                \
++  {                                                                           \
++    SOUND_COPY_##render_type();                                               \
++    if(current_sample > 2047)                                                 \
++      current_sample = 2047;                                                  \
++    if(current_sample < -2048)                                                \
++      current_sample = -2048;                                                 \
++                                                                              \
++    stream_base[i] = current_sample << 4;                                     \
++    source[i] = 0;                                                            \
++  }                                                                           \
++
++#define SOUND_COPY_NULL(source_offset, length)                                \
++  _length = (length) >> 2;                                                    \
++  source = (s16 *)(sound_buffer + source_offset);                             \
++  {                                                                           \
++    u32 *ptr1 = (u32 *) stream_base;                                          \
++    u32 *ptr2 = (u32 *) source;                                               \
++    while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
++  }                                                                           \
++
++#define sound_savestate_body(type)                                          \
++{                                                                           \
++  FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
++  FILE_##type##_VARIABLE(savestate_file, sound_buffer_base);                \
++  FILE_##type##_VARIABLE(savestate_file, sound_last_cpu_ticks);             \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_buffer_index);           \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_partial_ticks);          \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_left);     \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_right);    \
++  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume);          \
++  FILE_##type##_ARRAY(savestate_file, wave_samples);                        \
++  FILE_##type##_ARRAY(savestate_file, direct_sound_channel);                \
++  FILE_##type##_ARRAY(savestate_file, gbc_sound_channel);                   \
++}                                                                           \
++
++/******************************************************************************
++ * グローバル変数の定義
++ ******************************************************************************/
++DIRECT_SOUND_STRUCT direct_sound_channel[2];
++GBC_SOUND_STRUCT gbc_sound_channel[4];
++u32 sound_on = 0;
++u32 global_enable_audio = 1;
++u32 audio_buffer_size_number = 1;
++u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
++
++/******************************************************************************
++ * ローカル変数の定義
++ ******************************************************************************/
++static u32 audio_buffer_size;
++static u32 audio_buffer_size_x2;
++static u32 sound_buffer_base = 0;                   // サウンド バッファのベースポインタ
++static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
++static s32 sound_read_offset = 0;                   // サウンドバッファの読み込みオフセット
++static u32 sound_write_count = 0;                   // サウンドバッファの書込カウンタ
++static SceUID sound_thread;
++static u32 sound_last_cpu_ticks = 0;
++static FIXED16_16 gbc_sound_tick_step;
++static u32 gbc_sound_wave_update;
++static u32 audio_thread_exit_flag;       // オーディオスレッドの終了フラグ。
++static u32 pause_sound_flag;
++
++/******************************************************************************
++ * ローカル関数の宣言
++ ******************************************************************************/
++static void init_noise_table(u32 *table, u32 period, u32 bit_length);
++static int sound_update_thread(SceSize args, void *argp);
++
++/******************************************************************************
++ * グローバル関数の定義
++ ******************************************************************************/
++// マジカルバケーションの不具合修正
++void sound_timer_queue32(u8 channel)
++{
++  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
++  u8 offset = channel * 4;
++  u8 i;
++
++  for(i = 0xA0; i <= 0xA3; i++)
++  {
++    ds->fifo[ds->fifo_top] = ADDRESS8(io_registers, i + offset);
++    ds->fifo_top = (ds->fifo_top + 1) % 32;
++  }
++}
++
++void sound_timer(FIXED16_16 frequency_step, u32 channel)
++{
++  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
++
++  FIXED16_16 fifo_fractional = ds->fifo_fractional;
++  u32 sound_write_offset = ds->buffer_index;
++  s16 current_sample, next_sample, dest_sample;
++
++  current_sample = ds->fifo[ds->fifo_base] << 4;
++  ds->fifo_base = (ds->fifo_base + 1) % 32;
++  next_sample = ds->fifo[ds->fifo_base] << 4;
++
++  if(sound_on == 1)
++  {
++    if(ds->volume == DIRECT_SOUND_VOLUME_50)
++    {
++      current_sample >>= 1;
++      next_sample >>= 1;
++    }
++
++    switch(ds->status)
++    {
++      case DIRECT_SOUND_INACTIVE:
++        RENDER_SAMPLES(NULL);
++        break;
++
++      case DIRECT_SOUND_RIGHT:
++        RENDER_SAMPLES(RIGHT);
++        break;
++
++      case DIRECT_SOUND_LEFT:
++        RENDER_SAMPLES(LEFT);
++        break;
++
++      case DIRECT_SOUND_LEFTRIGHT:
++        RENDER_SAMPLES(BOTH);
++        break;
++    }
++  }
++  else
++  {
++    RENDER_SAMPLES(NULL);
++  }
++
++  ds->buffer_index = sound_write_offset;
++  ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
++
++// マジカルバケーションで動作が遅くなるのが改善される
++  u8 fifo_length;
++
++  if(ds->fifo_top > ds->fifo_base)
++    fifo_length = ds->fifo_top - ds->fifo_base;
++  else
++    fifo_length = ds->fifo_top + (32 - ds->fifo_base);
++
++  if(fifo_length <= 16)
++
++  if(((ds->fifo_top - ds->fifo_base) % 32) <= 16)
++  {
++    if(dma[1].direct_sound_channel == channel)
++      dma_transfer(dma + 1);
++
++    if(dma[2].direct_sound_channel == channel)
++      dma_transfer(dma + 2);
++  }
++}
++
++void sound_reset_fifo(u32 channel)
++{
++  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
++
++  memset(ds->fifo, 0, 32);
++}
++
++// Initial pattern data = 4bits (signed)
++// Channel volume = 12bits
++// Envelope volume = 14bits
++// Master volume = 2bits
++
++// Recalculate left and right volume as volume changes.
++// To calculate the current sample, use (sample * volume) >> 16
++
++// Square waves range from -8 (low) to 7 (high)
++
++s8 square_pattern_duty[4][8] =
++{
++  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0xF8, 0xF8, 0xF8 },
++  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
++  { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
++  { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 },
++};
++
++s8 wave_samples[64];
++
++u32 noise_table15[1024];
++u32 noise_table7[4];
++
++u32 gbc_sound_master_volume_table[4] = { 1, 2, 4, 0 };
++
++u32 gbc_sound_channel_volume_table[8] =
++{
++  FIXED_DIV(0, 7, 12),
++  FIXED_DIV(1, 7, 12),
++  FIXED_DIV(2, 7, 12),
++  FIXED_DIV(3, 7, 12),
++  FIXED_DIV(4, 7, 12),
++  FIXED_DIV(5, 7, 12),
++  FIXED_DIV(6, 7, 12),
++  FIXED_DIV(7, 7, 12)
++};
++
++u32 gbc_sound_envelope_volume_table[16] =
++{
++  FIXED_DIV(0, 15, 14),
++  FIXED_DIV(1, 15, 14),
++  FIXED_DIV(2, 15, 14),
++  FIXED_DIV(3, 15, 14),
++  FIXED_DIV(4, 15, 14),
++  FIXED_DIV(5, 15, 14),
++  FIXED_DIV(6, 15, 14),
++  FIXED_DIV(7, 15, 14),
++  FIXED_DIV(8, 15, 14),
++  FIXED_DIV(9, 15, 14),
++  FIXED_DIV(10, 15, 14),
++  FIXED_DIV(11, 15, 14),
++  FIXED_DIV(12, 15, 14),
++  FIXED_DIV(13, 15, 14),
++  FIXED_DIV(14, 15, 14),
++  FIXED_DIV(15, 15, 14)
++};
++
++u32 gbc_sound_buffer_index = 0;
++u32 gbc_sound_last_cpu_ticks = 0;
++u32 gbc_sound_partial_ticks = 0;
++
++u32 gbc_sound_master_volume_left;
++u32 gbc_sound_master_volume_right;
++u32 gbc_sound_master_volume;
++
++
+ void update_gbc_sound(u32 cpu_ticks)
+ {
+   FIXED16_16 buffer_ticks = FLOAT_TO_FP16_16(((float)(cpu_ticks -
+-   gbc_sound_last_cpu_ticks) * sound_frequency) / 16777216.0);
++   gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / 16777216.0);
+   u32 i, i2;
+-  gbc_sound_struct *gs = gbc_sound_channel;
++  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
+   FIXED16_16 sample_index, frequency_step;
+   FIXED16_16 tick_counter;
+-  u32 buffer_index;
++  u32 sound_write_offset;
+   s32 volume_left, volume_right;
+   u32 envelope_volume;
+   s32 current_sample;
+@@ -446,8 +521,8 @@
+     gbc_sound_partial_ticks &= 0xFFFF;
+   }
+ 
+-  SDL_LockMutex(sound_mutex);
+-
++//  SDL_LockMutex(sound_mutex);
++/*
+   if(synchronize_flag)
+   {
+     if(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) >
+@@ -466,7 +541,7 @@
+       }
+     }
+   }
+-
++*/
+   if(sound_on == 1)
+   {
+     gs = gbc_sound_channel + 0;
+@@ -475,7 +550,7 @@
+       sound_status |= 0x01;
+       sample_data = gs->sample_data;
+       envelope_volume = gs->envelope_volume;
+-      gbc_sound_render_channel(samples, 8, envelope, sweep);
++      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP);
+     }
+ 
+     gs = gbc_sound_channel + 1;
+@@ -484,13 +559,13 @@
+       sound_status |= 0x02;
+       sample_data = gs->sample_data;
+       envelope_volume = gs->envelope_volume;
+-      gbc_sound_render_channel(samples, 8, envelope, nosweep);
++      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP);
+     }
+ 
+     gs = gbc_sound_channel + 2;
+     if(gbc_sound_wave_update)
+     {
+-      gbc_sound_load_wave_ram(gs->wave_bank);
++      GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank);
+       gbc_sound_wave_update = 0;
+     }
+ 
+@@ -503,11 +578,11 @@
+         if(gs->wave_bank == 1)
+           sample_data += 32;
+ 
+-        gbc_sound_render_channel(samples, 32, noenvelope, nosweep);
++        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP);
+       }
+       else
+       {
+-        gbc_sound_render_channel(samples, 64, noenvelope, nosweep);
++        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP);
+       }
+     }
+ 
+@@ -519,155 +594,57 @@
+ 
+       if(gs->noise_type == 1)
+       {
+-        gbc_sound_render_channel(noise, half, envelope, nosweep);
++        GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP);
+       }
+       else
+       {
+-        gbc_sound_render_channel(noise, full, envelope, nosweep);
++        GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP);
+       }
+     }
+   }
+ 
+   ADDRESS16(io_registers, 0x84) = sound_status;
+ 
+-  SDL_CondSignal(sound_cv);
+-
+-  SDL_UnlockMutex(sound_mutex);
+-
+   gbc_sound_last_cpu_ticks = cpu_ticks;
+   gbc_sound_buffer_index =
+-   (gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
++   (gbc_sound_buffer_index + (buffer_ticks * 2) % BUFFER_SIZE);
+ }
+ 
+-#define sound_copy_normal()                                                   \
+-  current_sample = source[i]                                                  \
+-
+-#define sound_copy(source_offset, length, render_type)                        \
+-  _length = (length) / 2;                                                     \
+-  source = (s16 *)(sound_buffer + source_offset);                             \
+-  for(i = 0; i < _length; i++)                                                \
+-  {                                                                           \
+-    sound_copy_##render_type();                                               \
+-    if(current_sample > 2047)                                                 \
+-      current_sample = 2047;                                                  \
+-    if(current_sample < -2048)                                                \
+-      current_sample = -2048;                                                 \
+-                                                                              \
+-    stream_base[i] = current_sample << 4;                                     \
+-    source[i] = 0;                                                            \
+-  }                                                                           \
+-
+-#define sound_copy_null(source_offset, length)                                \
+-  _length = (length) >> 2;                                                    \
+-  source = (s16 *)(sound_buffer + source_offset);                             \
+-  {                                                                           \
+-    u32 *ptr1 = (u32 *) stream_base;                                          \
+-    u32 *ptr2 = (u32 *) source;                                               \
+-    while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
+-  }                                                                           \
+-
+-
+-/*--------------------------------------------------------
+-  サウンド コールバック
+---------------------------------------------------------*/
+-void sound_callback(void *userdata, Uint8 *stream, int length)
++void init_sound()
+ {
+-  u32 sample_length = length / 2;
+-  u32 _length;
+-  u32 i;
+-  s16 *stream_base = (s16 *)stream;
+-  s16 *source;
+-  s32 current_sample;
+-
+-  SDL_LockMutex(sound_mutex);
+-
+-  while(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) <
+-   length)
+-  {
+-    SDL_CondWait(sound_cv, sound_mutex);
+-  }
+-
+-  if(global_enable_audio)
+-  {
+-    if((sound_buffer_base + sample_length) >= BUFFER_SIZE)
+-    {
+-      u32 partial_length = (BUFFER_SIZE - sound_buffer_base) * 2;
+-      sound_copy(sound_buffer_base, partial_length, normal);
+-//      source = (s16 *)sound_buffer;
+-      sound_copy(0, length - partial_length, normal);
+-      sound_buffer_base = (length - partial_length) / 2;
+-    }
+-    else
+-    {
+-      sound_copy(sound_buffer_base, length, normal);
+-      sound_buffer_base += sample_length;
+-    }
+-  }
+-  else
+-  {
+-    if((sound_buffer_base + sample_length) >= BUFFER_SIZE)
+-    {
+-      u32 partial_length = (BUFFER_SIZE - sound_buffer_base) * 2;
+-      sound_copy_null(sound_buffer_base, partial_length);
+-//      source = (s16 *)sound_buffer;
+-      sound_copy_null(0, length - partial_length);
+-      sound_buffer_base = (length - partial_length) / 2;
+-    }
+-    else
+-    {
+-      sound_copy_null(sound_buffer_base, length);
+-      sound_buffer_base += sample_length;
+-    }
+-  }
+-
+-  SDL_CondSignal(sound_cv);
+-
+-  SDL_UnlockMutex(sound_mutex);
+-}
++  audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
++  audio_buffer_size_x2 = audio_buffer_size * 2;
+ 
+-// Special thanks to blarrg for the LSFR frequency used in Meridian, as posted
+-// on the forum at http://meridian.overclocked.org:
+-// http://meridian.overclocked.org/cgi-bin/wwwthreads/showpost.pl?Board=merid
+-// angeneraldiscussion&Number=2069&page=0&view=expanded&mode=threaded&sb=4
+-// Hope you don't mind me borrowing it ^_-
++  gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
+ 
+-void init_noise_table(u32 *table, u32 period, u32 bit_length)
+-{
+-  u32 shift_register = 0xFF;
+-  u32 mask = ~(1 << bit_length);
+-  s32 table_pos, bit_pos;
+-  u32 current_entry;
+-  u32 table_period = (period + 31) / 32;
++  init_noise_table(noise_table15, 32767, 14);
++  init_noise_table(noise_table7, 127, 6);
+ 
+-  // Bits are stored in reverse order so they can be more easily moved to
+-  // bit 31, for sign extended shift down.
++  // 変数等の初期化
++  reset_sound();
+ 
+-  for(table_pos = 0; table_pos < table_period; table_pos++)
++  // サウンド スレッドの作成
++  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 0x2000, 0, NULL);
++  if (sound_thread < 0)
+   {
+-    current_entry = 0;
+-    for(bit_pos = 31; bit_pos >= 0; bit_pos--)
+-    {
+-      current_entry |= (shift_register & 0x01) << bit_pos;
++    quit();
++  }
+ 
+-      shift_register =
+-       ((1 & (shift_register ^ (shift_register >> 1))) << bit_length) |
+-       ((shift_register >> 1) & mask);
+-    }
++  //スレッドの開始
++  sceKernelStartThread(sound_thread, 0, 0);
+ 
+-    table[table_pos] = current_entry;
+-  }
+ }
+ 
+ void reset_sound()
+ {
+-  direct_sound_struct *ds = direct_sound_channel;
+-  gbc_sound_struct *gs = gbc_sound_channel;
++  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
++  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
+   u32 i;
+ 
+   sound_on = 0;
+   sound_buffer_base = 0;
+   sound_last_cpu_ticks = 0;
+-  memset(sound_buffer, 0, audio_buffer_size);
++  memset(sound_buffer, 0, BUFFER_SIZE * 2);
+ 
+   for(i = 0; i < 2; i++, ds++)
+   {
+@@ -697,68 +674,109 @@
+   }
+ }
+ 
++void pause_sound(u32 flag)
++  {
++    pause_sound_flag = flag;
++  }
++
+ void sound_exit()
+ {
+ //  gbc_sound_buffer_index =
+ //   (sound_buffer_base + audio_buffer_size) % BUFFER_SIZE;
+-  SDL_PauseAudio(1);
+-  SDL_CondSignal(sound_cv);
++//  SDL_PauseAudio(1);
++//  SDL_CondSignal(sound_cv);
+ }
+ 
+-void init_sound()
++void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
++sound_savestate_body(WRITE_MEM);
++
++void sound_read_savestate(FILE_TAG_TYPE savestate_file)
++sound_savestate_body(READ);
++
++/******************************************************************************
++ * ローカル関数の定義
++ ******************************************************************************/
++
++/*--------------------------------------------------------
++  サウンド スレッド
++--------------------------------------------------------*/
++static int sound_update_thread(SceSize args, void *argp)
+ {
+-  audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
++  int audio_handle; // オーディオチャンネルのハンドル。
++  s16 buffer[SAMPLE_SIZE];
++  s16 temp_sample;
++  u32 temp;
++  u32 i;
++  // オーディオチャンネルの取得。
++  audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+ 
+-  SDL_AudioSpec desired_spec =
++// TODO:初期設定に移動
++  sound_read_offset = 0;
++  memset(buffer, 0, sizeof(buffer));
++  temp = 0;
++  
++  while(!audio_thread_exit_flag)
+   {
+-    sound_frequency,
+-    AUDIO_S16,
+-    2,
+-    0,
+-    audio_buffer_size / 4,
+-    0,
+-    0,
+-    sound_callback,
+-    NULL
+-  };
+-
+-  SDL_OpenAudio(&desired_spec, &sound_settings);
+-  sound_mutex = SDL_CreateMutex();
+-  sound_cv = SDL_CreateCond();
+-
+-  sound_frequency = sound_settings.freq;
+-  audio_buffer_size = sound_settings.size;
+-  audio_buffer_size_x2 = audio_buffer_size * 3;
+-
+-  gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / sound_frequency);
++    while( (sound_write_count < SAMPLE_SIZE ) )
++    {
++      sceKernelDelayThread(11.3 * SAMPLE_COUNT); // TODO:調整必要
++    }
+ 
+-  init_noise_table(noise_table15, 32767, 14);
+-  init_noise_table(noise_table7, 127, 6);
++    for(i = 0; i < SAMPLE_SIZE; i++)
++    {
++      if (sound_read_offset >= BUFFER_SIZE)
++        sound_read_offset = 0;
++      temp_sample = sound_buffer[sound_read_offset];
++      sound_buffer[sound_read_offset] = 0;
++      if(temp_sample > 2047) 
++        temp_sample = 2047;
++      if(temp_sample < -2048)
++        temp_sample = -2048;
++      buffer[i] = temp_sample << 4;
++      sound_read_offset++;
++    }
+ 
+-  reset_sound();
++    sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
++    sound_write_count -= SAMPLE_SIZE;
++  }
+ 
+-  SDL_PauseAudio(0);
++  memset(buffer, 0, sizeof(buffer));
++  sceAudioOutputPannedBlocking(audio_handle, 0, 0, &buffer);
++  sceAudioChRelease(audio_handle);
++  sceKernelExitThread(0);
++  return 0;
+ }
+ 
+-#define sound_savestate_body(type)                                          \
+-{                                                                           \
+-  FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
+-  FILE_##type##_VARIABLE(savestate_file, sound_buffer_base);                \
+-  FILE_##type##_VARIABLE(savestate_file, sound_last_cpu_ticks);             \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_buffer_index);           \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_partial_ticks);          \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_left);     \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_right);    \
+-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume);          \
+-  FILE_##type##_ARRAY(savestate_file, wave_samples);                        \
+-  FILE_##type##_ARRAY(savestate_file, direct_sound_channel);                \
+-  FILE_##type##_ARRAY(savestate_file, gbc_sound_channel);                   \
+-}                                                                           \
++// Special thanks to blarrg for the LSFR frequency used in Meridian, as posted
++// on the forum at http://meridian.overclocked.org:
++// http://meridian.overclocked.org/cgi-bin/wwwthreads/showpost.pl?Board=merid
++// angeneraldiscussion&Number=2069&page=0&view=expanded&mode=threaded&sb=4
++// Hope you don't mind me borrowing it ^_-
+ 
+-void sound_read_savestate(FILE_TAG_TYPE savestate_file)
+-sound_savestate_body(READ);
++void init_noise_table(u32 *table, u32 period, u32 bit_length)
++{
++  u32 shift_register = 0xFF;
++  u32 mask = ~(1 << bit_length);
++  s32 table_pos, bit_pos;
++  u32 current_entry;
++  u32 table_period = (period + 31) / 32;
+ 
+-void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+-sound_savestate_body(WRITE_MEM);
++  // Bits are stored in reverse order so they can be more easily moved to
++  // bit 31, for sign extended shift down.
++
++  for(table_pos = 0; table_pos < table_period; table_pos++)
++  {
++    current_entry = 0;
++    for(bit_pos = 31; bit_pos >= 0; bit_pos--)
++    {
++      current_entry |= (shift_register & 0x01) << bit_pos;
++
++      shift_register =
++       ((1 & (shift_register ^ (shift_register >> 1))) << bit_length) |
++       ((shift_register >> 1) & mask);
++    }
++
++    table[table_pos] = current_entry;
++  }
++}
+ 
+diff -ru 30_new/sound.h gpsp-kai-test/sound.h
+--- 30_new/sound.h	2007-08-06 23:46:42.000000000 +0900
++++ gpsp-kai-test/sound.h	2007-08-08 05:15:41.204000000 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -18,15 +19,17 @@
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+  */
+ 
++/******************************************************************************
++ * sound.h
++ * サウンド周りの処理
++ ******************************************************************************/
++
+ #ifndef SOUND_H
+ #define SOUND_H
+ 
+-#define BUFFER_SIZE 65536
+-
+-// A lot of sound cards on PC can't handle such small buffers but this
+-// seems to work well on PSP.
+-
+-#define SOUND_BUFFER_SIZE 4096
++/******************************************************************************
++ * マクロ等の定義
++ ******************************************************************************/
+ 
+ typedef enum
+ {
+@@ -34,13 +37,21 @@
+   DIRECT_SOUND_RIGHT,
+   DIRECT_SOUND_LEFT,
+   DIRECT_SOUND_LEFTRIGHT
+-} direct_sound_status_type;
++} DIRECT_SOUND_STATUS_TYPE;
+ 
+ typedef enum
+ {
+   DIRECT_SOUND_VOLUME_50,
+   DIRECT_SOUND_VOLUME_100
+-} direct_sound_volume_type;
++} DIRECT_SOUND_VOLUME_TYPE;
++
++typedef enum
++{
++  GBC_SOUND_INACTIVE,
++  GBC_SOUND_RIGHT,
++  GBC_SOUND_LEFT,
++  GBC_SOUND_LEFTRIGHT
++} GBC_SOUND_STATUS_TYPE;
+ 
+ typedef struct
+ {
+@@ -51,19 +62,10 @@
+   // The + 1 is to give some extra room for linear interpolation
+   // when wrapping around.
+   u32 buffer_index;
+-  direct_sound_status_type status;
+-  direct_sound_volume_type volume;
++  DIRECT_SOUND_STATUS_TYPE status;
++  DIRECT_SOUND_VOLUME_TYPE volume;
+   u32 last_cpu_ticks;
+-} direct_sound_struct;
+-
+-typedef enum
+-{
+-  GBC_SOUND_INACTIVE,
+-  GBC_SOUND_RIGHT,
+-  GBC_SOUND_LEFT,
+-  GBC_SOUND_LEFTRIGHT
+-} gbc_sound_status_type;
+-
++} DIRECT_SOUND_STRUCT;
+ 
+ typedef struct
+ {
+@@ -90,40 +92,17 @@
+   u32 wave_type;
+   u32 wave_bank;
+   u32 wave_volume;
+-  gbc_sound_status_type status;
++  GBC_SOUND_STATUS_TYPE status;
+   u32 active_flag;
+   u32 master_enable;
+   s8 *sample_data;
+-} gbc_sound_struct;
++} GBC_SOUND_STRUCT;
+ 
+-extern direct_sound_struct direct_sound_channel[2];
+-extern gbc_sound_struct gbc_sound_channel[4];
+-extern s8 square_pattern_duty[4][8];
+-extern u32 gbc_sound_master_volume_left;
+-extern u32 gbc_sound_master_volume_right;
+-extern u32 gbc_sound_master_volume;
++#define BUFFER_SIZE  65536                        // バッファのバイト数。
+ 
+-extern u32 sound_frequency;
+-extern u32 sound_on;
++#define SOUND_FREQUENCY 44100
+ 
+-extern u32 global_enable_audio;
+-extern u32 enable_low_pass_filter;
+-extern u32 audio_buffer_size_number;
+-
+-extern SDL_mutex *sound_mutex;
+-extern SDL_cond *sound_cv;
+-
+-void sound_timer_queue32(u8 channel);
+-void sound_timer(FIXED16_16 frequency_step, u32 channel);
+-void sound_reset_fifo(u32 channel);
+-void update_gbc_sound(u32 cpu_ticks);
+-void init_sound();
+-void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file);
+-void sound_read_savestate(FILE_TAG_TYPE savestate_file);
+-
+-// #define SOUND_FREQUENCY 44100
+-
+-#define gbc_sound_tone_control_low(channel, address)                          \
++#define GBC_SOUND_TONE_CONTROL_LOW(channel, address)                          \
+ {                                                                             \
+   u32 initial_volume = (value >> 12) & 0x0F;                                  \
+   u32 envelope_ticks = ((value >> 8) & 0x07) * 4;                             \
+@@ -140,12 +119,12 @@
+   ADDRESS16(io_registers, address) = value;                                   \
+ }                                                                             \
+ 
+-#define gbc_sound_tone_control_high(channel, address)                         \
++#define GBC_SOUND_TONE_CONTROL_HIGH(channel, address)                         \
+ {                                                                             \
+   u32 rate = value & 0x7FF;                                                   \
+   gbc_sound_channel[channel].rate = rate;                                     \
+   gbc_sound_channel[channel].frequency_step =                                 \
+-   FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0) / sound_frequency);    \
++   FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0) / SOUND_FREQUENCY);    \
+   gbc_sound_channel[channel].length_status = (value >> 14) & 0x01;            \
+   if(value & 0x8000)                                                          \
+   {                                                                           \
+@@ -157,13 +136,13 @@
+      gbc_sound_channel[channel].envelope_initial_volume;                      \
+     gbc_sound_channel[channel].sweep_ticks =                                  \
+      gbc_sound_channel[channel].sweep_initial_ticks;                          \
+-  }                                                                           \
++}                                                                             \
+                                                                               \
+   gbc_sound_update = 1;                                                       \
+   ADDRESS16(io_registers, address) = value;                                   \
+ }                                                                             \
+ 
+-#define gbc_sound_tone_control_sweep()                                        \
++#define GBC_SOUND_TONE_CONTROL_SWEEP()                                        \
+ {                                                                             \
+   u32 sweep_ticks = ((value >> 4) & 0x07) * 2;                                \
+   gbc_sound_channel[0].sweep_shift = value & 0x07;                            \
+@@ -175,7 +154,7 @@
+   ADDRESS16(io_registers, 0x60) = value;                                      \
+ }                                                                             \
+ 
+-#define gbc_sound_wave_control()                                              \
++#define GBC_SOUND_WAVE_CONTROL()                                              \
+ {                                                                             \
+   gbc_sound_channel[2].wave_type = (value >> 5) & 0x01;                       \
+   gbc_sound_channel[2].wave_bank = (value >> 6) & 0x01;                       \
+@@ -192,12 +171,8 @@
+   ADDRESS16(io_registers, 0x70) = value;                                      \
+ }                                                                             \
+ 
+-// extern u32 gbc_sound_wave_volume[4];
+-
+-#define gbc_sound_tone_control_low_wave()                                     \
++#define GBC_SOUND_TONE_CONTROL_LOW_WAVE()                                     \
+ {                                                                             \
+-  u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };                    \
+-                                                                              \
+   gbc_sound_channel[2].length_ticks = 256 - (value & 0xFF);                   \
+   if((value >> 15) & 0x01)                                                    \
+   {                                                                           \
+@@ -212,12 +187,12 @@
+   ADDRESS16(io_registers, 0x72) = value;                                      \
+ }                                                                             \
+ 
+-#define gbc_sound_tone_control_high_wave()                                    \
++#define GBC_SOUND_TONE_CONTROL_HIGH_WAVE()                                    \
+ {                                                                             \
+   u32 rate = value & 0x7FF;                                                   \
+   gbc_sound_channel[2].rate = rate;                                           \
+   gbc_sound_channel[2].frequency_step =                                       \
+-   FLOAT_TO_FP16_16((2097152.0 / (2048 - rate)) / sound_frequency);           \
++   FLOAT_TO_FP16_16((2097152.0 / (2048 - rate)) / SOUND_FREQUENCY);           \
+   gbc_sound_channel[2].length_status = (value >> 14) & 0x01;                  \
+   if(value & 0x8000)                                                          \
+   {                                                                           \
+@@ -228,7 +203,7 @@
+   ADDRESS16(io_registers, 0x74) = value;                                      \
+ }                                                                             \
+ 
+-#define gbc_sound_noise_control()                                             \
++#define GBC_SOUND_NOISE_CONTROL()                                             \
+ {                                                                             \
+   u32 dividing_ratio = value & 0x07;                                          \
+   u32 frequency_shift = (value >> 4) & 0x0F;                                  \
+@@ -236,13 +211,13 @@
+   {                                                                           \
+     gbc_sound_channel[3].frequency_step =                                     \
+      FLOAT_TO_FP16_16(1048576.0 / (1 << (frequency_shift + 1)) /              \
+-     sound_frequency);                                                        \
++     SOUND_FREQUENCY);                                                        \
+   }                                                                           \
+   else                                                                        \
+   {                                                                           \
+     gbc_sound_channel[3].frequency_step =                                     \
+      FLOAT_TO_FP16_16(524288.0 / (dividing_ratio *                            \
+-     (1 << (frequency_shift + 1))) / sound_frequency);                        \
++     (1 << (frequency_shift + 1))) / SOUND_FREQUENCY);                        \
+   }                                                                           \
+   gbc_sound_channel[3].noise_type = (value >> 3) & 0x01;                      \
+   gbc_sound_channel[3].length_status = (value >> 14) & 0x01;                  \
+@@ -259,23 +234,23 @@
+   ADDRESS16(io_registers, 0x7C) = value;                                      \
+ }                                                                             \
+ 
+-#define gbc_trigger_sound_channel(channel)                                    \
++#define GBC_TRIGGER_SOUND_CHANNEL(channel)                                    \
+   gbc_sound_channel[channel].status =                                         \
+-  ((value >> (channel + 11)) & 0x02) | ((value >> (channel + 8)) & 0x01)      \
++   ((value >> (channel + 11)) & 0x02) | ((value >> (channel + 8)) & 0x01)      \
+ 
+-#define gbc_trigger_sound()                                                   \
++#define GBC_TRIGGER_SOUND()                                                   \
+ {                                                                             \
+   gbc_sound_master_volume_right = value & 0x07;                               \
+   gbc_sound_master_volume_left = (value >> 4) & 0x07;                         \
+                                                                               \
+-  gbc_trigger_sound_channel(0);                                               \
+-  gbc_trigger_sound_channel(1);                                               \
+-  gbc_trigger_sound_channel(2);                                               \
+-  gbc_trigger_sound_channel(3);                                               \
++  GBC_TRIGGER_SOUND_CHANNEL(0);                                               \
++  GBC_TRIGGER_SOUND_CHANNEL(1);                                               \
++  GBC_TRIGGER_SOUND_CHANNEL(2);                                               \
++  GBC_TRIGGER_SOUND_CHANNEL(3);                                               \
+   ADDRESS16(io_registers, 0x80) = value;                                      \
+ }                                                                             \
+ 
+-#define trigger_sound()                                                       \
++#define TRIGGER_SOUND()                                                       \
+ {                                                                             \
+   timer[0].direct_sound_channels =                                            \
+    ((~value >> 13) & 0x02) | ((~value >> 10) & 0x01);                         \
+@@ -295,11 +270,9 @@
+   ADDRESS16(io_registers, 0x82) = value;                                      \
+ }                                                                             \
+ 
+-#define sound_on()                                                            \
++#define SOUND_ON()                                                            \
+   if(value & 0x80)                                                            \
+-  {                                                                           \
+-    sound_on = 1;                                                             \
+-  }                                                                           \
++    sound_on = 1;                                                           \
+   else                                                                        \
+   {                                                                           \
+     u32 i;                                                                    \
+@@ -312,10 +285,35 @@
+   ADDRESS16(io_registers, 0x84) =                                             \
+     (ADDRESS16(io_registers, 0x84) & 0x000F) | (value & 0xFFF0);              \
+ 
+-#define sound_update_frequency_step(timer_number)                             \
++#define SOUND_UPDATE_FREQUENCY_STEP(timer_number)                             \
+   timer[timer_number].frequency_step =                                        \
+-   FLOAT_TO_FP16_16(16777216.0 / (timer_reload * sound_frequency))            \
++   FLOAT_TO_FP16_16(16777216.0 / (timer_reload * SOUND_FREQUENCY))            \
++
++/******************************************************************************
++ * グローバル変数の宣言
++ ******************************************************************************/
++extern DIRECT_SOUND_STRUCT direct_sound_channel[2];
++extern GBC_SOUND_STRUCT gbc_sound_channel[4];
++extern s8 square_pattern_duty[4][8];
++extern u32 gbc_sound_master_volume_left;
++extern u32 gbc_sound_master_volume_right;
++extern u32 gbc_sound_master_volume;
++
++extern u32 sound_on;
++
++extern u32 global_enable_audio;
++extern u32 enable_low_pass_filter;
++extern u32 audio_buffer_size_number;
++extern u32 gbc_sound_wave_volume[4];
+ 
++void sound_timer_queue32(u8 channel);
++void sound_timer(FIXED16_16 frequency_step, u32 channel);
++void sound_reset_fifo(u32 channel);
++void update_gbc_sound(u32 cpu_ticks);
++void init_sound();
++void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file);
++void sound_read_savestate(FILE_TAG_TYPE savestate_file);
++void pause_sound(u32 flag);
+ void reset_sound();
+ void sound_exit();
+ 
+diff -ru 30_new/video.c gpsp-kai-test/video.c
+--- 30_new/video.c	2007-08-06 23:46:48.000000000 +0900
++++ gpsp-kai-test/video.c	2007-08-07 12:38:31.574400700 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -162,13 +163,21 @@
+   CONVERT_PALETTE(current_pixel)                                              \
+ 
+ #define tile_lookup_palette(palette, source)                                  \
+-  current_pixel = palette[source]                                             \
++  current_pixel = palette[source];                                            \
++
++
++#ifdef RENDER_COLOR16_NORMAL
++
++#define tile_expand_base_normal(index)                                        \
++  tile_expand_base_color16(index)                                             \
+ 
++#else
+ 
+ #define tile_expand_base_normal(index)                                        \
+   tile_lookup_palette(palette, current_pixel);                                \
+   dest_ptr[index] = current_pixel                                             \
+ 
++#endif
+ 
+ #define tile_expand_transparent_normal(index)                                 \
+   tile_expand_base_normal(index)                                              \
+@@ -613,10 +622,20 @@
+ // Draws eight background pixels for the normal renderer, just a bunch of
+ // zeros.
+ 
++#ifdef RENDER_COLOR16_NORMAL
++
++#define tile_4bpp_draw_eight_base_zero_normal()                               \
++  current_pixel = 0;                                                          \
++  tile_4bpp_draw_eight_base_zero(current_pixel)                               \
++
++#else
++
+ #define tile_4bpp_draw_eight_base_zero_normal()                               \
+   current_pixel = palette[0];                                                 \
+   tile_4bpp_draw_eight_base_zero(current_pixel)                               \
+ 
++#endif
++
+ 
+ // Draws eight 4bpp pixels.
+ 
+@@ -680,7 +699,7 @@
+ #define get_tile_4bpp()                                                       \
+   current_tile = *map_ptr;                                                    \
+   current_palette = (current_tile >> 12) << 4;                                \
+-  tile_ptr = tile_base + ((current_tile & 0x3FF) * 32)                        \
++  tile_ptr = tile_base + ((current_tile & 0x3FF) * 32);                       \
+ 
+ 
+ // Helper macro for drawing clipped 4bpp tiles.
+@@ -937,7 +956,6 @@
+   }                                                                           \
+ }                                                                             \
+ 
+-
+ // If rendering a scanline that is not a target A then there's no point in
+ // keeping what's underneath it because it can't blend with it.
+ 
+@@ -950,9 +968,19 @@
+   }                                                                           \
+ 
+ 
++#ifdef RENDER_COLOR16_NORMAL
++
++#define render_scanline_extra_variables_base_normal(bg_type)                  \
++  const u32 pixel_combine = 0                                                 \
++
++#else
++
+ #define render_scanline_extra_variables_base_normal(bg_type)                  \
+   u16 *palette = palette_ram_converted                                        \
+ 
++#endif
++
++
+ #define render_scanline_extra_variables_base_alpha(bg_type)                   \
+   u32 bg_combine = color_combine_mask(5);                                     \
+   u32 pixel_combine = color_combine_mask(layer) | (bg_combine << 16);         \
+@@ -1423,13 +1451,30 @@
+   else                                                                        \
+     src_ptr = (u16 *)vram                                                     \
+ 
++
++#ifdef RENDER_COLOR16_NORMAL
++
++#define render_scanline_vram_setup_mode4()                                    \
++  const u32 pixel_combine = 0;                                                \
++  u8 *src_ptr;                                                                \
++  if(io_registers[REG_DISPCNT] & 0x10)                                        \
++    src_ptr = (u8 *)(vram + 0xA000);                                                  \
++  else                                                                        \
++    src_ptr = (u8 *)vram                                                            \
++
++
++#else
++
+ #define render_scanline_vram_setup_mode4()                                    \
+   u16 *palette = palette_ram_converted;                                       \
+   u8 *src_ptr;                                                                \
+   if(io_registers[REG_DISPCNT] & 0x10)                                        \
+-    src_ptr = vram + 0xA000;                                                  \
++    src_ptr = (u8 *)(vram + 0xA000);                                                  \
+   else                                                                        \
+-    src_ptr = vram                                                            \
++    src_ptr = (u8 *)vram                                                            \
++
++#endif
++
+ 
+ 
+ // Build bitmap scanline rendering functions.
+@@ -1694,7 +1739,7 @@
+ 
+ #define obj_render_scale_pixel_8bpp(combine_op, alpha_op)                     \
+   current_pixel = tile_ptr[tile_map_offset + (tile_x & 0x07)];                \
+-  tile_8bpp_draw_##combine_op(0, none, 0, alpha_op)                           \
++  tile_8bpp_draw_##combine_op(0, none, 0, alpha_op);                          \
+ 
+ #define obj_render_scale(combine_op, color_depth, alpha_op, map_space)        \
+ {                                                                             \
+@@ -1879,9 +1924,19 @@
+ 
+ // Build obj rendering functions
+ 
++#ifdef RENDER_COLOR16_NORMAL
++
++#define render_scanline_obj_extra_variables_normal(bg_type)                   \
++  const u32 pixel_combine = (1 << 8)                                          \
++
++#else
++
+ #define render_scanline_obj_extra_variables_normal(bg_type)                   \
+   u16 *palette = palette_ram_converted + 256                                  \
+ 
++#endif
++
++
+ #define render_scanline_obj_extra_variables_color()                           \
+   u32 dest;                                                                   \
+   u32 pixel_combine = color_combine_mask(4) | (1 << 8)                        \
+@@ -2277,10 +2332,10 @@
+   }                                                                           \
+ 
+ #define brighten_pixel()                                                      \
+-  pixel_top = upper + ((pixel_top * blend) >> 4)                              \
++  pixel_top = upper + ((pixel_top * blend) >> 4);                             \
+ 
+ #define darken_pixel()                                                        \
+-  pixel_top = (pixel_top * blend) >> 4                                        \
++  pixel_top = (pixel_top * blend) >> 4;                                       \
+ 
+ #define effect_condition_alpha                                                \
+   ((pixel_pair & 0x04000200) == 0x04000200)                                   \
+@@ -2368,8 +2423,32 @@
+ 
+ // Blend top two pixels of scanline with each other.
+ 
++#ifdef RENDER_COLOR16_NORMAL
++
++void expand_normal(u16 *screen_ptr, u32 start, u32 end)
++{
++  u32 i, pixel_source;
++  screen_ptr += start;
++
++  return;
++
++  end -= start;
++
++  for(i = 0; i < end; i++)
++  {
++    pixel_source = *screen_ptr;
++    *screen_ptr = palette_ram_converted[pixel_source];
++
++    screen_ptr++;
++  }
++}
++
++#else
++
+ #define expand_normal(screen_ptr, start, end)
+ 
++#endif
++
+ void expand_blend(u32 *screen_src_ptr, u16 *screen_dest_ptr,
+  u32 start, u32 end)
+ {
+@@ -3388,7 +3467,6 @@
+ 
+ void set_gba_resolution(video_scale_type scale)
+ {
+-//  u32 filter_linear = 0;
+   screen_scale = scale;
+   switch(scale)
+   {
+diff -ru 30_new/zip.c gpsp-kai-test/zip.c
+--- 30_new/zip.c	2007-08-06 23:45:44.000000000 +0900
++++ gpsp-kai-test/zip.c	2007-08-07 12:38:22.044400700 +0900
+@@ -3,6 +3,7 @@
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2006 SiberianSTAR
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+diff -ru 30_new/zip.h gpsp-kai-test/zip.h
+--- 30_new/zip.h	2007-08-06 23:45:26.000000000 +0900
++++ gpsp-kai-test/zip.h	2007-08-07 12:37:27.744400700 +0900
+@@ -2,6 +2,7 @@
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
+  * Copyright (C) 2007 takka <takka@tfact.net>
++ * Copyright (C) 2007 ????? <?????>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as

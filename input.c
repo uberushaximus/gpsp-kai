@@ -105,7 +105,6 @@ gui_action_type get_gui_input()
     quit();
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
-  ctrl_data.Buttons &= PSP_ALL_BUTTON_MASK;
 
   if(!(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {

@@ -470,7 +470,6 @@ const u8 bit_count[256] =
   r_dest = memory_regions[(address) >> 24];                                   \
   l_dest = memory_limits[(address) >> 24]                                     \
 
-
 #define pc_region()                                                           \
   memory_region(pc_region, pc_limit, pc)                                      \
 
@@ -1333,7 +1332,7 @@ const u32 psr_masks[16] =
   address += offset + 4                                                       \
 
 #define thumb_block_address_postadjust_push_lr()                              \
-  store_memory_u32(address + offset, reg[REG_LR]);                            \
+  store_memory_u32(address + offset, reg[REG_LR])                             \
 
 #define thumb_block_memory_wb_load(base_reg)                                  \
   if(!((reg_list >> base_reg) & 0x01))                                        \

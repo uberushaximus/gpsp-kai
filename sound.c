@@ -70,6 +70,7 @@
 #define OFFSET_INC()                                                          \
   /* indexを進める */                                                         \
   sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;                \
+  sound_write_count += 2;                                                     \
 
 #define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
   volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
@@ -644,9 +645,6 @@ void reset_sound()
   sound_buffer_base = 0;
   sound_last_cpu_ticks = 0;
   memset(sound_buffer, 0, BUFFER_SIZE * 2);
-  s32 sound_read_offset = 0;
-  u32 sound_write_count = 0;
-  u32 sound_call_flag = 0;
 
   for(i = 0; i < 2; i++, ds++)
   {
@@ -707,6 +705,7 @@ static int sound_update_thread(SceSize args, void *argp)
   int audio_handle; // オーディオチャンネルのハンドル。
   s16 buffer[SAMPLE_SIZE];
   s16 temp_sample;
+  u32 temp;
   u32 i;
   // オーディオチャンネルの取得。
   audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
@@ -714,13 +713,13 @@ static int sound_update_thread(SceSize args, void *argp)
 // TODO:初期設定に移動
   sound_read_offset = 0;
   memset(buffer, 0, sizeof(buffer));
+  temp = 0;
   
   while(!audio_thread_exit_flag)
   {
-
-    while(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) < SAMPLE_COUNT)
+    while( (sound_write_count < SAMPLE_SIZE ) )
     {
-      sceKernelDelayThread(SAMPLE_COUNT/2); /* TODO:調整必要 */
+      sceKernelDelayThread(11.3 * SAMPLE_COUNT); // TODO:調整必要
     }
 
     for(i = 0; i < SAMPLE_SIZE; i++)
@@ -734,9 +733,11 @@ static int sound_update_thread(SceSize args, void *argp)
       if(temp_sample < -2048)
         temp_sample = -2048;
       buffer[i] = temp_sample << 4;
-        sound_read_offset++;
+      sound_read_offset++;
     }
+
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
+    sound_write_count -= SAMPLE_SIZE;
   }
 
   memset(buffer, 0, sizeof(buffer));
