@@ -1487,9 +1487,8 @@ u32 menu(u16 *original_screen)
   set_gba_resolution(screen_scale);
   video_resolution_small();
 
-  game_config_clock_speed = (clock_speed_number + 1) * 33;
-
-  scePowerSetClockFrequency(game_config_clock_speed, game_config_clock_speed, game_config_clock_speed / 2);
+  game_config_clock_speed = (clock_speed_number + 1) * 333 / 10;
+  set_cpu_clock(game_config_clock_speed);
 
   pause_sound(0);
   return return_value;

@@ -150,7 +150,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
 // ローカル関数の宣言
 void vblank_interrupt_handler(u32 sub, u32 *parg);
 void init_main();
-int main(SceSize args, void *argp);
+int main(int argc, char *argv[]);
 void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
 void trigger_ext_event();
 u32 check_power();
@@ -158,7 +158,7 @@ int exit_callback(int arg1, int arg2, void *common);
 int power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
-int user_main(int argc, char *argv[]);
+int user_main(SceSize args, char *argp);
 
 void set_cpu_clock(u32 clock)
 {
@@ -274,7 +274,7 @@ void quit()
 
 //  XBMから呼び出されるmain
 //    HOMEボタン用のスレッドと本来んのmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
-int main(SceSize args, void *argp)
+int main(int argc, char *argv[])
 {
   SceUID main_thread;
   SceUID home_thread;
@@ -306,7 +306,7 @@ int main(SceSize args, void *argp)
   return 0;
 }
 
-int user_main(int argc, char *argv[])
+int user_main(SceSize argc, char *argv)
 {
 //  u32 i;
 //  u32 vcount = 0;
@@ -412,7 +412,7 @@ int user_main(int argc, char *argv[])
 
     init_cpu();
     init_memory();
-//    reset_sound();
+    reset_sound();
   }
   else
   {

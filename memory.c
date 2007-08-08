@@ -498,11 +498,10 @@ u32 read_eeprom()
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                    /* TODO:アドレス調整調査 */ \
-        address -= 0x8000;                                                    \
-                                                                              \
-      value = ADDRESS##type(vram, address);                                   \
+      if(address & 0x10000)                                                   \
+        value = ADDRESS##type(vram, address & 0x17FFF);                       \
+      else                                                                    \
+        value = ADDRESS##type(vram, address & 0x1FFFF);                       \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
@@ -1590,14 +1589,22 @@ void write_backup(u32 address, u32 value)
 #define write_backup32()                                                      \
 
 #define write_vram8()                                                         \
-  address &= ~0x01;                                                           \
-  ADDRESS16(vram, address) = ((value << 8) | value)                           \
+  if(address & 0x10000)                                                       \
+    ADDRESS16(vram, address & 0x17FFe) = ((value << 8) | value);              \
+  else                                                                        \
+    ADDRESS16(vram, address & 0x1FFFe) = ((value << 8) | value)               \
 
 #define write_vram16()                                                        \
-  ADDRESS16(vram, address) = value                                            \
+  if(address & 0x10000)                                                       \
+    ADDRESS16(vram, address & 0x17FFF) = value;                               \
+  else                                                                        \
+    ADDRESS16(vram, address & 0x1FFFF) = value                                \
 
 #define write_vram32()                                                        \
-  ADDRESS32(vram, address) = value                                            \
+  if(address & 0x10000)                                                       \
+    ADDRESS32(vram, address & 0x17FFF) = value;                               \
+  else                                                                        \
+    ADDRESS32(vram, address & 0x1FFFF) = value                                \
 
 #define write_oam_ram8()                                                      \
 /*  Write 8bit data is ignore */                                              \
@@ -1902,17 +1909,11 @@ void write_rtc(u32 address, u32 value)
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                    /* TODO:アドレス調整調査 */ \
-        address -= 0x8000;                                                    \
-                                                                              \
       write_vram##type();                                                     \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
       /* OAM RAM */                                                           \
-      oam_update = 1;                                                         \
-      ADDRESS##type(oam_ram, address & 0x3FF) = value;                        \
       write_oam_ram##type();                                                  \
       break;                                                                  \
                                                                               \
@@ -2522,6 +2523,8 @@ dma_region_type dma_region_map[16] =
   dma_smc_vars_##type()                                                       \
 
 #define dma_vars_vram(type)                                                   \
+  if(type##_ptr & 0x10000)                                                    \
+    type##_ptr &= ~0x08000                                                    \
 
 #define dma_vars_palette_ram(type)                                            \
 

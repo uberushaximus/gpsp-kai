@@ -1643,7 +1643,7 @@ typedef struct
     }                                                                         \
   }                                                                           \
                                                                               \
-  pc += 4;                                                                    \
+  pc += 4                                                                     \
 
 #define arm_flag_status()                                                     \
 
