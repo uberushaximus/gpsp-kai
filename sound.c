@@ -33,9 +33,8 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(512) // サンプル数
+#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(128) // サンプル数
 #define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
-#define SOUND_FLAG_NUM (BUFFER_SIZE/SAMPLE_SIZE)
 
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
@@ -71,13 +70,6 @@
 #define OFFSET_INC()                                                          \
   /* indexを進める */                                                         \
   sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;                \
-  sound_write_count++;                                                        \
-  if (sound_write_count > SAMPLE_COUNT)                                       \
-  {                                                                           \
-    sound_call_flag[write_flag_num] = 1;                                      \
-    sound_write_count = 0;                                                    \
-    write_flag_num = (write_flag_num + 1) % SOUND_FLAG_NUM;                   \
-  }                                                                           \
 
 #define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
   volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
@@ -332,9 +324,6 @@ static u32 sound_buffer_base = 0;                   // サウンド バッファ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
 static s32 sound_read_offset = 0;                   // サウンドバッファの読み込みオフセット
 static u32 sound_write_count = 0;                   // サウンドバッファの書込カウンタ
-static u32 sound_call_flag[SOUND_FLAG_NUM];                     // サウンドスレッド呼出し
-static u32 write_flag_num = 0;
-static u32 read_flag_num = 0;
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
@@ -347,6 +336,7 @@ static u32 pause_sound_flag;
  ******************************************************************************/
 static void init_noise_table(u32 *table, u32 period, u32 bit_length);
 static int sound_update_thread(SceSize args, void *argp);
+
 /******************************************************************************
  * グローバル関数の定義
  ******************************************************************************/
@@ -724,16 +714,14 @@ static int sound_update_thread(SceSize args, void *argp)
 
 // TODO:初期設定に移動
   sound_read_offset = 0;
-  read_flag_num = 0;
+  memset(buffer, 0, sizeof(buffer));
   
   while(!audio_thread_exit_flag)
   {
 
-    sceKernelDelayThread(10); /* TODO:調整必要 */
-    if ((pause_sound_flag == 1) || (sound_call_flag[read_flag_num] == 0))
+    while(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) < SAMPLE_COUNT)
     {
-      sceKernelDelayThread(200); /* TODO:調整必要 */
-      continue;
+      sceKernelDelayThread(SAMPLE_COUNT/2); /* TODO:調整必要 */
     }
 
     for(i = 0; i < SAMPLE_SIZE; i++)
@@ -750,20 +738,12 @@ static int sound_update_thread(SceSize args, void *argp)
         sound_read_offset++;
     }
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
-    sound_call_flag[read_flag_num] = 0;
-    read_flag_num = (read_flag_num + 1) % SOUND_FLAG_NUM;
   }
 
-  // 無音のブロックを出力する。次回再生時のプチノイズ防止用。
-  sceAudioOutputPannedBlocking(audio_handle, 0, 0, sound_buffer[0]);
-
-  // オーディオチャンネルの解放。
+  memset(buffer, 0, sizeof(buffer));
+  sceAudioOutputPannedBlocking(audio_handle, 0, 0, &buffer);
   sceAudioChRelease(audio_handle);
-
-  // スレッドの終了。
   sceKernelExitThread(0);
-
-  // 正常終了。
   return 0;
 }
 

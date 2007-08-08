@@ -209,7 +209,7 @@ static int home_button_thread(SceSize args, void *argp)
   {
     sceCtrlPeekBufferPositive(&paddata, 1);
     home_button = paddata.Buttons & PSP_CTRL_HOME;
-    sceKernelDelayThread(200);
+    sceKernelDelayThread(500);
   }
 
   sceKernelExitThread(0);
@@ -219,6 +219,7 @@ static int home_button_thread(SceSize args, void *argp)
 int exit_callback(int arg1, int arg2, void *common)
 {
   quit_flag = 1;
+  sceKernelDelayThread(500);
   return 0;
 }
 
