@@ -26,7 +26,6 @@ VPATH           += ..
 CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
 CFLAGS          += -Wall -Wredundant-decls -Wmissing-declarations
 CFLAGS          += -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
-#CFLAGS          += ${shell ${PREFIX}/bin/sdl-config --cflags}
 
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
@@ -37,7 +36,6 @@ EXTRA_TARGETS   = EBOOT.PBP
 
 LIBS            += -lpspgu -lpsprtc -lpspaudio
 LIBS            += -lz -lpsppower -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
-#LIBS            += ${shell ${PREFIX}/bin/sdl-config --libs}
 
 include ${PSPSDK}/lib/build.mak
 
