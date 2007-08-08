@@ -157,7 +157,6 @@ typedef u32 FIXED16_16;
 #define DBGOUT(...) fprintf(dbg_file, __VA_ARGS__)
 FILE *dbg_file;
 
-//#include "SDL.h"
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"

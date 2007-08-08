@@ -150,7 +150,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
 // ローカル関数の宣言
 void vblank_interrupt_handler(u32 sub, u32 *parg);
 void init_main();
-int main(int argc, char *argv[]);
+int main(SceSize args, void *argp);
 void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
 void trigger_ext_event();
 u32 check_power();
@@ -274,7 +274,7 @@ void quit()
 
 //  XBMから呼び出されるmain
 //    HOMEボタン用のスレッドと本来んのmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
-int main(int argc, char *argv[])
+int main(SceSize args, void *argp)
 {
   SceUID main_thread;
   SceUID home_thread;
@@ -365,12 +365,7 @@ int user_main(int argc, char *argv[])
   error_msg("load font \n");
 
   // adhoc接続のテスト
-  if (adhocInit("test") != 0)
-  {
-    error_msg("not use wlan!! \n");
-  }
   error_msg("OK use wlan!! \n");
-  adhocTerm();
 
   init_gamepak_buffer();
 

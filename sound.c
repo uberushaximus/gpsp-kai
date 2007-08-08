@@ -33,8 +33,9 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(1024)      // 768  サンプル数
-#define SAMPLE_SIZE  (SAMPLE_COUNT * 2)               // 768byte 1サンプルあたりのバッファ数(768*2ch)
+#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(512) // サンプル数
+#define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
+#define SOUND_FLAG_NUM (BUFFER_SIZE/SAMPLE_SIZE)
 
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
@@ -64,7 +65,18 @@
     RENDER_SAMPLE_##type();                                                   \
     fifo_fractional += frequency_step;                                        \
     /* indexを進める */                                                       \
-    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
+    OFFSET_INC();                                                             \
+  }                                                                           \
+
+#define OFFSET_INC()                                                          \
+  /* indexを進める */                                                         \
+  sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;                \
+  sound_write_count++;                                                        \
+  if (sound_write_count > SAMPLE_COUNT)                                       \
+  {                                                                           \
+    sound_call_flag[write_flag_num] = 1;                                      \
+    sound_write_count = 0;                                                    \
+    write_flag_num = (write_flag_num + 1) % SOUND_FLAG_NUM;                   \
   }                                                                           \
 
 #define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
@@ -188,7 +200,7 @@
                                                                               \
     sample_index += frequency_step;                                           \
     /* indexを進める */                                                       \
-    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
+    OFFSET_INC();                                                             \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
@@ -215,7 +227,7 @@
       sample_index -= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type);            \
                                                                               \
     /* indexを進める */                                                       \
-    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
+    OFFSET_INC();                                                             \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
@@ -319,6 +331,10 @@ static u32 audio_buffer_size_x2;
 static u32 sound_buffer_base = 0;                   // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
 static s32 sound_read_offset = 0;                   // サウンドバッファの読み込みオフセット
+static u32 sound_write_count = 0;                   // サウンドバッファの書込カウンタ
+static u32 sound_call_flag[SOUND_FLAG_NUM];                     // サウンドスレッド呼出し
+static u32 write_flag_num = 0;
+static u32 read_flag_num = 0;
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
@@ -616,6 +632,7 @@ void init_sound()
   // 変数等の初期化
   reset_sound();
 
+  // サウンド スレッドの作成
   sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 0x2000, 0, NULL);
   if (sound_thread < 0)
   {
@@ -638,6 +655,9 @@ void reset_sound()
   sound_buffer_base = 0;
   sound_last_cpu_ticks = 0;
   memset(sound_buffer, 0, BUFFER_SIZE * 2);
+  s32 sound_read_offset = 0;
+  u32 sound_write_count = 0;
+  u32 sound_call_flag = 0;
 
   for(i = 0; i < 2; i++, ds++)
   {
@@ -704,13 +724,15 @@ static int sound_update_thread(SceSize args, void *argp)
 
 // TODO:初期設定に移動
   sound_read_offset = 0;
+  read_flag_num = 0;
   
   while(!audio_thread_exit_flag)
   {
 
-    sceDisplayWaitVblankStart();
-    if (pause_sound_flag == 1)
+    sceKernelDelayThread(10); /* TODO:調整必要 */
+    if ((pause_sound_flag == 1) || (sound_call_flag[read_flag_num] == 0))
     {
+      sceKernelDelayThread(200); /* TODO:調整必要 */
       continue;
     }
 
@@ -727,8 +749,9 @@ static int sound_update_thread(SceSize args, void *argp)
       buffer[i] = temp_sample << 4;
         sound_read_offset++;
     }
-
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
+    sound_call_flag[read_flag_num] = 0;
+    read_flag_num = (read_flag_num + 1) % SOUND_FLAG_NUM;
   }
 
   // 無音のブロックを出力する。次回再生時のプチノイズ防止用。
