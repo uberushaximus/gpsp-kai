@@ -112,7 +112,7 @@ void change_ext(char *src, char *buffer, char *extension);
 u32 file_length(char *filename, s32 dummy);
 
 // TODO:タイマーカウンタ周りの処理は再検討
-#define count_timer(timer_number)                                             \
+#define COUNT_TIMER(timer_number)                                             \
   timer[timer_number].reload = 0x10000 - value;                               \
   if(timer_number < 2)                                                        \
   {                                                                           \
