@@ -2996,21 +2996,22 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xE800)                                                         \
+  if(opcode < 0xF800)                                                         \
   {                                                                           \
-    branch_target = block_end_pc + 2 + (((s32)(opcode & 0x7FF) << 21) >> 20); \
-  }                                                                           \
-  else                                                                        \
-                                                                              \
-  if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                       \
-  {                                                                           \
-    branch_target =                                                           \
-     (block_end_pc + (((s32)(last_opcode & 0x07FF) << 21) >> 9) +             \
-     ((s32)(opcode & 0x07FF) * 2));                                           \
+    branch_target = block_end_pc + 2 + ((s32)((opcode & 0x7FF) << 21) >> 20); \
   }                                                                           \
   else                                                                        \
   {                                                                           \
-    goto no_direct_branch;                                                    \
+    if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                     \
+    {                                                                         \
+      branch_target =                                                         \
+       (block_end_pc + ((s32)((last_opcode & 0x07FF) << 21) >> 9) +           \
+       ((opcode & 0x07FF) * 2));                                              \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+      goto no_direct_branch;                                                  \
+    }                                                                         \
   }                                                                           \
 
 #define thumb_set_condition(_condition)                                       \

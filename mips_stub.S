@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2006 Exophase <exophase@gmail.com>
 # Copyright (C) 2007 takka <takka@tfact.net>
-# Copyright (C) 2007 ????? <?????>
+# Copyright (C) 2007 _____ <_____>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -269,8 +269,9 @@ mips_indirect_branch_dual:
 .macro patch_handler ftable, force_open
   srl $1, $4, 24                  # $1 = address region
   sltu $2, $1, 0x0F               # check if the value is open
-  sll $1, $1, 2                   # make address word indexed
-  beql $2, $0, 1f
+  bne $2, $0, 1f
+  sll $1, $1, 2                   # make address word indexed (delay)
+
   addiu $1, $0, (\force_open * 4)
 
 1:
@@ -299,9 +300,10 @@ mips_indirect_branch_dual:
 .macro patch_handler_align ftable, alignment
   srl $1, $4, 24                  # $1 = address region
   sltu $2, $1, 0x0F               # check if the value is open
-  sll $1, $1, 2                   # make address word indexed
-  beql $2, $0, 1f
-  addiu $1, $0, 4                 # force address to 0x1 (open) delay
+  bne $2, $0, 1f
+  sll $1, $1, 2                   # make address word indexed (delay)
+
+  addiu $1, $0, 4                 # force address to 0x1 (open)
 
 1:
   ins $1, $4, 6, \alignment       # place alignment bits into offset
@@ -675,10 +677,10 @@ mips_indirect_branch_dual:
 .macro open_load8_core
   lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
   andi $2, $2, 0x20               # test T bit
-  andi $4, $4, 0x03               # in ARM mode, isolate lower 2bits from address
+  beq $2, $0, 1f                  # branch if ARM mode
+  andi $4, $4, 0x03               # isolate lower 3bits from address (delay)
 
-  bnel $2, $0, 1f                 # branch if Thumb mode
-  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit (delay)
+  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit
 
 1:
   sw $ra, REG_SAVE($16)           # save the return address
@@ -703,10 +705,10 @@ mips_indirect_branch_dual:
 .macro open_load16_core
   lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
   andi $2, $2, 0x20               # test T bit
-  andi $4, $4, 0x02               # in ARM mode, isolate bit 1 from address
+  beq $2, $0, 1f                  # branch if ARM mode
+  andi $4, $4, 0x02               # isolate bit 1 from address (delay)
 
-  bnel $2, $0, 1f                 # branch if Thumb mode
-  addu $4, $0, $0                 # in Thumb mode, zero out address bit (delay)
+  addu $4, $0, $0                 # zero out address bit
 
 1:
   sw $ra, REG_SAVE($16)           # save the return address
@@ -2084,6 +2086,7 @@ execute_load_bios_u32a:
 
 2:
   open_load32_a
+  nop
 
 execute_load_ewram_u32a:
   translate_region_ewram patch_load_u32a
@@ -2143,6 +2146,7 @@ execute_load_eeprom_u32a:
 
 execute_load_backup_u32a:
   backup_load_a patch_load_u32a
+  nop
 
 execute_load_open_u32a:
   open_load32_a patch_load_u32a
@@ -2188,7 +2192,7 @@ execute_store_iwram_u8:
 
 execute_store_io_u8:
   region_check 4, patch_store_u8
-  andi $5, $5, 0xFF               # make value 8bit (delay)
+  andi $5, $5, 0xFF               # make value 8bit
   andi $4, $4, 0x3FF              # wrap around address
 
   addiu $sp, $sp, -4              # make room on the stack for $ra
@@ -2289,7 +2293,7 @@ execute_store_iwram_u16:
 
 execute_store_io_u16:
   region_check 4, patch_store_u16
-  andi $5, $5, 0xFFFF             # make value 16bit (delay)
+  andi $5, $5, 0xFFFF             # make value 16bit
   andi $4, $4, 0x3FE              # wrap around/align address
 
   addiu $sp, $sp, -4              # make room on the stack for $ra
@@ -2796,10 +2800,11 @@ no_alert:
   addiu $sp, $sp, 4               # fix the stack (delay)
 
 smc_dma:
+  addiu $sp, $sp, 4               # fix the stack
   jal flush_translation_cache_ram # flush translation cache
   nop
   j lookup_pc
-  addiu $sp, $sp, 4               # fix the stack (delay)
+  nop
 
 
 ext_store_eeprom:
@@ -2967,7 +2972,7 @@ ext_store_oam16:
   sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
 
 ext_store_rtc:
-  andi $4, $4, 0xFF               # wrap address
+  andi $4, $4, 0xFFFF             # wrap address
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
   save_registers
@@ -3349,11 +3354,11 @@ lsl_shift_zero:
   sllv $4, $4, $5                 # return (value << shift) (delay)
 
 lsl_shift_high:
-  sltiu $1, $5, 33                # $1 = (shift < 33)
-  andi $22, $4, 1                 # c flag = value & 0x01
+  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
+  bne $1, $0, lsl_shift_done      # jump if shift == 32
+  andi $22, $4, 1                 # c flag = value & 0x01 (delay)
 
-  beql $1, $0, lsl_shift_done     # jump if shift == 32
-  add $22, $0, $0                 # c flag = 0 otherwise (delay)
+  add $22, $0, $0                 # c flag = 0 otherwise
 
 lsl_shift_done:
   jr $ra                          # return
@@ -3374,11 +3379,11 @@ lsr_shift_zero:
   srlv $4, $4, $5                 # return (value >> shift) (delay)
 
 lsr_shift_high:
-  sltiu $1, $5, 33                # $1 = (shift < 33)
-  srl $22, $4, 31                 # c flag = value >> 31
+  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
+  bne $1, $0, lsr_shift_done      # jump if shift == 32
+  srl $22, $4, 31                 # c flag = value >> 31 (delay)
 
-  beql $1, $0, lsr_shift_done     # jump if shift == 32
-  add $22, $0, $0                 # c flag = 0 otherwise (delay)
+  add $22, $0, $0                 # c flag = 0 otherwise
 
 lsr_shift_done:
   jr $ra                          # return
@@ -3466,8 +3471,6 @@ iac_loop:
 
   jr $ra                          # return
   nop
-
-.align 4
 
 memory_map_read:
   .space 0x8000

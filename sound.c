@@ -69,8 +69,7 @@
 
 #define OFFSET_INC()                                                          \
   /* indexを進める */                                                         \
-  sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;                \
-  sound_write_count += 2;                                                     \
+  sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE                 \
 
 #define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
   volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
@@ -100,12 +99,12 @@
       else                                                                    \
         rate = rate + (rate >> gs->sweep_shift);                              \
                                                                               \
-      if(rate > 2047) {                                                       \
-        frequency_step = 0;                                                   \
-      } else {                                                                \
-        frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)  \
-        / SOUND_FREQUENCY);                                                   \
+      if(rate > 2047)                                                         \
+      {                                                                       \
+        rate = 2047;                                                          \
       }                                                                       \
+      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)    \
+        / SOUND_FREQUENCY);                                                   \
                                                                               \
       gs->frequency_step = frequency_step;                                    \
       gs->rate = rate;                                                        \
@@ -607,7 +606,7 @@ void update_gbc_sound(u32 cpu_ticks)
 
   gbc_sound_last_cpu_ticks = cpu_ticks;
   gbc_sound_buffer_index =
-   (gbc_sound_buffer_index + (buffer_ticks * 2) % BUFFER_SIZE);
+   (gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
 }
 
 void init_sound()
@@ -624,7 +623,7 @@ void init_sound()
   reset_sound();
 
   // サウンド スレッドの作成
-  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 0x2000, 0, NULL);
+  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 0x1000, 0, NULL);
   if (sound_thread < 0)
   {
     quit();
@@ -717,9 +716,18 @@ static int sound_update_thread(SceSize args, void *argp)
   
   while(!audio_thread_exit_flag)
   {
-    while( (sound_write_count < SAMPLE_SIZE ) )
+    while( (pause_sound_flag != 0) )
     {
       sceKernelDelayThread(11.3 * SAMPLE_COUNT); // TODO:調整必要
+    }
+
+    while( (temp <= SAMPLE_SIZE) )
+    {
+      sceKernelDelayThread(11.3 * SAMPLE_COUNT); /* TODO:調整必要 */
+      if (gbc_sound_buffer_index >= sound_read_offset)
+        temp = gbc_sound_buffer_index - sound_read_offset;
+      else
+        temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
     }
 
     for(i = 0; i < SAMPLE_SIZE; i++)
@@ -737,7 +745,7 @@ static int sound_update_thread(SceSize args, void *argp)
     }
 
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
-    sound_write_count -= SAMPLE_SIZE;
+
   }
 
   memset(buffer, 0, sizeof(buffer));

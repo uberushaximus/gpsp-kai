@@ -1451,7 +1451,6 @@ render_scanline_affine_builder(transparent, alpha);
   else                                                                        \
     src_ptr = (u16 *)vram                                                     \
 
-
 #ifdef RENDER_COLOR16_NORMAL
 
 #define render_scanline_vram_setup_mode4()                                    \

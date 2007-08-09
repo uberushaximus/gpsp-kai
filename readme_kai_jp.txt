@@ -3,7 +3,7 @@
 -- Release log --
 -UnOfficial gpSP kai 3.1 test 05 svn rev.**
 	カーネルモードで動作するように変更
-	SDLなしでビルドするようにした
+	サウンド周りを非SDLにした
 	statesaveの日付表示を修正
 	上記に伴い、statesaveファイルのサイズを506947 -> 506951に変更
 		古いファイルも読込み時に自動判別して読み込みます

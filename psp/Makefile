@@ -10,8 +10,8 @@ COMMON_FILE     = common.h cpu.h memory.h video.h input.h sound.h main.h gui.h z
 
 PSP_EBOOT_ICON  = icon0.png
 
-OBJS            = main.o cpu.o video.o memory.o sound.o input.o \
-                  cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o adhoc.o
+OBJS            = main.o cpu.o video.o memory.o sound.o input.o
+OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o adhoc.o
 
 TARGET          = UO_gpSP_kai
 

@@ -159,6 +159,7 @@ int power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
 int user_main(SceSize args, char *argp);
+void psp_exception_handler(PspDebugRegBlock *regs);
 
 void set_cpu_clock(u32 clock)
 {
@@ -225,17 +226,20 @@ int exit_callback(int arg1, int arg2, void *common)
 
 int power_callback(int unknown, int powerInfo, void *common)
 {
-  if (powerInfo & PSP_POWER_CB_SUSPENDING) power_flag = 1;
+  if (powerInfo & PSP_POWER_CB_SUSPENDING)
+    power_flag = 1;
+  else
+    power_flag = 0;
   return 0;
 }
 
 int CallbackThread(SceSize args, void *argp)
 {
-  int cbid, power_callback_id;
+  int exit_callback_id, power_callback_id;
 
   // 終了周りのコールバック 
-  cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-  sceKernelRegisterExitCallback(cbid);
+  exit_callback_id = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+  sceKernelRegisterExitCallback(exit_callback_id);
 
   // 電源周りのコールバック 
   power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
@@ -248,15 +252,15 @@ int CallbackThread(SceSize args, void *argp)
 
 int SetupCallbacks()
 {
-  int thid = 0;
+  int callback_thread_id = 0;
 
-  thid = sceKernelCreateThread("update_thread", CallbackThread, 0x20, 0xFA0, 0, 0);
-  if (thid >= 0)
+  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+  if (callback_thread_id >= 0)
   {
-    sceKernelStartThread(thid, 0, 0);
+    sceKernelStartThread(callback_thread_id, 0, 0);
   }
 
-  return thid;
+  return callback_thread_id;
 }
 
 void quit()
@@ -273,8 +277,24 @@ void quit()
   sceKernelExitThread(0);
 }
 
+void psp_exception_handler(PspDebugRegBlock *regs)
+{
+  pspDebugScreenInit();
+
+  pspDebugScreenSetBackColor(0x00FF0000);
+  pspDebugScreenSetTextColor(0xFFFFFFFF);
+  pspDebugScreenClear();
+
+  pspDebugScreenPrintf("I regret to inform you your psp has just crashed\n\n");
+  pspDebugScreenPrintf("Exception Details:\n");
+  pspDebugDumpException(regs);
+  pspDebugScreenPrintf("\nThe offending routine may be identified with:\n\n"
+    "\tpsp-addr2line -e target.elf -f -C 0x%x 0x%x 0x%x\n",
+    regs->epc, regs->badvaddr, regs->r[31]);
+}
+
 //  XBMから呼び出されるmain
-//    HOMEボタン用のスレッドと本来んのmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
+//    HOMEボタン用のスレッドと本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
 int main(int argc, char *argv[])
 {
   SceUID main_thread;
@@ -287,10 +307,12 @@ int main(int argc, char *argv[])
   pspDebugScreenInit();
   printf("screen init\n");
 
+  pspDebugInstallErrorHandler(psp_exception_handler);
+
   // adhoc用モジュールのロード
-//  if (pspSdkLoadAdhocModules() != 0)
-//    error_msg("not load inet modules\n");
-//  printf("load network modules\n");
+  if (pspSdkLoadAdhocModules() != 0)
+    error_msg("not load inet modules\n");
+  printf("load network modules\n");
 
   home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
   main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
@@ -327,7 +349,6 @@ int user_main(SceSize argc, char *argv)
   dbg_file = fopen(DBG_FILE_NAME, "awb");
 
   // Copy the directory path of the executable into main_path
-//  getcwd(main_path, 512);
   chdir(main_path);
 
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
@@ -577,7 +598,6 @@ u32 check_power()
     u16 *screen_copy = copy_screen();
     u32 ret_val = menu(screen_copy);
     free(screen_copy);
-    power_flag = 0;
     FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
     return ret_val;
   }
