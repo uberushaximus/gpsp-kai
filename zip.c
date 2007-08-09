@@ -51,7 +51,7 @@ s32 load_file_zip(char *filename)
   char tmp[1024];
   s32 retval = -1;
   u8 *buffer = NULL;
-  u8 *cbuffer;
+//  u8 *cbuffer;
   char *ext;
   FILE_ID fd;
 
@@ -110,8 +110,7 @@ s32 load_file_zip(char *filename)
         {
           z_stream stream;
           s32 err;
-
-          cbuffer = malloc(ZIP_BUFFER_SIZE);
+          u8 cbuffer[ZIP_BUFFER_SIZE];
 
           stream.next_in = (Bytef*)cbuffer;
           stream.avail_in = (u32)ZIP_BUFFER_SIZE;
@@ -145,7 +144,6 @@ s32 load_file_zip(char *filename)
             err = Z_OK;
             inflateEnd(&stream);
           }
-          free(cbuffer);
           goto outcode;
         }
       }

@@ -431,7 +431,9 @@ int user_main(SceSize argc, char *argv)
   {
     if(load_file(file_ext, load_filename, DEFAULT_ROM_DIR) == -1)
     {
-      menu(copy_screen());
+      u16 *screen_copy = copy_screen();
+      menu(screen_copy);
+      free(screen_copy);
     }
     else
     {
