@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 05 svn rev.**
+-UnOfficial gpSP kai 3.1 test 05 svn rev.125
 	カーネルモードで動作するように変更
 	サウンド周りを非SDLにした
 	statesaveの日付表示を修正
