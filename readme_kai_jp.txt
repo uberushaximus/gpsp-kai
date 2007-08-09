@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 06 svn rev.***
+-UnOfficial gpSP kai 3.1 test 06 svn rev.134
 	ZIPファイル読込み時の不具合を修正
 -UnOfficial gpSP kai 3.1 test 05.1 svn rev.129
 	サウンドの遅延を修正
