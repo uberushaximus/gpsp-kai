@@ -2996,6 +2996,12 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
+  if(opcode < 0xE800)                                                         \
+  {                                                                           \
+    branch_target = block_end_pc + 2 + (((s32)(opcode & 0x7FF) << 21) >> 20); \
+  }                                                                           \
+  else                                                                        \
+                                                                              \
   if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                       \
   {                                                                           \
     branch_target =                                                           \
