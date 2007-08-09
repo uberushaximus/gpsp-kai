@@ -718,12 +718,17 @@ static int sound_update_thread(SceSize args, void *argp)
   {
     while( (pause_sound_flag != 0) )
     {
-      sceKernelDelayThread(11.3 * SAMPLE_COUNT); // TODO:調整必要
+      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 3); // TODO:調整必要
     }
 
-    while( (temp <= SAMPLE_SIZE) )
+    if (gbc_sound_buffer_index >= sound_read_offset)
+      temp = gbc_sound_buffer_index - sound_read_offset;
+    else
+      temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+
+    while( (temp < SAMPLE_SIZE) )
     {
-      sceKernelDelayThread(11.3 * SAMPLE_COUNT); /* TODO:調整必要 */
+      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 3); /* TODO:調整必要 */
       if (gbc_sound_buffer_index >= sound_read_offset)
         temp = gbc_sound_buffer_index - sound_read_offset;
       else

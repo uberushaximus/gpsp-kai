@@ -305,14 +305,12 @@ int main(int argc, char *argv[])
 
   // デバッグ用スクリーンの初期化
   pspDebugScreenInit();
-  printf("screen init\n");
 
   pspDebugInstallErrorHandler(psp_exception_handler);
 
   // adhoc用モジュールのロード
   if (pspSdkLoadAdhocModules() != 0)
     error_msg("not load inet modules\n");
-  printf("load network modules\n");
 
   home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
   main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
@@ -354,8 +352,6 @@ int user_main(SceSize argc, char *argv)
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
-  printf("main thread \n");
-
   if (load_dircfg("settings/dir.cfg") != 0)
   {
     error_msg("dir.cfg Error!!");
@@ -376,18 +372,13 @@ int user_main(SceSize argc, char *argv)
     quit();
   }
 
-  printf("load cfg \n");
-
   if (load_font() != 0)
   {
     error_msg("font init Error!!");
     quit();
   }
 
-  printf("load font \n");
-
   // adhoc接続のテスト
-  printf("OK use wlan!! \n");
 
   init_gamepak_buffer();
 
