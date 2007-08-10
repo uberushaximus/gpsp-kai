@@ -390,4 +390,3 @@ input_savestate_body(READ);
 
 void input_write_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
 input_savestate_body(WRITE_MEM);
-

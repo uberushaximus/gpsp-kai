@@ -99,36 +99,47 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
  * マクロ等の定義
  ******************************************************************************/
 
+// エミュレーション サイクルの決定
 #define CHECK_COUNT(count_var)                                                \
   if((count_var) < execute_cycles)                                            \
     execute_cycles = count_var;                                               \
 
-#define check_timer(timer_number)                                             \
+#define CHECK_TIMER(timer_number)                                             \
   if(timer[timer_number].status == TIMER_PRESCALE)                            \
     CHECK_COUNT(timer[timer_number].count);                                   \
 
-// TODO:タイマーカウンタ周りの処理は再検討
+// タイマーのアップデート
+// 実機では0~0xFFFFだが、gpSP内部では (0xFFFF~0)<<prescale(0,6,8,10)の値をとる
 #define update_timer(timer_number)                                            \
   if(timer[timer_number].status != TIMER_INACTIVE)                            \
   {                                                                           \
+    /* タイマーがアクティブだった場合 */                                      \
     if(timer[timer_number].status != TIMER_CASCADE)                           \
     {                                                                         \
+      /* タイマーがプリスケールモードだった場合 */                            \
+      /* タイマー変更 */                                                      \
       timer[timer_number].count -= execute_cycles;                            \
+      /* レジスタに書込 */                                                    \
       io_registers[REG_TM##timer_number##D] =                                 \
-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
+       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
     }                                                                         \
                                                                               \
     if(timer[timer_number].count <= 0)                                        \
     {                                                                         \
+      /* タイマーがオーバーフローした場合 */                                  \
+      /* IRQのトリガをON */                                                   \
       if(timer[timer_number].irq == TIMER_TRIGGER_IRQ)                        \
         irq_raised |= IRQ_TIMER##timer_number;                                \
                                                                               \
       if((timer_number != 3) &&                                               \
        (timer[timer_number + 1].status == TIMER_CASCADE))                     \
       {                                                                       \
+        /* タイマー0～2 かつ 次のタイマーがカスケードモードの場合 */          \
+        /* カウンタを変更 */                                                  \
         timer[timer_number + 1].count--;                                      \
+        /* レジスタに書込 */                                                  \
         io_registers[REG_TM0D + (timer_number + 1) * 2] =                     \
-        0xFFFF   - (timer[timer_number + 1].count);                          \
+          0xFFFF - (timer[timer_number + 1].count);                           \
       }                                                                       \
                                                                               \
       if(timer_number < 2)                                                    \
@@ -140,10 +151,11 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
           sound_timer(timer[timer_number].frequency_step, 1);                 \
       }                                                                       \
                                                                               \
+      /* タイマーのリロード */                                                \
       timer[timer_number].count +=                                            \
-       (timer[timer_number].reload << timer[timer_number].prescale);          \
+        (timer[timer_number].reload << timer[timer_number].prescale);         \
       io_registers[REG_TM##timer_number##D] =                                 \
-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
+       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
     }                                                                         \
   }                                                                           \
 
@@ -730,10 +742,10 @@ u32 update_gba()
       
     execute_cycles = video_count;
 
-    check_timer(0);
-    check_timer(1);
-    check_timer(2);
-    check_timer(3);
+    CHECK_TIMER(0);
+    CHECK_TIMER(1);
+    CHECK_TIMER(2);
+    CHECK_TIMER(3);
 
   } while(reg[CPU_HALT_STATE] != CPU_ACTIVE);
 

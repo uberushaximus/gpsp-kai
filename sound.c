@@ -622,6 +622,8 @@ void init_sound()
   // 変数等の初期化
   reset_sound();
 
+  pause_sound_flag = 1;
+
   // サウンド スレッドの作成
   sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 2 * 1024, 0, NULL);
   if (sound_thread < 0)
@@ -659,6 +661,7 @@ void reset_sound()
   gbc_sound_buffer_index = 0;
   gbc_sound_last_cpu_ticks = 0;
   gbc_sound_partial_ticks = 0;
+  sound_read_offset = 0;
 
   gbc_sound_master_volume_left = 0;
   gbc_sound_master_volume_right = 0;
@@ -706,6 +709,7 @@ static int sound_update_thread(SceSize args, void *argp)
   s16 temp_sample;
   u32 temp;
   u32 i;
+
   // オーディオチャンネルの取得。
   audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
 
@@ -718,7 +722,7 @@ static int sound_update_thread(SceSize args, void *argp)
   {
     while( (pause_sound_flag != 0) )
     {
-      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 3); // TODO:調整必要
+      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 2); // TODO:調整必要
     }
 
     if (gbc_sound_buffer_index >= sound_read_offset)
@@ -728,7 +732,7 @@ static int sound_update_thread(SceSize args, void *argp)
 
     while( (temp < SAMPLE_SIZE) )
     {
-      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 3); /* TODO:調整必要 */
+      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 2); /* TODO:調整必要 */
       if (gbc_sound_buffer_index >= sound_read_offset)
         temp = gbc_sound_buffer_index - sound_read_offset;
       else
@@ -749,8 +753,11 @@ static int sound_update_thread(SceSize args, void *argp)
       sound_read_offset++;
     }
 
+    /* サウンドが遅れた場合の処理 */
+    if((temp > SAMPLE_SIZE * 1.5))
+      continue;
+    
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
-
   }
 
   memset(buffer, 0, sizeof(buffer));

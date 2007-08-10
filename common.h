@@ -49,6 +49,7 @@
 #include <pspnet_adhocctl.h>
 #include <pspnet_adhocmatching.h>
 #include <pspwlan.h>
+#include <psputility_osk.h>
 
 typedef s32 FILE_TAG_TYPE;
 typedef u32 FIXED16_16;

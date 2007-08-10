@@ -116,12 +116,13 @@ u32 file_length(char *filename, s32 dummy);
 // タイマーリロード時のカウンタの設定(この時点ではタイマーにセットされない)
 // タイマースタート時にカウンタに設定される
 // ただし、32bitアクセス時には即座にタイマーにセットされる
-// 実機では0~0xFFFFだが、gpSP内部では 0xFFFF~0の値をとる
+// 実機では0~0xFFFFだが、gpSP内部では (0xFFFF~0)<<prescale(0,6,8,10)の値をとる
 // 各カウンターにリロードする際にprescale分シフトされる
 // TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
 // 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0xFFFF - value;                                \
+  timer[timer_number].reload = 0xFFFF                                         \
+    - io_registers[REG_TM0D + (timer_number * 2)];                            \
   if(timer_number < 2)                                                        \
   {                                                                           \
     /* DMAサウンドチャネルへのサンプルレートの設定(これもこの時点では必要ない？)*/ \
@@ -144,25 +145,38 @@ u32 file_length(char *filename, s32 dummy);
 #define TRIGGER_TIMER(timer_number)                                           \
   if(value & 0x80)                                                            \
   {                                                                           \
-    /* スタートビットが”1”だった場合 */                                         \
+    /* スタートビットが”1”だった場合 */                                       \
     if(timer[timer_number].status == TIMER_INACTIVE)                          \
     {                                                                         \
-      /* タイマーが停止していた場合場合 */                                      \
-      u32 prescale = prescale_table[value & 0x03];                            \
+      /* タイマーが停止していた場合 */                                        \
+      /* 各種設定をして、タイマー作動 */                                      \
+                                                                              \
+      /* リロード値を読み込む */                                              \
       u32 timer_reload = timer[timer_number].reload;                          \
                                                                               \
-      if((value >> 2) & 0x01)                                                 \
+      /* カスケードモードか判別(タイマー0以外)*/                              \
+      if(((value >> 2) & 0x01)&&(timer_number != 0))                          \
+      {                                                                       \
+        /* カスケードモード */                                                \
         timer[timer_number].status = TIMER_CASCADE;                           \
+        u32 prescale = 0;                                                     \
+        /* プリスケールの設定 */                                              \
+        timer[timer_number].prescale = prescale;                              \
+      }                                                                       \
       else                                                                    \
+      {                                                                       \
+        /* プリスケールモード */                                              \
         timer[timer_number].status = TIMER_PRESCALE;                          \
+        u32 prescale = prescale_table[value & 0x03];                          \
+        timer_reload <<= prescale;                                            \
+        /* プリスケールの設定 */                                              \
+        timer[timer_number].prescale = prescale;                              \
+      }                                                                       \
                                                                               \
-      timer[timer_number].prescale = prescale;                                \
+      /* IRQの設定 */                                                         \
       timer[timer_number].irq = (value >> 6) & 0x01;                          \
                                                                               \
-      ADDRESS16(io_registers, 0x100 + (timer_number * 4)) =                   \
-       0x10000 - timer_reload;                                                \
-                                                                              \
-      timer_reload <<= prescale;                                              \
+      /* カウンタを設定 */                                                    \
       timer[timer_number].count = timer_reload;                               \
                                                                               \
       if(timer_reload < execute_cycles)                                       \
@@ -171,17 +185,13 @@ u32 file_length(char *filename, s32 dummy);
       if(timer_number < 2)                                                    \
       {                                                                       \
         u32 buffer_adjust =                                                   \
-         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *      /* TODO:サウンドのズレはこのあたりの処理が問題 */ \
+         (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
          SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
                                                                               \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
-        ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
-        ADJUST_SOUND_BUFFER(timer_number, 1);                                 \
+/*        ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
+        ADJUST_SOUND_BUFFER(timer_number, 1);  */                               \
       }                                                                       \
-    }                                                                         \
-    else                                                                      \
-    {                                                                         \
-      /* タイマーが作動していた場合 */                                        \
     }                                                                         \
   }                                                                           \
   else                                                                        \
@@ -195,5 +205,4 @@ u32 file_length(char *filename, s32 dummy);
   ADDRESS16(io_registers, 0x102 + (timer_number * 4)) = value;                \
 
 #endif
-
 
