@@ -33,7 +33,7 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(128) // サンプル数
+#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
 #define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
 
 #define GBC_NOISE_WRAP_FULL 32767
@@ -739,6 +739,19 @@ static int sound_update_thread(SceSize args, void *argp)
         temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
     }
 
+    /* サウンドが遅れた場合の処理 */
+    if((temp > SAMPLE_SIZE * 1.5))
+    {
+      for(i = 0; i < (SAMPLE_SIZE / 2); i++)
+      {
+        if (sound_read_offset >= BUFFER_SIZE)
+          sound_read_offset = 0;
+        sound_buffer[sound_read_offset] = 0;
+        sound_read_offset++;
+      }
+      continue;
+    }
+
     for(i = 0; i < SAMPLE_SIZE; i++)
     {
       if (sound_read_offset >= BUFFER_SIZE)
@@ -753,10 +766,6 @@ static int sound_update_thread(SceSize args, void *argp)
       sound_read_offset++;
     }
 
-    /* サウンドが遅れた場合の処理 */
-    if((temp > SAMPLE_SIZE * 1.5))
-      continue;
-    
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
   }
 
