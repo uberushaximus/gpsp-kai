@@ -1050,22 +1050,22 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
     // Timer control (trigger byte)
     case 0x103:
       access_register8_high(0x102);
-      trigger_timer(0);
+      TRIGGER_TIMER(0);
       break;
 
     case 0x107:
       access_register8_high(0x106);
-      trigger_timer(1);
+      TRIGGER_TIMER(1);
       break;
 
     case 0x10B:
       access_register8_high(0x10A);
-      trigger_timer(2);
+      TRIGGER_TIMER(2);
       break;
 
     case 0x10F:
       access_register8_high(0x10E);
-      trigger_timer(3);
+      TRIGGER_TIMER(3);
       break;
 
     // P1
@@ -1314,19 +1314,19 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // Timer control
     case 0x102:
-      trigger_timer(0);
+      TRIGGER_TIMER(0);
       break;
 
     case 0x106:
-      trigger_timer(1);
+      TRIGGER_TIMER(1);
       break;
 
     case 0x10A:
-      trigger_timer(2);
+      TRIGGER_TIMER(2);
       break;
 
     case 0x10E:
-      trigger_timer(3);
+      TRIGGER_TIMER(3);
       break;
 
     // P1

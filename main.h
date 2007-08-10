@@ -112,28 +112,42 @@ void change_ext(char *src, char *buffer, char *extension);
 u32 file_length(char *filename, s32 dummy);
 
 // TODO:タイマーカウンタ周りの処理は再検討
+
+// タイマーリロード時のカウンタの設定(この時点ではタイマーにセットされない)
+// タイマースタート時にカウンタに設定される
+// ただし、32bitアクセス時には即座にタイマーにセットされる
+// 実機では0~0xFFFFだが、gpSP内部では 0xFFFF~0の値をとる
+// 各カウンターにリロードする際にprescale分シフトされる
+// TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
+// 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0x10000 - value;                               \
+  timer[timer_number].reload = 0xFFFF - value;                                \
   if(timer_number < 2)                                                        \
   {                                                                           \
+    /* DMAサウンドチャネルへのサンプルレートの設定(これもこの時点では必要ない？)*/ \
     u32 timer_reload =                                                        \
      timer[timer_number].reload << timer[timer_number].prescale;              \
     SOUND_UPDATE_FREQUENCY_STEP(timer_number);                                \
   }                                                                           \
 
-#define adjust_sound_buffer(timer_number, channel)                            \
+// タイマーの値の調整？
+// TODO:サウンドのズレはこのあたりの処理が問題?
+#define ADJUST_SOUND_BUFFER(timer_number, channel)                            \
   if(timer[timer_number].direct_sound_channels & (0x01 << channel))           \
   {                                                                           \
     direct_sound_channel[channel].buffer_index =                              \
-     (direct_sound_channel[channel].buffer_index + buffer_adjust) % BUFFER_SIZE; /* TODO:サウンドのズレはこのあたりの処理が問題? */ \
+     (direct_sound_channel[channel].buffer_index + buffer_adjust) % BUFFER_SIZE; \
                                                                               \
   }                                                                           \
 
-#define trigger_timer(timer_number)                                           \
+// タイマーのアクセスとカウント開始処理
+#define TRIGGER_TIMER(timer_number)                                           \
   if(value & 0x80)                                                            \
   {                                                                           \
+    /* スタートビットが”1”だった場合 */                                         \
     if(timer[timer_number].status == TIMER_INACTIVE)                          \
     {                                                                         \
+      /* タイマーが停止していた場合場合 */                                      \
       u32 prescale = prescale_table[value & 0x03];                            \
       u32 timer_reload = timer[timer_number].reload;                          \
                                                                               \
@@ -161,9 +175,13 @@ u32 file_length(char *filename, s32 dummy);
          SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
                                                                               \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
-        adjust_sound_buffer(timer_number, 0);                                 \
-        adjust_sound_buffer(timer_number, 1);                                 \
+        ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
+        ADJUST_SOUND_BUFFER(timer_number, 1);                                 \
       }                                                                       \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+      /* タイマーが作動していた場合 */                                        \
     }                                                                         \
   }                                                                           \
   else                                                                        \
