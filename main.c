@@ -42,7 +42,7 @@ u32 global_cycles_per_instruction = 1;
 u64 frame_count_initial_timestamp = 0;
 u64 last_frame_interval_timestamp;
 u32 psp_fps_debug = 0;
-u32 skip_next_frame = 0;
+u32 skip_next_frame_flag = 0;
 u32 frameskip_counter = 0;
 
 u32 cpu_ticks = 0;
@@ -164,7 +164,6 @@ void vblank_interrupt_handler(u32 sub, u32 *parg);
 void init_main();
 int main(int argc, char *argv[]);
 void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
-void trigger_ext_event();
 u32 check_power();
 int exit_callback(int arg1, int arg2, void *common);
 int power_callback(int unknown, int powerInfo, void *common);
@@ -182,7 +181,7 @@ void init_main()
 {
   u32 i;
 
-  skip_next_frame = 0;
+  skip_next_frame_flag = 0;
 
   for(i = 0; i < 4; i++)
   {
@@ -499,96 +498,6 @@ u32 event_cycles = 0;
 const u32 event_cycles_trigger = 60 * 5;
 u32 no_alpha = 0;
 
-void trigger_ext_event()
-{
-  static u32 event_number = 0;
-  static u64 benchmark_ticks[16];
-  u64 new_ticks;
-  char current_savestate_filename[512];
-
-  return;
-
-  if(event_number)
-  {
-    get_ticks_us(&new_ticks);
-    benchmark_ticks[event_number - 1] =
-     new_ticks - benchmark_ticks[event_number - 1];
-  }
-
-  game_config_frameskip_type = no_frameskip;
-  no_alpha = 0;
-  synchronize_flag = 0;
-
-  get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-  load_state(current_savestate_filename);
-
-  switch(event_number)
-  {
-    case 0:
-      // Full benchmark, run normally
-      break;
-
-    case 1:
-      // No alpha blending
-      no_alpha = 1;
-      break;
-
-    case 2:
-      // No video benchmark
-      // Set frameskip really high + manual
-      game_config_frameskip_type = manual_frameskip;
-      game_config_frameskip_value = 1000000;
-      break;
-
-    case 3:
-      // No CPU benchmark
-      // Put CPU in halt mode, put it in IRQ mode with interrupts off
-      reg[CPU_HALT_STATE] = CPU_HALT;
-      reg[REG_CPSR] = 0xD2;
-      break;
-
-    case 4:
-      // No CPU or video benchmark
-      reg[CPU_HALT_STATE] = CPU_HALT;
-      reg[REG_CPSR] = 0xD2;
-      game_config_frameskip_type = manual_frameskip;
-      game_config_frameskip_value = 1000000;
-      break;
-
-    case 5:
-    {
-      // Done
-      char *print_strings[] =
-      {
-        "Full test   ",
-        "No blending ",
-        "No video    ",
-        "No CPU      ",
-        "No CPU/video",
-        "CPU speed   ",
-        "Video speed ",
-        "Alpha cost  "
-      };
-      u32 i;
-
-      benchmark_ticks[6] = benchmark_ticks[0] - benchmark_ticks[2];
-      benchmark_ticks[5] = benchmark_ticks[0] - benchmark_ticks[4] -
-       benchmark_ticks[6];
-      benchmark_ticks[7] = benchmark_ticks[0] - benchmark_ticks[1];
-
-      printf("Benchmark results (%d frames): \n", (int)event_cycles_trigger);
-      for(i = 0; i < 8; i++)
-      {
-        printf("   %s: %d ms (%f ms per frame)\n",
-         print_strings[i], (int)benchmark_ticks[i] / 1000,
-         (float)(benchmark_ticks[i] / (1000.0 * event_cycles_trigger)));
-        if(i == 4)
-          printf("\n");
-      }
-      quit();
-    }
-  }
-
   event_cycles = 0;
 
   get_ticks_us(benchmark_ticks + event_number);
@@ -758,6 +667,7 @@ u32 frame_speed = 15000;
 
 u32 real_frame_count = 0;
 u32 virtual_frame_count = 0;
+u32 vblank_count = 0;
 u32 num_skipped_frames = 0;
 u32 interval_skipped_frames;
 u32 frames;
@@ -768,6 +678,7 @@ const u32 frame_interval = 60;
 void vblank_interrupt_handler(u32 sub, u32 *parg)
 {
   real_frame_count++;
+  vblank_count++;
 }
 
 void synchronize()
@@ -777,114 +688,103 @@ void synchronize()
   u64 time_delta;
 //  s32 used_frameskip = game_config_frameskip_value;
   static u32 fps = 60;
-  static u32 frames_drawn = 60;
+  static u32 frames_drawn = 0;
+  static u32 frames_drawn_count = 0;
 
+  // FPS等の表示
   if(psp_fps_debug)
   {
     char print_buffer[256];
 //    int i;
-    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, enable_low_pass_filter);
+    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, left_buffer);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
-//  if(!synchronize_flag)
-//  {
-//    print_string("--FF--", 0xFFFF, 0x000, 0, 0);
-//    used_frameskip = 4;
-//    virtual_frame_count = real_frame_count - 1;
-//  }
-
+  // タイマ値の取得
   get_ticks_us(&new_ticks);
+  // 前回とのタイマの差分
   time_delta = new_ticks - last_screen_timestamp;
   last_screen_timestamp = new_ticks;
+
+  // 差分の合計
   ticks_needed_total += time_delta;
 
-  skip_next_frame = 0;
+  // フレームスキップ フラグの初期化
+  skip_next_frame_flag = 0;
+  // 内部フレーム値の増加
   virtual_frame_count++;
+  frames++;
 
-//  real_frame_count = ((new_ticks -
-//    frame_count_initial_timestamp) * 3) / 50000;
-
-  if(real_frame_count >= virtual_frame_count)
+  // オートフレームスキップ時
+  if(game_config_frameskip_type == auto_frameskip)
   {
-    if((real_frame_count > virtual_frame_count) &&
-     (game_config_frameskip_type == auto_frameskip) &&
-     (num_skipped_frames < game_config_frameskip_value))
+    if(real_frame_count >= virtual_frame_count)
     {
-      skip_next_frame = 1;
-      num_skipped_frames++;
+      // 内部フレーム数に遅れが出ている場合
+      if((real_frame_count > virtual_frame_count)                 // 内部フレームが遅れている
+          && (num_skipped_frames < game_config_frameskip_value))  // スキップしたフレームが設定より小さい
+      {
+        // 次のフレームはスキップ
+        skip_next_frame_flag = 1;
+        // スキップしたフレーム数を増加
+        num_skipped_frames++;
+      }
+      else
+      {
+        // 遅れの出ていない場合
+        virtual_frame_count = real_frame_count;
+        // スキップしたフレーム数は0に初期化
+        num_skipped_frames = 0;
+        frames_drawn_count++;
+      }
     }
     else
     {
-      virtual_frame_count = real_frame_count;
-      num_skipped_frames = 0;
+      // 内部フレーム数が実機を上回る場合
+      if(synchronize_flag)
+      {
+        // VBANK待ち
+        sceDisplayWaitVblankStart();
+        synchronize_sound();
+        frames_drawn_count++;
+        real_frame_count = 0;
+        virtual_frame_count = 0;
+      }
     }
   }
   else
   {
-    if(synchronize_flag)
-    {
-      sceDisplayWaitVblankStart();
-      synchronize_sound();
-      real_frame_count = 0;
-      virtual_frame_count = 0;
-    }
-  }
-
-  frames++;
-
-  if(frames == frame_interval)
-  {
-    u32 new_fps;
-    u32 new_frames_drawn;
-
-    time_delta = new_ticks - last_frame_interval_timestamp;
-    new_fps = 60000000 / time_delta;
-    new_frames_drawn = frame_interval - interval_skipped_frames;
-
-    // Left open for rolling averages
-    fps = new_fps;
-    frames_drawn = new_frames_drawn;
-
-    last_frame_interval_timestamp = new_ticks;
-    interval_skipped_frames = 0;
-    ticks_needed_total = 0;
-    frames = 0;
-  }
-
-  if(game_config_frameskip_type == manual_frameskip)
-  {
-    frameskip_counter = (frameskip_counter + 1) %
-     (game_config_frameskip_value + 1);
+  // マニュアルフレームスキップ時
+    // フレームスキップ数増加
+    num_skipped_frames = (num_skipped_frames + 1) % (game_config_frameskip_value + 1);
     if(game_config_random_skip)
     {
-      if(frameskip_counter != (rand() % (game_config_frameskip_value + 1)))
-        skip_next_frame = 1;
+      if(num_skipped_frames != (rand() % (game_config_frameskip_value + 1)))
+        skip_next_frame_flag = 1;
+      else
+        frames_drawn_count++;
     }
     else
     {
-      if(frameskip_counter)
-        skip_next_frame = 1;
+      // フレームスキップ数=0の時だけ画面更新
+      if(num_skipped_frames)
+        skip_next_frame_flag = 1;
+      else
+        frames_drawn_count++;
     }
   }
 
-  interval_skipped_frames += skip_next_frame;
+  // 60回目のループ
+  if(frames == frame_interval)
+  {
+    fps = vblank_count;
+    vblank_count = 0;
+    frames_drawn = frames_drawn_count;
+    frames_drawn_count = 0;
+  }
 
   if(!synchronize_flag)
     print_string("--FF--", 0xFFFF, 0x000, 0, 0);
-/*
-  sprintf(char_buffer, "%08d %08d %d %d %d\n",
-   real_frame_count, virtual_frame_count, num_skipped_frames,
-   real_frame_count - virtual_frame_count, skip_next_frame);
-  print_string(char_buffer, 0xFFFF, 0x0000, 0, 10);
-*/
-
-/*
-    sprintf(char_buffer, "%02d %02d %06d %07d", frameskip, (u32)ms_needed,
-     ram_translation_ptr - ram_translation_cache, rom_translation_ptr -
-     rom_translation_cache);
-    print_string(char_buffer, 0xFFFF, 0x0000, 0, 0);
-*/
 }
 
 void reset_gba()
@@ -911,9 +811,7 @@ void get_ticks_us(u64 *tick_return)
 {
   u64 ticks;
   sceRtcGetCurrentTick(&ticks);
-
-//  *tick_return = (ticks * 1000000) / sceRtcGetTickResolution();
-    *tick_return = ticks;
+  *tick_return = ticks;
 }
 
 void change_ext(char *src, char *buffer, char *extension)
