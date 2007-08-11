@@ -783,7 +783,7 @@ void synchronize()
   {
     char print_buffer[256];
 //    int i;
-    sprintf(print_buffer, "%d (%d) %d", (int)fps, (int)frames_drawn, enable_low_pass_filter);
+    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, enable_low_pass_filter);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
@@ -819,11 +819,6 @@ void synchronize()
       virtual_frame_count = real_frame_count;
       num_skipped_frames = 0;
     }
-    // Here so that the home button return will eventually work.
-    // If it's not running fullspeed anyway this won't really hurt
-    // it much more.
-
-///    delay_us(1);
   }
   else
   {

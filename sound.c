@@ -465,7 +465,7 @@ u32 gbc_sound_channel_volume_table[8] =
 u32 gbc_sound_envelope_volume_table[16] =
   { FIXED_DIV(0, 15, 14), FIXED_DIV(1, 15, 14), FIXED_DIV(2, 15, 14), FIXED_DIV(3, 15, 14), FIXED_DIV(4, 15, 14), FIXED_DIV(5, 15, 14), FIXED_DIV(6, 15, 14), FIXED_DIV(7, 15, 14), FIXED_DIV(8, 15, 14), FIXED_DIV(9, 15, 14), FIXED_DIV(10, 15, 14), FIXED_DIV(11, 15, 14), FIXED_DIV(12, 15, 14), FIXED_DIV(13, 15, 14), FIXED_DIV(14, 15, 14), FIXED_DIV(15, 15, 14) };
 
-volatile u32 gbc_sound_buffer_index = 0;
+volatile static u32 gbc_sound_buffer_index = 0;
 u32 gbc_sound_last_cpu_ticks = 0;
 u32 gbc_sound_partial_ticks = 0;
 
@@ -659,11 +659,11 @@ void sound_exit()
     //  SDL_CondSignal(sound_cv);
   }
 
-void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)sound_savestate_body(WRITE_MEM)
-;
+void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+  sound_savestate_body(WRITE_MEM);
 
-void sound_read_savestate(FILE_TAG_TYPE savestate_file)sound_savestate_body(READ)
-;
+void sound_read_savestate(FILE_TAG_TYPE savestate_file)
+  sound_savestate_body(READ);
 
 /******************************************************************************
  * ローカル関数の定義
@@ -705,7 +705,7 @@ static int sound_update_thread(SceSize args, void *argp)
 
       while( (temp < SAMPLE_SIZE) )
       {
-        sceKernelDelayThread(0); /* TODO:調整必要 */
+        sceKernelDelayThread(1); /* TODO:調整必要 */
         if (gbc_sound_buffer_index >= sound_read_offset)
         temp = gbc_sound_buffer_index - sound_read_offset;
         else
@@ -779,12 +779,13 @@ void synchronize_sound()
   else
   temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
 
-  while( temp >= (SAMPLE_SIZE * 4) )
+  while( temp >= (SAMPLE_SIZE * 7) )
   {
     if (gbc_sound_buffer_index >= sound_read_offset)
     temp = gbc_sound_buffer_index - sound_read_offset;
     else
     temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
   }
+
 }
 
