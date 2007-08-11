@@ -73,7 +73,8 @@ typedef enum
   CURSOR_EXIT,
   CURSOR_NONE,
   CURSOR_RTRIGGER,
-  CURSOR_LTRIGGER
+  CURSOR_LTRIGGER,
+  KEY_SELECT
 } gui_action_type;
 
 void init_input();

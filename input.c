@@ -156,6 +156,9 @@ gui_action_type get_gui_input()
   if(new_buttons & PSP_CTRL_LTRIGGER)
     new_button = CURSOR_LTRIGGER;
 
+  if(new_buttons & PSP_CTRL_SELECT)
+    new_button = KEY_SELECT;
+
   if(new_button != CURSOR_NONE)
   {
     get_ticks_us(&button_repeat_timestamp);

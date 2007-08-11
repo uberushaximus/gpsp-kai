@@ -779,7 +779,7 @@ void synchronize_sound()
   else
   temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
 
-  while( temp >= (SAMPLE_SIZE * 7) )
+  while( temp >= (SAMPLE_SIZE * 9) )
   {
     if (gbc_sound_buffer_index >= sound_read_offset)
     temp = gbc_sound_buffer_index - sound_read_offset;
