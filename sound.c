@@ -328,7 +328,6 @@ volatile static s32 sound_read_offset = 0; // サウンドバッファの読み�
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
-static u32 gbc_sound_wave_update;
 static u32 audio_thread_exit_flag; // オーディオスレッドの終了フラグ。
 volatile static u32 pause_sound_flag;
 

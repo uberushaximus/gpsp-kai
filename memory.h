@@ -146,8 +146,8 @@ typedef enum
 extern char gamepak_title[13];
 extern char gamepak_code[5];
 extern char gamepak_maker[3];
-extern char gamepak_filename[512];
-extern char gamepak_filename_raw[512];
+extern char gamepak_filename[MAX_FILE];
+extern char gamepak_filename_raw[MAX_PATH];
 
 extern u8 *gamepak_rom;
 extern u32 gamepak_ram_buffer_size;
@@ -172,6 +172,8 @@ extern u32 reg[64];
 extern u8 *memory_map_write[8 * 1024];
 
 extern FILE_TAG_TYPE gamepak_file_large;
+
+extern u32 gbc_sound_wave_update;
 
 // 関数宣言
 

@@ -29,11 +29,11 @@
  * グローバル変数の宣言
  ******************************************************************************/
 extern u32 SAVESTATE_SLOT;
-extern char DEFAULT_ROM_DIR[512];
-extern char DEFAULT_SAVE_DIR[512];
-extern char DEFAULT_CFG_DIR[512];
-extern char DEFAULT_SS_DIR[512];
-extern char DEFAULT_CHEAT_DIR[512];
+extern char DEFAULT_ROM_DIR[MAX_PATH];
+extern char DEFAULT_SAVE_DIR[MAX_PATH];
+extern char DEFAULT_CFG_DIR[MAX_PATH];
+extern char DEFAULT_SS_DIR[MAX_PATH];
+extern char DEFAULT_CHEAT_DIR[MAX_PATH];
 
 /******************************************************************************
  * グローバル関数の宣言

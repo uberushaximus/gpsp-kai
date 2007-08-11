@@ -134,8 +134,8 @@ u32 gamepak_ram_pages;
 char gamepak_title[13];
 char gamepak_code[5];
 char gamepak_maker[3];
-char gamepak_filename[512];
-char gamepak_filename_raw[512];
+char gamepak_filename[MAX_FILE];
+char gamepak_filename_raw[MAX_PATH];
 
 // Enough to map the gamepak RAM space.
 gamepak_swap_entry_type *gamepak_memory_map;
@@ -2042,11 +2042,11 @@ CPU_ALERT_TYPE write_memory32(u32 address, u32 value)
   return CPU_ALERT_NONE;
 }
 
-char backup_filename[512];
+char backup_filename[MAX_FILE];
 
 u32 load_backup(char *name)
 {
-  char backup_path[1024];
+  char backup_path[MAX_PATH];
   FILE_ID backup_file;
 
   if (*DEFAULT_SAVE_DIR != (char)NULL) {
@@ -2230,7 +2230,7 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
   char current_line[256];
   char current_variable[256];
   char current_value[256];
-  char config_path[512];
+  char config_path[MAX_PATH];
 //  u8 *line_ptr;
 //  u32 fgets_value;
   FILE *config_file;
@@ -2384,7 +2384,7 @@ s32 load_gamepak_raw(char *name)
       // ファイルリストでカレントディレクトリを変更された場合
       // ファイルが読めなくなるので、フルパス指定
       char temp_path[MAX_PATH];
-      getcwd(temp_path, 512);
+      getcwd(temp_path, MAX_PATH);
       sprintf(gamepak_filename_raw, "%s/%s", temp_path, name);
     }
 
@@ -2398,7 +2398,7 @@ s32 load_gamepak(char *name)
 {
   char *dot_position = strrchr(name, '.');
   s32 file_size;
-  char cheats_filename[256];
+  char cheats_filename[MAX_FILE];
 
   // ファイルが開いていたら閉じる
   if(FILE_CHECK_VALID(gamepak_file_large))
@@ -2421,7 +2421,7 @@ s32 load_gamepak(char *name)
     gamepak_size = (file_size + 0x7FFF) & ~0x7FFF;
 
     strcpy(backup_filename, name);
-    strncpy(gamepak_filename, name, 512);
+    strncpy(gamepak_filename, name, MAX_FILE);
     change_ext(gamepak_filename, backup_filename, ".sav");
 
     load_backup(backup_filename);
@@ -3406,7 +3406,7 @@ void load_state(char *savestate_filename)
   FILE_OPEN(savestate_file, savestate_path, READ);
   if(FILE_CHECK_VALID(savestate_file))
   {
-    char current_gamepak_filename[512];
+    char current_gamepak_filename[MAX_FILE];
     u32 i;
     u32 current_color;
 

@@ -135,6 +135,8 @@ typedef struct
      gbc_sound_channel[channel].envelope_initial_ticks;                       \
     gbc_sound_channel[channel].envelope_volume =                              \
      gbc_sound_channel[channel].envelope_initial_volume;                      \
+    gbc_sound_channel[channel].sweep_ticks =                                  \
+     gbc_sound_channel[channel].sweep_initial_ticks;                          \
 }                                                                             \
                                                                               \
   gbc_sound_update = 1;                                                       \
@@ -301,7 +303,7 @@ extern u32 gbc_sound_master_volume;
 extern u32 sound_on;
 
 extern u32 global_enable_audio;
-extern u32 enable_low_pass_filter;
+extern u32 left_buffer;
 extern u32 audio_buffer_size_number;
 extern u32 gbc_sound_wave_volume[4];
 

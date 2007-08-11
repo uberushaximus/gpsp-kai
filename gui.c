@@ -803,7 +803,7 @@ s32 load_game_config_file()
 --------------------------------------------------------*/
 s32 load_config_file()
 {
-  char config_path[512];
+  char config_path[MAX_PATH];
   FILE_ID config_file;
 
   sprintf(config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
@@ -944,7 +944,7 @@ u32 menu(u16 *original_screen)
   void menu_load()
   {
     char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
-    char load_filename[512];
+    char load_filename[MAX_FILE];
     save_game_config_file();
 
 //    if(!update_backup_flag)
@@ -1501,7 +1501,7 @@ u32 load_dircfg(char *file_name)
   char current_line[256];
   char current_str[256];
   FILE *msg_file;
-  char msg_path[512];
+  char msg_path[MAX_PATH];
 
   sprintf(msg_path, "%s/%s", main_path, file_name);
 
@@ -1601,7 +1601,7 @@ u32 load_fontcfg(char *file_name)
   char current_line[256];
   char current_str[256];
   FILE *msg_file;
-  char msg_path[512];
+  char msg_path[MAX_PATH];
 
   sprintf(msg_path, "%s/%s", main_path, file_name);
 
@@ -1650,7 +1650,7 @@ u32 load_msgcfg(char *file_name)
   char current_line[256];
   char current_str[256];
   FILE *msg_file;
-  char msg_path[512];
+  char msg_path[MAX_PATH];
 
   sprintf(msg_path, "%s/%s", main_path, file_name);
 

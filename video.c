@@ -3285,7 +3285,7 @@ void update_scanline()
 
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
 
-  if(skip_next_frame)
+  if(skip_next_frame_flag)
     return;
 
   // If the screen is in in forced blank draw pure white.
@@ -3353,7 +3353,7 @@ u32 frame_to_render;
 
 void update_screen()
 {
-  if(!skip_next_frame)
+  if(!skip_next_frame_flag)
     flip_screen();
 }
 
