@@ -88,7 +88,7 @@ extern u32 update_backup_flag;
 extern u32 game_config_clock_speed;
 extern u32 hold_state;
 extern u32 quit_flag;
-extern u32 real_frame_count;
+extern volatile u32 real_frame_count;
 extern u32 virtual_frame_count;
 extern u32 max_frameskip;
 extern u32 num_skipped_frames;

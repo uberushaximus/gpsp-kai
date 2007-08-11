@@ -1,6 +1,11 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.1 test 08 svn rev.***
+	サウンドの遅れの調整
+	フレームスキップ処理の調整
+	サウンドのバグを修正
+
 -UnOfficial gpSP kai 3.1 test 07 svn rev.150
 	タイマー処理の調整
 	サウンドの遅れの調整
