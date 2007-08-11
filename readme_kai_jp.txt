@@ -1,11 +1,9 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 07 svn rev.142
+-UnOfficial gpSP kai 3.1 test 07 svn rev.150
 	タイマー処理の調整
 	サウンドの遅れの調整
-		最大で1/125秒以上ズレ無い様になっています
-		(どの位の精度が必要でしょうか？)
 		サウンドバッファの設定は現在機能していません、内部固定です
 		将来はサウンドバッファの設定を削除する予定です
 		現在の設定値は、以前の2倍の精度になっています
