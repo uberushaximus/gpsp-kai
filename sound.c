@@ -575,7 +575,7 @@ void update_gbc_sound(u32 cpu_ticks)
     ADDRESS16(io_registers, 0x84) = sound_status;
 
     gbc_sound_last_cpu_ticks = cpu_ticks;
-    gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks * 2) -4) % BUFFER_SIZE;
+    gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
   }
 
 void init_sound()
