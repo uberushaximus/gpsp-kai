@@ -304,6 +304,8 @@
   FILE_##type##_ARRAY(savestate_file, gbc_sound_channel);                   \
 }                                                                           \
 
+#define CHECK_BUFFER()                                                      \
+  ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)              \
 /******************************************************************************
  * グローバル変数の定義
  ******************************************************************************/
@@ -312,9 +314,8 @@ GBC_SOUND_STRUCT gbc_sound_channel[4];
 u32 sound_on = 0;
 u32 global_enable_audio = 1;
 u32 audio_buffer_size_number = 1;
-u32 gbc_sound_wave_volume[4] =
-  { 0, 16384, 8192, 4096 };
-u32 enable_low_pass_filter;
+u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
+u32 left_buffer;
 
 /******************************************************************************
  * ローカル変数の定義
@@ -324,7 +325,6 @@ static u32 audio_buffer_size_x2;
 volatile static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
 volatile static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
-static u32 sound_write_count = 0; // サウンドバッファの書込カウンタ
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
@@ -687,45 +687,28 @@ static int sound_update_thread(SceSize args, void *argp)
     // TODO:初期設定に移動
     sound_read_offset = 0;
     memset(buffer, 0, sizeof(buffer));
-    temp = 0;
-    enable_low_pass_filter = 0;
+    left_buffer = 0;
 
     while(!audio_thread_exit_flag)
     {
 
-      if (gbc_sound_buffer_index >= sound_read_offset)
-      temp = gbc_sound_buffer_index - sound_read_offset;
-      else
-      temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
-
-      while( (pause_sound_flag != 0) && (temp < SAMPLE_SIZE) )
+      while( (pause_sound_flag != 0) && (CHECK_BUFFER() < SAMPLE_SIZE) )
       {
-        sceKernelDelayThread(5); // TODO:調整必要
+        sceKernelDelayThread(1);
       }
 
-      while( (temp < SAMPLE_SIZE) )
+      while( (CHECK_BUFFER() < SAMPLE_SIZE) )
       {
-        sceKernelDelayThread(1); /* TODO:調整必要 */
-        if (gbc_sound_buffer_index >= sound_read_offset)
-        temp = gbc_sound_buffer_index - sound_read_offset;
-        else
-        temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+        sceKernelDelayThread(1);
       }
 
-      enable_low_pass_filter = temp / SAMPLE_SIZE;
+      left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
 
       for(i = 0; i < SAMPLE_SIZE; i++)
       {
-        temp_sample = sound_buffer[sound_read_offset];
+        buffer[i] = sound_buffer[sound_read_offset] << 4;
         sound_buffer[sound_read_offset] = 0;
-        if(temp_sample > 2047)
-        temp_sample = 2047;
-        if(temp_sample < -2048)
-        temp_sample = -2048;
-        buffer[i] = temp_sample << 4;
-        sound_read_offset++;
-        if (sound_read_offset >= BUFFER_SIZE)
-        sound_read_offset = 0;
+        sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
       }
 
       sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
@@ -772,20 +755,7 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 
 void synchronize_sound()
 {
-  u32 temp;
-
-  if (gbc_sound_buffer_index >= sound_read_offset)
-  temp = gbc_sound_buffer_index - sound_read_offset;
-  else
-  temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
-
-  while( temp >= (SAMPLE_SIZE * 9) )
-  {
-    if (gbc_sound_buffer_index >= sound_read_offset)
-    temp = gbc_sound_buffer_index - sound_read_offset;
-    else
-    temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
-  }
-
+  while( CHECK_BUFFER() >= (SAMPLE_SIZE * 9) ) // TODO:調整必要
+    ;
 }
 
