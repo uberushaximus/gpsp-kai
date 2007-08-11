@@ -58,6 +58,8 @@ typedef u32 FIXED16_16;
 #define MAX_FILE 64
 #define FILE_ID SceUID
 
+#define SYS_CLOCK (16777216.0)
+
 #define ROR(dest, value, shift)                                             \
   dest = ((value) >> (shift)) | ((value) << (32 - (shift)))                 \
 

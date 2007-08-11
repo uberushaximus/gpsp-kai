@@ -186,7 +186,7 @@ u32 file_length(char *filename, s32 dummy);
       {                                                                       \
         u32 buffer_adjust =                                                   \
          (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
-         SOUND_FREQUENCY) / 16777216.0) * 2;                                  \
+         SOUND_FREQUENCY) / SYS_CLOCK) * 2;                                  \
                                                                               \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
 /*        ADJUST_SOUND_BUFFER(timer_number, 0);                                 \

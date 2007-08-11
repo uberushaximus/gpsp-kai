@@ -100,7 +100,7 @@ typedef struct
 
 #define BUFFER_SIZE  65536                        // バッファのバイト数。
 
-#define SOUND_FREQUENCY 44100
+#define SOUND_FREQUENCY (44100.0)
 
 #define GBC_SOUND_TONE_CONTROL_LOW(channel, address)                          \
 {                                                                             \
@@ -124,7 +124,7 @@ typedef struct
   u32 rate = value & 0x7FF;                                                   \
   gbc_sound_channel[channel].rate = rate;                                     \
   gbc_sound_channel[channel].frequency_step =                                 \
-   FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0) / SOUND_FREQUENCY);    \
+   FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0) / SOUND_FREQUENCY);  \
   gbc_sound_channel[channel].length_status = (value >> 14) & 0x01;            \
   if(value & 0x8000)                                                          \
   {                                                                           \
@@ -192,7 +192,7 @@ typedef struct
   u32 rate = value & 0x7FF;                                                   \
   gbc_sound_channel[2].rate = rate;                                           \
   gbc_sound_channel[2].frequency_step =                                       \
-   FLOAT_TO_FP16_16((2097152.0 / (2048 - rate)) / SOUND_FREQUENCY);           \
+   FLOAT_TO_FP16_16((2097152.0 / (2048.0 - rate)) / SOUND_FREQUENCY);         \
   gbc_sound_channel[2].length_status = (value >> 14) & 0x01;                  \
   if(value & 0x8000)                                                          \
   {                                                                           \
@@ -287,7 +287,7 @@ typedef struct
 
 #define SOUND_UPDATE_FREQUENCY_STEP(timer_number)                             \
   timer[timer_number].frequency_step =                                        \
-   FLOAT_TO_FP16_16(16777216.0 / (timer_reload * SOUND_FREQUENCY))            \
+   FLOAT_TO_FP16_16(SYS_CLOCK / (timer_reload * SOUND_FREQUENCY))            \
 
 /******************************************************************************
  * グローバル変数の宣言

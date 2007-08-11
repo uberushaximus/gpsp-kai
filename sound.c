@@ -35,7 +35,6 @@
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
 #define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
 #define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
-
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
 
@@ -103,7 +102,7 @@
       {                                                                       \
         rate = 2047;                                                          \
       }                                                                       \
-      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048 - rate)) * 8.0)    \
+      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0)  \
         / SOUND_FREQUENCY);                                                   \
                                                                               \
       gs->frequency_step = frequency_step;                                    \
@@ -313,22 +312,24 @@ GBC_SOUND_STRUCT gbc_sound_channel[4];
 u32 sound_on = 0;
 u32 global_enable_audio = 1;
 u32 audio_buffer_size_number = 1;
-u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
+u32 gbc_sound_wave_volume[4] =
+  { 0, 16384, 8192, 4096 };
+u32 enable_low_pass_filter;
 
 /******************************************************************************
  * ローカル変数の定義
  ******************************************************************************/
 static u32 audio_buffer_size;
 static u32 audio_buffer_size_x2;
-static u32 sound_buffer_base = 0;                   // サウンド バッファのベースポインタ
+static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
-static s32 sound_read_offset = 0;                   // サウンドバッファの読み込みオフセット
-static u32 sound_write_count = 0;                   // サウンドバッファの書込カウンタ
+static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
+static u32 sound_write_count = 0; // サウンドバッファの書込カウンタ
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
 static u32 gbc_sound_wave_update;
-static u32 audio_thread_exit_flag;       // オーディオスレッドの終了フラグ。
+static u32 audio_thread_exit_flag; // オーディオスレッドの終了フラグ。
 static u32 pause_sound_flag;
 
 /******************************************************************************
@@ -342,91 +343,95 @@ static int sound_update_thread(SceSize args, void *argp);
  ******************************************************************************/
 // マジカルバケーションの不具合修正
 void sound_timer_queue32(u8 channel)
-{
-  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
-  u8 offset = channel * 4;
-  u8 i;
-
-  for(i = 0xA0; i <= 0xA3; i++)
   {
-    ds->fifo[ds->fifo_top] = ADDRESS8(io_registers, i + offset);
-    ds->fifo_top = (ds->fifo_top + 1) % 32;
+    DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
+    u8 offset = channel * 4;
+    u8 i;
+
+    for (i = 0xA0; i <= 0xA3; i++)
+    {
+      ds->fifo[ds->fifo_top] = ADDRESS8(io_registers, i + offset);
+      ds->fifo_top = (ds->fifo_top + 1) % 32;
+    }
   }
-}
 
 void sound_timer(FIXED16_16 frequency_step, u32 channel)
-{
-  DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
-
-  FIXED16_16 fifo_fractional = ds->fifo_fractional;
-  u32 sound_write_offset = ds->buffer_index;
-  s16 current_sample, next_sample, dest_sample;
-
-  current_sample = ds->fifo[ds->fifo_base] << 4;
-  ds->fifo_base = (ds->fifo_base + 1) % 32;
-  next_sample = ds->fifo[ds->fifo_base] << 4;
-
-  if(sound_on == 1)
   {
-    if(ds->volume == DIRECT_SOUND_VOLUME_50)
+    DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
+
+    FIXED16_16 fifo_fractional = ds->fifo_fractional;
+    u32 sound_write_offset = ds->buffer_index;
+    s16 current_sample, next_sample, dest_sample;
+
+    current_sample = ds->fifo[ds->fifo_base] << 4;
+    ds->fifo_base = (ds->fifo_base + 1) % 32;
+    next_sample = ds->fifo[ds->fifo_base] << 4;
+
+    if (sound_on == 1)
     {
-      current_sample >>= 1;
-      next_sample >>= 1;
+      if (ds->volume == DIRECT_SOUND_VOLUME_50)
+      {
+        current_sample >>= 1;
+        next_sample >>= 1;
+      }
+
+      switch (ds->status)
+        {
+          case DIRECT_SOUND_INACTIVE:
+            RENDER_SAMPLES(NULL)
+            ;
+            break;
+
+          case DIRECT_SOUND_RIGHT:
+            RENDER_SAMPLES(RIGHT)
+            ;
+            break;
+
+          case DIRECT_SOUND_LEFT:
+            RENDER_SAMPLES(LEFT)
+            ;
+            break;
+
+          case DIRECT_SOUND_LEFTRIGHT:
+            RENDER_SAMPLES(BOTH)
+            ;
+            break;
+        }
+    }
+    else
+    {
+      RENDER_SAMPLES(NULL);
     }
 
-    switch(ds->status)
-    {
-      case DIRECT_SOUND_INACTIVE:
-        RENDER_SAMPLES(NULL);
-        break;
+    ds->buffer_index = sound_write_offset;
+    ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
 
-      case DIRECT_SOUND_RIGHT:
-        RENDER_SAMPLES(RIGHT);
-        break;
+    // マジカルバケーションで動作が遅くなるのが改善される
+    u8 fifo_length;
 
-      case DIRECT_SOUND_LEFT:
-        RENDER_SAMPLES(LEFT);
-        break;
+    if (ds->fifo_top > ds->fifo_base)
+      fifo_length = ds->fifo_top - ds->fifo_base;
+    else
+      fifo_length = ds->fifo_top + (32 - ds->fifo_base);
 
-      case DIRECT_SOUND_LEFTRIGHT:
-        RENDER_SAMPLES(BOTH);
-        break;
-    }
+    if (fifo_length <= 16)
+
+      if (((ds->fifo_top - ds->fifo_base) % 32) <= 16)
+      {
+        if (dma[1].direct_sound_channel == channel)
+          dma_transfer(dma + 1);
+
+        if (dma[2].direct_sound_channel == channel)
+          dma_transfer(dma + 2);
+      }
   }
-  else
-  {
-    RENDER_SAMPLES(NULL);
-  }
-
-  ds->buffer_index = sound_write_offset;
-  ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
-
-// マジカルバケーションで動作が遅くなるのが改善される
-  u8 fifo_length;
-
-  if(ds->fifo_top > ds->fifo_base)
-    fifo_length = ds->fifo_top - ds->fifo_base;
-  else
-    fifo_length = ds->fifo_top + (32 - ds->fifo_base);
-
-  if(fifo_length <= 16)
-
-  if(((ds->fifo_top - ds->fifo_base) % 32) <= 16)
-  {
-    if(dma[1].direct_sound_channel == channel)
-      dma_transfer(dma + 1);
-
-    if(dma[2].direct_sound_channel == channel)
-      dma_transfer(dma + 2);
-  }
-}
 
 void sound_reset_fifo(u32 channel)
-{
-  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
+  {
+    DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
 
-  memset(ds->fifo, 0, 32);
-}
+    memset(ds->fifo, 0, 32);
+  }
 
 // Initial pattern data = 4bits (signed)
 // Channel volume = 12bits
@@ -439,11 +444,11 @@ void sound_reset_fifo(u32 channel)
 // Square waves range from -8 (low) to 7 (high)
 
 s8 square_pattern_duty[4][8] =
-{
-  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0xF8, 0xF8, 0xF8 },
-  { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
-  { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
-  { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 },
+  {
+    { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0xF8, 0xF8, 0xF8 },
+    { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
+    { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
+    { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 }, 
 };
 
 s8 wave_samples[64];
@@ -451,39 +456,14 @@ s8 wave_samples[64];
 u32 noise_table15[1024];
 u32 noise_table7[4];
 
-u32 gbc_sound_master_volume_table[4] = { 1, 2, 4, 0 };
+u32 gbc_sound_master_volume_table[4] =
+  { 1, 2, 4, 0 };
 
 u32 gbc_sound_channel_volume_table[8] =
-{
-  FIXED_DIV(0, 7, 12),
-  FIXED_DIV(1, 7, 12),
-  FIXED_DIV(2, 7, 12),
-  FIXED_DIV(3, 7, 12),
-  FIXED_DIV(4, 7, 12),
-  FIXED_DIV(5, 7, 12),
-  FIXED_DIV(6, 7, 12),
-  FIXED_DIV(7, 7, 12)
-};
+  { FIXED_DIV(0, 7, 12), FIXED_DIV(1, 7, 12), FIXED_DIV(2, 7, 12), FIXED_DIV(3, 7, 12), FIXED_DIV(4, 7, 12), FIXED_DIV(5, 7, 12), FIXED_DIV(6, 7, 12), FIXED_DIV(7, 7, 12) };
 
 u32 gbc_sound_envelope_volume_table[16] =
-{
-  FIXED_DIV(0, 15, 14),
-  FIXED_DIV(1, 15, 14),
-  FIXED_DIV(2, 15, 14),
-  FIXED_DIV(3, 15, 14),
-  FIXED_DIV(4, 15, 14),
-  FIXED_DIV(5, 15, 14),
-  FIXED_DIV(6, 15, 14),
-  FIXED_DIV(7, 15, 14),
-  FIXED_DIV(8, 15, 14),
-  FIXED_DIV(9, 15, 14),
-  FIXED_DIV(10, 15, 14),
-  FIXED_DIV(11, 15, 14),
-  FIXED_DIV(12, 15, 14),
-  FIXED_DIV(13, 15, 14),
-  FIXED_DIV(14, 15, 14),
-  FIXED_DIV(15, 15, 14)
-};
+  { FIXED_DIV(0, 15, 14), FIXED_DIV(1, 15, 14), FIXED_DIV(2, 15, 14), FIXED_DIV(3, 15, 14), FIXED_DIV(4, 15, 14), FIXED_DIV(5, 15, 14), FIXED_DIV(6, 15, 14), FIXED_DIV(7, 15, 14), FIXED_DIV(8, 15, 14), FIXED_DIV(9, 15, 14), FIXED_DIV(10, 15, 14), FIXED_DIV(11, 15, 14), FIXED_DIV(12, 15, 14), FIXED_DIV(13, 15, 14), FIXED_DIV(14, 15, 14), FIXED_DIV(15, 15, 14) };
 
 u32 gbc_sound_buffer_index = 0;
 u32 gbc_sound_last_cpu_ticks = 0;
@@ -493,188 +473,178 @@ u32 gbc_sound_master_volume_left;
 u32 gbc_sound_master_volume_right;
 u32 gbc_sound_master_volume;
 
-
 void update_gbc_sound(u32 cpu_ticks)
-{
-  FIXED16_16 buffer_ticks = FLOAT_TO_FP16_16(((float)(cpu_ticks -
-   gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / 16777216.0);
-  u32 i, i2;
-  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
-  FIXED16_16 sample_index, frequency_step;
-  FIXED16_16 tick_counter;
-  u32 sound_write_offset;
-  s32 volume_left, volume_right;
-  u32 envelope_volume;
-  s32 current_sample;
-  u32 sound_status = ADDRESS16(io_registers, 0x84) & 0xFFF0;
-  s8 *sample_data;
-  s8 *wave_bank;
-  u8 *wave_ram = ((u8 *)io_registers) + 0x90;
-
-  gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks);
-  buffer_ticks = FP16_16_TO_U32(buffer_ticks);
-
-  if(gbc_sound_partial_ticks > 0xFFFF)
   {
-    buffer_ticks += 1;
-    gbc_sound_partial_ticks &= 0xFFFF;
+    FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
+    u32 i, i2;
+    GBC_SOUND_STRUCT *gs = gbc_sound_channel;
+    FIXED16_16 sample_index, frequency_step;
+    FIXED16_16 tick_counter;
+    u32 sound_write_offset;
+    s32 volume_left, volume_right;
+    u32 envelope_volume;
+    s32 current_sample;
+    u32 sound_status= ADDRESS16(io_registers, 0x84) & 0xFFF0;
+    s8 *sample_data;
+    s8 *wave_bank;
+    u8 *wave_ram = ((u8 *)io_registers) + 0x90;
+    u32 temp;
+
+    gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks);
+    buffer_ticks = FP16_16_TO_U32(buffer_ticks);
+
+    if (gbc_sound_partial_ticks > 0xFFFF)
+    {
+      buffer_ticks += 1;
+      gbc_sound_partial_ticks &= 0xFFFF;
+    }
+
+    if (gbc_sound_buffer_index >= sound_read_offset)
+    temp = gbc_sound_buffer_index - sound_read_offset;
+    else
+    temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+
+    if (sound_on == 1)
+    {
+      gs = gbc_sound_channel + 0;
+      if (gs->active_flag)
+      {
+        sound_status |= 0x01;
+        sample_data = gs->sample_data;
+        envelope_volume = gs->envelope_volume;
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP)
+        ;
+      }
+
+      gs = gbc_sound_channel + 1;
+      if (gs->active_flag)
+      {
+        sound_status |= 0x02;
+        sample_data = gs->sample_data;
+        envelope_volume = gs->envelope_volume;
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP)
+        ;
+      }
+
+      gs = gbc_sound_channel + 2;
+      if (gbc_sound_wave_update)
+      {
+        GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank)
+        ;
+        gbc_sound_wave_update = 0;
+      }
+
+      if ((gs->active_flag) && (gs->master_enable))
+      {
+        sound_status |= 0x04;
+        sample_data = wave_samples;
+        if (gs->wave_type == 0)
+        {
+          if (gs->wave_bank == 1)
+            sample_data += 32;
+
+          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP)
+          ;
+        }
+        else
+        {
+          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP)
+          ;
+        }
+      }
+
+      gs = gbc_sound_channel + 3;
+      if (gs->active_flag)
+      {
+        sound_status |= 0x08;
+        envelope_volume = gs->envelope_volume;
+
+        if (gs->noise_type == 1)
+        {
+          GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP)
+          ;
+        }
+        else
+        {
+          GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP)
+          ;
+        }
+      }
+    }
+
+    ADDRESS16(io_registers, 0x84) = sound_status;
+
+    gbc_sound_last_cpu_ticks = cpu_ticks;
+    gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks * 2) -4) % BUFFER_SIZE;
   }
-
-//  SDL_LockMutex(sound_mutex);
-/*
-  if(synchronize_flag)
-  {
-    if(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) >
-     (audio_buffer_size_x2))
-    {
-      while(((gbc_sound_buffer_index - sound_buffer_base) % BUFFER_SIZE) >
-       (audio_buffer_size_x2))
-      {
-        SDL_CondWait(sound_cv, sound_mutex);
-      }
-      if(game_config_frameskip_type == auto_frameskip)
-      {
-        sceDisplayWaitVblankStart();
-        real_frame_count = 0;
-        virtual_frame_count = 0;
-      }
-    }
-  }
-*/
-  if(sound_on == 1)
-  {
-    gs = gbc_sound_channel + 0;
-    if(gs->active_flag)
-    {
-      sound_status |= 0x01;
-      sample_data = gs->sample_data;
-      envelope_volume = gs->envelope_volume;
-      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP);
-    }
-
-    gs = gbc_sound_channel + 1;
-    if(gs->active_flag)
-    {
-      sound_status |= 0x02;
-      sample_data = gs->sample_data;
-      envelope_volume = gs->envelope_volume;
-      GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP);
-    }
-
-    gs = gbc_sound_channel + 2;
-    if(gbc_sound_wave_update)
-    {
-      GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank);
-      gbc_sound_wave_update = 0;
-    }
-
-    if((gs->active_flag) && (gs->master_enable))
-    {
-      sound_status |= 0x04;
-      sample_data = wave_samples;
-      if(gs->wave_type == 0)
-      {
-        if(gs->wave_bank == 1)
-          sample_data += 32;
-
-        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP);
-      }
-      else
-      {
-        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP);
-      }
-    }
-
-    gs = gbc_sound_channel + 3;
-    if(gs->active_flag)
-    {
-      sound_status |= 0x08;
-      envelope_volume = gs->envelope_volume;
-
-      if(gs->noise_type == 1)
-      {
-        GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP);
-      }
-      else
-      {
-        GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP);
-      }
-    }
-  }
-
-  ADDRESS16(io_registers, 0x84) = sound_status;
-
-  gbc_sound_last_cpu_ticks = cpu_ticks;
-  gbc_sound_buffer_index =
-   (gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
-}
 
 void init_sound()
-{
-  audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
-  audio_buffer_size_x2 = audio_buffer_size * 2;
-
-  gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
-
-  init_noise_table(noise_table15, 32767, 14);
-  init_noise_table(noise_table7, 127, 6);
-
-  // 変数等の初期化
-  reset_sound();
-
-  pause_sound_flag = 1;
-
-  // サウンド スレッドの作成
-  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x08, 2 * 1024, 0, NULL);
-  if (sound_thread < 0)
   {
-    quit();
+    audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
+    audio_buffer_size_x2 = audio_buffer_size * 2;
+
+    gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
+
+    init_noise_table(noise_table15, 32767, 14);
+    init_noise_table(noise_table7, 127, 6);
+
+    // 変数等の初期化
+    reset_sound();
+
+    // サウンド スレッドの作成
+    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread,
+        0x08, 3 * 1024, 0, NULL);
+    if (sound_thread < 0)
+    {
+      quit();
+    }
+
+    //スレッドの開始
+    sceKernelStartThread(sound_thread, 0, 0);
+
   }
-
-  //スレッドの開始
-  sceKernelStartThread(sound_thread, 0, 0);
-
-}
 
 void reset_sound()
-{
-  DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
-  GBC_SOUND_STRUCT *gs = gbc_sound_channel;
-  u32 i;
-
-  sound_on = 0;
-  sound_buffer_base = 0;
-  sound_last_cpu_ticks = 0;
-  memset(sound_buffer, 0, BUFFER_SIZE * 2);
-
-  for(i = 0; i < 2; i++, ds++)
   {
-    ds->buffer_index = 0;
-    ds->status = DIRECT_SOUND_INACTIVE;
-    ds->fifo_top = 0;
-    ds->fifo_base = 0;
-    ds->fifo_fractional = 0;
-    ds->last_cpu_ticks = 0;
-    memset(ds->fifo, 0, 32);
+    DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
+    GBC_SOUND_STRUCT *gs = gbc_sound_channel;
+    u32 i;
+
+    sound_on = 0;
+    sound_buffer_base = 0;
+    sound_last_cpu_ticks = 0;
+    memset(sound_buffer, 0, BUFFER_SIZE * 2);
+
+    for (i = 0; i < 2; i++, ds++)
+    {
+      ds->buffer_index = 0;
+      ds->status = DIRECT_SOUND_INACTIVE;
+      ds->fifo_top = 0;
+      ds->fifo_base = 0;
+      ds->fifo_fractional = 0;
+      ds->last_cpu_ticks = 0;
+      memset(ds->fifo, 0, 32);
+    }
+
+    gbc_sound_buffer_index = 0;
+    gbc_sound_last_cpu_ticks = 0;
+    gbc_sound_partial_ticks = 0;
+    sound_read_offset = 0;
+
+    gbc_sound_master_volume_left = 0;
+    gbc_sound_master_volume_right = 0;
+    gbc_sound_master_volume = 0;
+    memset(wave_samples, 0, 64);
+
+    pause_sound(1);
+
+    for (i = 0; i < 4; i++, gs++)
+    {
+      gs->status = GBC_SOUND_INACTIVE;
+      gs->sample_data = square_pattern_duty[2];
+      gs->active_flag = 0;
+    }
   }
-
-  gbc_sound_buffer_index = 0;
-  gbc_sound_last_cpu_ticks = 0;
-  gbc_sound_partial_ticks = 0;
-  sound_read_offset = 0;
-
-  gbc_sound_master_volume_left = 0;
-  gbc_sound_master_volume_right = 0;
-  gbc_sound_master_volume = 0;
-  memset(wave_samples, 0, 64);
-
-  for(i = 0; i < 4; i++, gs++)
-  {
-    gs->status = GBC_SOUND_INACTIVE;
-    gs->sample_data = square_pattern_duty[2];
-    gs->active_flag = 0;
-  }
-}
 
 void pause_sound(u32 flag)
   {
@@ -682,130 +652,121 @@ void pause_sound(u32 flag)
   }
 
 void sound_exit()
-{
-//  gbc_sound_buffer_index =
-//   (sound_buffer_base + audio_buffer_size) % BUFFER_SIZE;
-//  SDL_PauseAudio(1);
-//  SDL_CondSignal(sound_cv);
-}
+  {
+    //  gbc_sound_buffer_index =
+    //   (sound_buffer_base + audio_buffer_size) % BUFFER_SIZE;
+    //  SDL_PauseAudio(1);
+    //  SDL_CondSignal(sound_cv);
+  }
 
-void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
-sound_savestate_body(WRITE_MEM);
+void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)sound_savestate_body(WRITE_MEM)
+;
 
-void sound_read_savestate(FILE_TAG_TYPE savestate_file)
-sound_savestate_body(READ);
+void sound_read_savestate(FILE_TAG_TYPE savestate_file)sound_savestate_body(READ)
+;
 
 /******************************************************************************
  * ローカル関数の定義
  ******************************************************************************/
 
 /*--------------------------------------------------------
-  サウンド スレッド
---------------------------------------------------------*/
+ サウンド スレッド
+ --------------------------------------------------------*/
 static int sound_update_thread(SceSize args, void *argp)
-{
-  int audio_handle; // オーディオチャンネルのハンドル。
-  s16 buffer[SAMPLE_SIZE];
-  s16 temp_sample;
-  u32 temp;
-  u32 i;
-
-  // オーディオチャンネルの取得。
-  audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
-
-// TODO:初期設定に移動
-  sound_read_offset = 0;
-  memset(buffer, 0, sizeof(buffer));
-  temp = 0;
-  
-  while(!audio_thread_exit_flag)
   {
-    while( (pause_sound_flag != 0) )
-    {
-      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 2); // TODO:調整必要
-    }
+    int audio_handle; // オーディオチャンネルのハンドル。
+    s16 buffer[SAMPLE_SIZE];
+    s16 temp_sample;
+    u32 temp;
+    u32 i;
 
-    if (gbc_sound_buffer_index >= sound_read_offset)
+    // オーディオチャンネルの取得。
+    audio_handle
+        = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+
+    // TODO:初期設定に移動
+    sound_read_offset = 0;
+    memset(buffer, 0, sizeof(buffer));
+    temp = 0;
+    enable_low_pass_filter = 0;
+
+    while(!audio_thread_exit_flag)
+    {
+
+      if (gbc_sound_buffer_index >= sound_read_offset)
       temp = gbc_sound_buffer_index - sound_read_offset;
-    else
+      else
       temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
 
-    while( (temp < SAMPLE_SIZE) )
-    {
-      sceKernelDelayThread((22.6 * SAMPLE_COUNT) / 2); /* TODO:調整必要 */
-      if (gbc_sound_buffer_index >= sound_read_offset)
-        temp = gbc_sound_buffer_index - sound_read_offset;
-      else
-        temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
-    }
-
-    /* サウンドが遅れた場合の処理 */
-    if((temp > SAMPLE_SIZE * 1.5))
-    {
-      for(i = 0; i < (SAMPLE_SIZE / 2); i++)
+      while( (pause_sound_flag != 0) && (temp < SAMPLE_SIZE) )
       {
-        if (sound_read_offset >= BUFFER_SIZE)
-          sound_read_offset = 0;
-        sound_buffer[sound_read_offset] = 0;
-        sound_read_offset++;
+        sceKernelDelayThread(10); // TODO:調整必要
       }
-      continue;
-    }
 
-    for(i = 0; i < SAMPLE_SIZE; i++)
-    {
-      if (sound_read_offset >= BUFFER_SIZE)
-        sound_read_offset = 0;
-      temp_sample = sound_buffer[sound_read_offset];
-      sound_buffer[sound_read_offset] = 0;
-      if(temp_sample > 2047) 
+      while( (temp < SAMPLE_SIZE) )
+      {
+        sceKernelDelayThread(10); /* TODO:調整必要 */
+        if (gbc_sound_buffer_index >= sound_read_offset)
+        temp = gbc_sound_buffer_index - sound_read_offset;
+        else
+        temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+      }
+
+      enable_low_pass_filter = temp / SAMPLE_SIZE;
+
+      for(i = 0; i < SAMPLE_SIZE; i++)
+      {
+        temp_sample = sound_buffer[sound_read_offset];
+        sound_buffer[sound_read_offset] = 0;
+        if(temp_sample > 2047)
         temp_sample = 2047;
-      if(temp_sample < -2048)
+        if(temp_sample < -2048)
         temp_sample = -2048;
-      buffer[i] = temp_sample << 4;
-      sound_read_offset++;
+        buffer[i] = temp_sample << 4;
+        sound_read_offset++;
+        if (sound_read_offset >= BUFFER_SIZE)
+        sound_read_offset = 0;
+      }
+
+      sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
     }
 
-    sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
+    memset(buffer, 0, sizeof(buffer));
+    sceAudioOutputPannedBlocking(audio_handle, 0, 0, &buffer);
+    sceAudioChRelease(audio_handle);
+    sceKernelExitThread(0);
+    return 0;
   }
 
-  memset(buffer, 0, sizeof(buffer));
-  sceAudioOutputPannedBlocking(audio_handle, 0, 0, &buffer);
-  sceAudioChRelease(audio_handle);
-  sceKernelExitThread(0);
-  return 0;
-}
-
-// Special thanks to blarrg for the LSFR frequency used in Meridian, as posted
-// on the forum at http://meridian.overclocked.org:
-// http://meridian.overclocked.org/cgi-bin/wwwthreads/showpost.pl?Board=merid
-// angeneraldiscussion&Number=2069&page=0&view=expanded&mode=threaded&sb=4
-// Hope you don't mind me borrowing it ^_-
+  // Special thanks to blarrg for the LSFR frequency used in Meridian, as posted
+  // on the forum at http://meridian.overclocked.org:
+  // http://meridian.overclocked.org/cgi-bin/wwwthreads/showpost.pl?Board=merid
+  // angeneraldiscussion&Number=2069&page=0&view=expanded&mode=threaded&sb=4
+  // Hope you don't mind me borrowing it ^_-
 
 void init_noise_table(u32 *table, u32 period, u32 bit_length)
-{
-  u32 shift_register = 0xFF;
-  u32 mask = ~(1 << bit_length);
-  s32 table_pos, bit_pos;
-  u32 current_entry;
-  u32 table_period = (period + 31) / 32;
-
-  // Bits are stored in reverse order so they can be more easily moved to
-  // bit 31, for sign extended shift down.
-
-  for(table_pos = 0; table_pos < table_period; table_pos++)
   {
-    current_entry = 0;
-    for(bit_pos = 31; bit_pos >= 0; bit_pos--)
+    u32 shift_register = 0xFF;
+    u32 mask = ~(1 << bit_length);
+    s32 table_pos, bit_pos;
+    u32 current_entry;
+    u32 table_period = (period + 31) / 32;
+
+    // Bits are stored in reverse order so they can be more easily moved to
+    // bit 31, for sign extended shift down.
+
+    for (table_pos = 0; table_pos < table_period; table_pos++)
     {
-      current_entry |= (shift_register & 0x01) << bit_pos;
+      current_entry = 0;
+      for (bit_pos = 31; bit_pos >= 0; bit_pos--)
+      {
+        current_entry |= (shift_register & 0x01) << bit_pos;
 
-      shift_register =
-       ((1 & (shift_register ^ (shift_register >> 1))) << bit_length) |
-       ((shift_register >> 1) & mask);
+        shift_register =((1 & (shift_register ^ (shift_register >> 1)))
+            << bit_length) |((shift_register >> 1) & mask);
+      }
+
+      table[table_pos] = current_entry;
     }
-
-    table[table_pos] = current_entry;
   }
-}
 

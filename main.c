@@ -155,7 +155,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
       timer[timer_number].count +=                                            \
         (timer[timer_number].reload << timer[timer_number].prescale);         \
       io_registers[REG_TM##timer_number##D] =                                 \
-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
+        0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
     }                                                                         \
   }                                                                           \
 
@@ -189,7 +189,7 @@ void init_main()
     dma[i].start_type = DMA_INACTIVE;
     dma[i].direct_sound_channel = DMA_NO_DIRECT_SOUND;
     timer[i].status = TIMER_INACTIVE;
-    timer[i].reload = 0x10000;
+    timer[i].reload = 0xFFFF;
     timer[i].stop_cpu_ticks = 0;
   }
 
@@ -468,9 +468,8 @@ int user_main(SceSize argc, char *argv)
   last_frame = 0;
   set_cpu_clock(game_config_clock_speed);
 
-  // We'll never actually return from here.
+  pause_sound(0);
 
-//  get_ticks_us(&frame_count_initial_timestamp);
   execute_arm_translate(execute_cycles);
 //  execute_arm(execute_cycles);
   return 0;
@@ -782,7 +781,7 @@ void synchronize()
   {
     char print_buffer[256];
 //    int i;
-    sprintf(print_buffer, "%d (%d)", (int)fps, (int)frames_drawn);
+    sprintf(print_buffer, "%d (%d) %d", (int)fps, (int)frames_drawn, enable_low_pass_filter);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
@@ -826,10 +825,8 @@ void synchronize()
   }
   else
   {
-    if((synchronize_flag) /*&&
-     ((time_delta < frame_speed) && synchronize_flag)*/)
+    if(synchronize_flag)
     {
-//      delay_us(frame_speed - time_delta);
       sceDisplayWaitVblankStart();
       real_frame_count = 0;
       virtual_frame_count = 0;
