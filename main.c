@@ -474,36 +474,6 @@ int user_main(SceSize argc, char *argv)
   return 0;
 }
 
-void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str)
-{
-  u32 other_region_counter = region_stats[0x1] + region_stats[0xE] + region_stats[0xF];
-  u32 rom_region_counter = region_stats[0x8] + region_stats[0x9] + region_stats[0xA] +
-   region_stats[0xB] + region_stats[0xC] + region_stats[0xD];
-  u32 _counter = *counter;
-
-  printf("memory access stats: %s (out of %d)\n", stats_str, (int)_counter);
-  printf("bios: %f%%\tiwram: %f%%\tewram: %f%%\tvram: %f\n",
-   region_stats[0x0] * 100.0 / _counter, region_stats[0x3] * 100.0 / _counter,
-   region_stats[0x2] * 100.0 / _counter, region_stats[0x6] * 100.0 / _counter);
-
-  printf("oam: %f%%\tpalette: %f%%\trom: %f%%\tother: %f%%\n",
-   region_stats[0x7] * 100.0 / _counter, region_stats[0x5] * 100.0 / _counter,
-   rom_region_counter * 100.0 / _counter, other_region_counter * 100.0 / _counter);
-
-  *counter = 0;
-  memset(region_stats, 0, sizeof(u32) * 16);
-}
-
-u32 event_cycles = 0;
-const u32 event_cycles_trigger = 60 * 5;
-u32 no_alpha = 0;
-
-  event_cycles = 0;
-
-  get_ticks_us(benchmark_ticks + event_number);
-  event_number++;
-}
-
 u32 check_power()
   {
     if (power_flag == 0) return 0;
@@ -665,9 +635,9 @@ u32 update_gba()
 u64 last_screen_timestamp = 0;
 u32 frame_speed = 15000;
 
-u32 real_frame_count = 0;
+volatile u32 real_frame_count = 0;
 u32 virtual_frame_count = 0;
-u32 vblank_count = 0;
+volatile u32 vblank_count = 0;
 u32 num_skipped_frames = 0;
 u32 interval_skipped_frames;
 u32 frames;
@@ -684,9 +654,6 @@ void vblank_interrupt_handler(u32 sub, u32 *parg)
 void synchronize()
 {
 //  char char_buffer[64];
-  u64 new_ticks;
-  u64 time_delta;
-//  s32 used_frameskip = game_config_frameskip_value;
   static u32 fps = 60;
   static u32 frames_drawn = 0;
   static u32 frames_drawn_count = 0;
@@ -699,15 +666,6 @@ void synchronize()
     sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, left_buffer);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
-
-  // タイマ値の取得
-  get_ticks_us(&new_ticks);
-  // 前回とのタイマの差分
-  time_delta = new_ticks - last_screen_timestamp;
-  last_screen_timestamp = new_ticks;
-
-  // 差分の合計
-  ticks_needed_total += time_delta;
 
   // フレームスキップ フラグの初期化
   skip_next_frame_flag = 0;
@@ -752,7 +710,8 @@ void synchronize()
       }
     }
   }
-  else
+
+  if(game_config_frameskip_type == manual_frameskip)
   {
   // マニュアルフレームスキップ時
     // フレームスキップ数増加
@@ -774,10 +733,27 @@ void synchronize()
     }
   }
 
-  // 60回目のループ
-  if(frames == frame_interval)
+  // フレームスキップなし時
+  if(game_config_frameskip_type == no_frameskip)
   {
-    fps = vblank_count;
+    frames_drawn_count++;
+    if((real_frame_count < virtual_frame_count) && (synchronize_flag))
+    {
+      // 内部フレーム数が実機を上回る場合
+      // VBANK待ち
+      sceDisplayWaitVblankStart();
+      synchronize_sound();
+    }
+    real_frame_count = 0;
+    virtual_frame_count = 0;
+  }
+
+  // FPSのカウント
+  // 1/60秒のVBLANK割込みがあるので、タイマは使用しないようにした
+  if(frames == 60)
+  {
+    frames = 0;
+    fps = 3600 / vblank_count;
     vblank_count = 0;
     frames_drawn = frames_drawn_count;
     frames_drawn_count = 0;
