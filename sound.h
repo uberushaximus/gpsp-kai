@@ -316,5 +316,6 @@ void sound_read_savestate(FILE_TAG_TYPE savestate_file);
 void pause_sound(u32 flag);
 void reset_sound();
 void sound_exit();
+void synchronize_sound();
 
 #endif
