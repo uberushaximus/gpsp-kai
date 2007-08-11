@@ -668,7 +668,8 @@ u32 update_gba()
 //          u32 i;
 
           dispstat |= 0x01;
-          if(dispstat & 0x8) {
+          if(dispstat & 0x8)
+          {
             irq_raised |= IRQ_VBLANK;
           }
 
@@ -695,7 +696,7 @@ u32 update_gba()
         if(vcount == 228) {
           // Transition from vblank to next screen
           dispstat &= ~0x01;
-//          frame_ticks++;
+          frame_ticks++;
 
           if (update_input())
             continue;
@@ -722,7 +723,8 @@ u32 update_gba()
         if(vcount == (dispstat >> 8)) {
           // vcount trigger
           dispstat |= 0x04;
-          if(dispstat & 0x20) {
+          if(dispstat & 0x20)
+          {
             irq_raised |= IRQ_VCOUNT;
           }
         }
@@ -828,6 +830,7 @@ void synchronize()
     if(synchronize_flag)
     {
       sceDisplayWaitVblankStart();
+      synchronize_sound();
       real_frame_count = 0;
       virtual_frame_count = 0;
     }
