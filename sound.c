@@ -33,7 +33,7 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
+#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(128) // サンプル数
 #define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
@@ -321,16 +321,16 @@ u32 enable_low_pass_filter;
  ******************************************************************************/
 static u32 audio_buffer_size;
 static u32 audio_buffer_size_x2;
-static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
+volatile static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
-static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
+volatile static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
 static u32 sound_write_count = 0; // サウンドバッファの書込カウンタ
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
 static u32 gbc_sound_wave_update;
 static u32 audio_thread_exit_flag; // オーディオスレッドの終了フラグ。
-static u32 pause_sound_flag;
+volatile static u32 pause_sound_flag;
 
 /******************************************************************************
  * ローカル関数の宣言
@@ -465,7 +465,7 @@ u32 gbc_sound_channel_volume_table[8] =
 u32 gbc_sound_envelope_volume_table[16] =
   { FIXED_DIV(0, 15, 14), FIXED_DIV(1, 15, 14), FIXED_DIV(2, 15, 14), FIXED_DIV(3, 15, 14), FIXED_DIV(4, 15, 14), FIXED_DIV(5, 15, 14), FIXED_DIV(6, 15, 14), FIXED_DIV(7, 15, 14), FIXED_DIV(8, 15, 14), FIXED_DIV(9, 15, 14), FIXED_DIV(10, 15, 14), FIXED_DIV(11, 15, 14), FIXED_DIV(12, 15, 14), FIXED_DIV(13, 15, 14), FIXED_DIV(14, 15, 14), FIXED_DIV(15, 15, 14) };
 
-u32 gbc_sound_buffer_index = 0;
+volatile u32 gbc_sound_buffer_index = 0;
 u32 gbc_sound_last_cpu_ticks = 0;
 u32 gbc_sound_partial_ticks = 0;
 
@@ -700,12 +700,12 @@ static int sound_update_thread(SceSize args, void *argp)
 
       while( (pause_sound_flag != 0) && (temp < SAMPLE_SIZE) )
       {
-        sceKernelDelayThread(10); // TODO:調整必要
+        sceKernelDelayThread(5); // TODO:調整必要
       }
 
       while( (temp < SAMPLE_SIZE) )
       {
-        sceKernelDelayThread(10); /* TODO:調整必要 */
+        sceKernelDelayThread(0); /* TODO:調整必要 */
         if (gbc_sound_buffer_index >= sound_read_offset)
         temp = gbc_sound_buffer_index - sound_read_offset;
         else
@@ -769,4 +769,22 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
       table[table_pos] = current_entry;
     }
   }
+
+void synchronize_sound()
+{
+  u32 temp;
+
+  if (gbc_sound_buffer_index >= sound_read_offset)
+  temp = gbc_sound_buffer_index - sound_read_offset;
+  else
+  temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+
+  while( temp >= (SAMPLE_SIZE * 4) )
+  {
+    if (gbc_sound_buffer_index >= sound_read_offset)
+    temp = gbc_sound_buffer_index - sound_read_offset;
+    else
+    temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
+  }
+}
 
