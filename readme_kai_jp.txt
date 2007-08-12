@@ -2,6 +2,11 @@
 
 -- Release log --
 -UnOfficial gpSP kai 3.1 test 08 svn rev.165
+	ステートセーブのデータが読めないバグを修正
+		申し訳ありませんが、test 8で保存したデータは読めません
+	サウンドスレッドの調整
+
+-UnOfficial gpSP kai 3.1 test 08 svn rev.165
 	サウンドの遅れの調整
 	フレームスキップ処理の調整
 	サウンドのバグを修正
