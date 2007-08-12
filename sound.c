@@ -579,8 +579,7 @@ void update_gbc_sound(u32 cpu_ticks)
 
 void init_sound()
   {
-    audio_buffer_size = (audio_buffer_size_number * 1024) + 2048;
-    audio_buffer_size_x2 = audio_buffer_size * 2;
+    audio_buffer_size = SAMPLE_SIZE * (10 + audio_buffer_size_number);
 
     gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
 
@@ -648,6 +647,7 @@ void reset_sound()
 void pause_sound(u32 flag)
   {
     pause_sound_flag = flag;
+    audio_buffer_size = SAMPLE_SIZE * (15 + audio_buffer_size_number);
   }
 
 void sound_exit()
@@ -675,8 +675,6 @@ static int sound_update_thread(SceSize args, void *argp)
   {
     int audio_handle; // オーディオチャンネルのハンドル。
     s16 buffer[SAMPLE_SIZE];
-    s16 temp_sample;
-    u32 temp;
     u32 i;
 
     // オーディオチャンネルの取得。
@@ -691,14 +689,14 @@ static int sound_update_thread(SceSize args, void *argp)
     while(!audio_thread_exit_flag)
     {
 
-      while( (pause_sound_flag != 0) && (CHECK_BUFFER() < SAMPLE_SIZE) )
+      while( (pause_sound_flag != 0) && (CHECK_BUFFER() < audio_buffer_size) )
       {
         sceKernelDelayThread(1);
       }
 
-      while( (CHECK_BUFFER() < SAMPLE_SIZE) )
+      while(CHECK_BUFFER() < SAMPLE_SIZE)
       {
-        sceKernelDelayThread(1);
+        sceKernelDelayThread(0);
       }
 
       left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
@@ -754,7 +752,6 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 
 void synchronize_sound()
 {
-  while( CHECK_BUFFER() >= (SAMPLE_SIZE * 9) ) // TODO:調整必要
+  while( CHECK_BUFFER() >= audio_buffer_size ) // TODO:調整必要
     ;
 }
-

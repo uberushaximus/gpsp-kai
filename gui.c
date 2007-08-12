@@ -1491,6 +1491,8 @@ u32 menu(u16 *original_screen)
   set_cpu_clock(game_config_clock_speed);
 
   pause_sound(0);
+  real_frame_count = 0;
+  virtual_frame_count = 0;
   return return_value;
 }
 

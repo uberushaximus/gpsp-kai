@@ -2422,31 +2422,7 @@ fill_line_builder(color32);
 
 // Blend top two pixels of scanline with each other.
 
-#ifdef RENDER_COLOR16_NORMAL
-
-void expand_normal(u16 *screen_ptr, u32 start, u32 end)
-{
-  u32 i, pixel_source;
-  screen_ptr += start;
-
-  return;
-
-  end -= start;
-
-  for(i = 0; i < end; i++)
-  {
-    pixel_source = *screen_ptr;
-    *screen_ptr = palette_ram_converted[pixel_source];
-
-    screen_ptr++;
-  }
-}
-
-#else
-
 #define expand_normal(screen_ptr, start, end)
-
-#endif
 
 void expand_blend(u32 *screen_src_ptr, u16 *screen_dest_ptr,
  u32 start, u32 end)
@@ -3269,11 +3245,9 @@ void update_scanline()
 {
   u32 pitch = get_screen_pitch();
   u32 dispcnt = io_registers[REG_DISPCNT];
-//  u32 display_flags = (dispcnt >> 8) & 0x1F;
   u32 vcount = io_registers[REG_VCOUNT];
   u16 *screen_offset = get_screen_pixels() + (vcount * pitch);
   u32 video_mode = dispcnt & 0x07;
-//  u32 current_layer;
 
   // If OAM has been modified since the last scanline has been updated then
   // reorder and reprofile the OBJ lists.

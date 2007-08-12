@@ -468,7 +468,9 @@ int user_main(SceSize argc, char *argv)
   set_cpu_clock(game_config_clock_speed);
 
   pause_sound(0);
-
+  real_frame_count = 0;
+  virtual_frame_count = 0;
+  
   execute_arm_translate(execute_cycles);
 //  execute_arm(execute_cycles);
   return 0;
@@ -651,6 +653,7 @@ void vblank_interrupt_handler(u32 sub, u32 *parg)
   vblank_count++;
 }
 
+// TODO:最適化
 void synchronize()
 {
 //  char char_buffer[64];
@@ -663,7 +666,7 @@ void synchronize()
   {
     char print_buffer[256];
 //    int i;
-    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, left_buffer);
+    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
@@ -675,11 +678,12 @@ void synchronize()
   // オートフレームスキップ時
   if(game_config_frameskip_type == auto_frameskip)
   {
-    if(real_frame_count >= virtual_frame_count)
+    virtual_frame_count++;
+
+    // 内部フレーム数に遅れが出ている場合
+    if(real_frame_count > virtual_frame_count)
     {
-      // 内部フレーム数に遅れが出ている場合
-      if((real_frame_count > virtual_frame_count)                 // 内部フレームが遅れている
-          && (num_skipped_frames < game_config_frameskip_value))  // スキップしたフレームが設定より小さい
+      if(num_skipped_frames < game_config_frameskip_value)  // スキップしたフレームが設定より小さい
       {
         // 次のフレームはスキップ
         skip_next_frame_flag = 1;
@@ -688,32 +692,44 @@ void synchronize()
       }
       else
       {
-        // 遅れの出ていない場合
-        virtual_frame_count = real_frame_count;
+        // 設定の上限に達した場合
+//        real_frame_count = virtual_frame_count;
         // スキップしたフレーム数は0に初期化
         num_skipped_frames = 0;
         frames_drawn_count++;
       }
     }
-    else
+
+    // 内部フレーム数が同じ場合
+    if(real_frame_count == virtual_frame_count)
     {
+      // スキップしたフレーム数は0に初期化
+      num_skipped_frames = 0;
+      frames_drawn_count++;
+    }
+
       // 内部フレーム数が実機を上回る場合
-      if(synchronize_flag)
-      {
-        // VBANK待ち
-        sceDisplayWaitVblankStart();
-        synchronize_sound();
-        virtual_frame_count++;
-        frames_drawn_count++;
-        real_frame_count = 0;
-        virtual_frame_count = 0;
-      }
+    if(real_frame_count < virtual_frame_count)
+    {
+      num_skipped_frames = 0;
+      frames_drawn_count++;
+    }
+
+    // 内部フレーム数が実機を上回る場合
+    if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
+    {
+      // VBANK待ち
+      synchronize_sound();
+      sceDisplayWaitVblankStart();
+      real_frame_count = 0;
+      virtual_frame_count = 0;
     }
   }
 
+  // マニュアルフレームスキップ時
   if(game_config_frameskip_type == manual_frameskip)
   {
-  // マニュアルフレームスキップ時
+    virtual_frame_count++;
     // フレームスキップ数増加
     num_skipped_frames = (num_skipped_frames + 1) % (game_config_frameskip_value + 1);
     if(game_config_random_skip)
@@ -721,32 +737,26 @@ void synchronize()
       if(num_skipped_frames != (rand() % (game_config_frameskip_value + 1)))
         skip_next_frame_flag = 1;
       else
-      {
-        virtual_frame_count++;
         frames_drawn_count++;
-      }
     }
     else
     {
       // フレームスキップ数=0の時だけ画面更新
-      if(num_skipped_frames)
+      if(num_skipped_frames != 0)
         skip_next_frame_flag = 1;
       else
-      {
-        virtual_frame_count++;
         frames_drawn_count++;
-      }
     }
 
+    // 内部フレーム数が実機を上回る場合
     if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
     {
-      // 内部フレーム数が実機を上回る場合
       // VBANK待ち
-      sceDisplayWaitVblankStart();
       synchronize_sound();
-      real_frame_count = 0;
-      virtual_frame_count = 0;
+      sceDisplayWaitVblankStart();
     }
+    real_frame_count = 0;
+    virtual_frame_count = 0;
   }
 
   // フレームスキップなし時
@@ -758,8 +768,8 @@ void synchronize()
     {
       // 内部フレーム数が実機を上回る場合
       // VBANK待ち
-      sceDisplayWaitVblankStart();
       synchronize_sound();
+      sceDisplayWaitVblankStart();
     }
     real_frame_count = 0;
     virtual_frame_count = 0;
