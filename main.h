@@ -121,7 +121,7 @@ u32 file_length(char *filename, s32 dummy);
 // TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
 // 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0xFFFF - value;                                \
+  timer[timer_number].reload = 0x10000 - value;                               \
   if(timer_number < 2)                                                        \
   {                                                                           \
     u32 timer_reload =                                                        \
@@ -153,7 +153,7 @@ u32 file_length(char *filename, s32 dummy);
       u32 timer_reload = timer[timer_number].reload;                          \
                                                                               \
       /* カスケードモードか判別(タイマー0以外)*/                              \
-      if(((value >> 2) & 0x01)&&(timer_number != 0))                          \
+      if(((value >> 2) & 0x01) && (timer_number != 0))                        \
       {                                                                       \
         /* カスケードモード */                                                \
         timer[timer_number].status = TIMER_CASCADE;                           \
@@ -177,7 +177,7 @@ u32 file_length(char *filename, s32 dummy);
       /* カウンタを設定 */                                                    \
       timer[timer_number].count = timer_reload;                               \
       ADDRESS16(io_registers, 0x100 + (timer_number * 4)) =                   \
-       0xFFFF - timer_reload;                                                 \
+       0x10000 - timer_reload;                                                \
                                                                               \
       if(timer_reload < execute_cycles)                                       \
         execute_cycles = timer_reload;                                        \

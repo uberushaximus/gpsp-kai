@@ -109,7 +109,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
     CHECK_COUNT(timer[timer_number].count);                                   \
 
 // タイマーのアップデート
-// 実機では0~0xFFFFだが、gpSP内部では (0xFFFF~0)<<prescale(0,6,8,10)の値をとる
+// 実機では0~0xFFFFだが、gpSP内部では (0x10000~1)<<prescale(0,6,8,10)の値をとる
 #define update_timer(timer_number)                                            \
   if(timer[timer_number].status != TIMER_INACTIVE)                            \
   {                                                                           \
@@ -121,7 +121,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
       timer[timer_number].count -= execute_cycles;                            \
       /* レジスタに書込 */                                                    \
       io_registers[REG_TM##timer_number##D] =                                 \
-       0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale);  \
+       0x10000 - (timer[timer_number].count >> timer[timer_number].prescale); \
     }                                                                         \
                                                                               \
     if(timer[timer_number].count <= 0)                                        \
@@ -139,7 +139,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
         timer[timer_number + 1].count--;                                      \
         /* レジスタに書込 */                                                  \
         io_registers[REG_TM0D + (timer_number + 1) * 2] =                     \
-          0xFFFF - (timer[timer_number + 1].count);                           \
+          0x10000 - (timer[timer_number + 1].count);                          \
       }                                                                       \
                                                                               \
       if(timer_number < 2)                                                    \
@@ -155,7 +155,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
       timer[timer_number].count +=                                            \
         (timer[timer_number].reload << timer[timer_number].prescale);         \
       io_registers[REG_TM##timer_number##D] =                                 \
-        0xFFFF - (timer[timer_number].count >> timer[timer_number].prescale); \
+        0x10000 - (timer[timer_number].count >> timer[timer_number].prescale);\
     }                                                                         \
   }                                                                           \
 
@@ -188,7 +188,7 @@ void init_main()
     dma[i].start_type = DMA_INACTIVE;
     dma[i].direct_sound_channel = DMA_NO_DIRECT_SOUND;
     timer[i].status = TIMER_INACTIVE;
-    timer[i].reload = 0xFFFF;
+    timer[i].reload = 0x10000;
     timer[i].stop_cpu_ticks = 0;
   }
 

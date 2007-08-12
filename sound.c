@@ -151,8 +151,6 @@
   tick_counter += gbc_sound_tick_step;                                        \
   if(tick_counter > 0xFFFF)                                                   \
   {                                                                           \
-    tick_counter &= 0xFFFF;                                                   \
-                                                                              \
     if(gs->length_status)                                                     \
     {                                                                         \
       u32 length_ticks = gs->length_ticks - 1;                                \
@@ -167,6 +165,8 @@
                                                                               \
     UPDATE_TONE_##envelope_op();                                              \
     UPDATE_TONE_##sweep_op();                                                 \
+                                                                              \
+    tick_counter &= 0xFFFF;                                                   \
   }                                                                           \
 
 // サウンドバッファにLEFT CHANNELのデータを書込む
@@ -504,6 +504,7 @@ void update_gbc_sound(u32 cpu_ticks)
 
     if (sound_on == 1)
     {
+      // Channel 0
       gs = gbc_sound_channel + 0;
       if (gs->active_flag)
       {
@@ -514,6 +515,7 @@ void update_gbc_sound(u32 cpu_ticks)
         ;
       }
 
+      // Channel 1
       gs = gbc_sound_channel + 1;
       if (gs->active_flag)
       {
@@ -524,6 +526,7 @@ void update_gbc_sound(u32 cpu_ticks)
         ;
       }
 
+      // Channel 2
       gs = gbc_sound_channel + 2;
       if (gbc_sound_wave_update)
       {
@@ -551,6 +554,7 @@ void update_gbc_sound(u32 cpu_ticks)
         }
       }
 
+      // Channel 3
       gs = gbc_sound_channel + 3;
       if (gs->active_flag)
       {
