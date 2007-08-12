@@ -55,7 +55,7 @@ typedef s32 FILE_TAG_TYPE;
 typedef u32 FIXED16_16;
 
 #define MAX_PATH 1024
-#define MAX_FILE 256
+#define MAX_FILE 512
 #define FILE_ID SceUID
 
 #define SYS_CLOCK (16777216.0)

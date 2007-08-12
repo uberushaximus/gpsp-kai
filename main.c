@@ -344,8 +344,8 @@ int user_main(SceSize argc, char *argv)
 //  u32 vcount = 0;
 //  u32 ticks;
 //  u32 dispstat;
-  char load_filename[512];
-  char filename[512];
+  char load_filename[MAX_FILE];
+  char filename[MAX_FILE];
 
   quit_flag = 0;
   power_flag = 0;
@@ -665,7 +665,6 @@ void synchronize()
   if(psp_fps_debug)
   {
     char print_buffer[256];
-//    int i;
     sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
@@ -675,104 +674,104 @@ void synchronize()
   // 内部フレーム値の増加
   frames++;
 
-  // オートフレームスキップ時
-  if(game_config_frameskip_type == auto_frameskip)
+  switch(game_config_frameskip_type)
   {
-    virtual_frame_count++;
+  // オートフレームスキップ時
+    case auto_frameskip:
+      virtual_frame_count++;
 
-    // 内部フレーム数に遅れが出ている場合
-    if(real_frame_count > virtual_frame_count)
-    {
-      if(num_skipped_frames < game_config_frameskip_value)  // スキップしたフレームが設定より小さい
+      // 内部フレーム数に遅れが出ている場合
+      if(real_frame_count > virtual_frame_count)
       {
-        // 次のフレームはスキップ
-        skip_next_frame_flag = 1;
-        // スキップしたフレーム数を増加
-        num_skipped_frames++;
+        if(num_skipped_frames < game_config_frameskip_value)  // スキップしたフレームが設定より小さい
+        {
+          // 次のフレームはスキップ
+          skip_next_frame_flag = 1;
+          // スキップしたフレーム数を増加
+          num_skipped_frames++;
+        }
+        else
+        {
+          // 設定の上限に達した場合
+//          real_frame_count = virtual_frame_count;
+          // スキップしたフレーム数は0に初期化
+          num_skipped_frames = 0;
+          frames_drawn_count++;
+        }
       }
-      else
+
+      // 内部フレーム数が同じ場合
+      if(real_frame_count == virtual_frame_count)
       {
-        // 設定の上限に達した場合
-//        real_frame_count = virtual_frame_count;
         // スキップしたフレーム数は0に初期化
         num_skipped_frames = 0;
         frames_drawn_count++;
       }
-    }
-
-    // 内部フレーム数が同じ場合
-    if(real_frame_count == virtual_frame_count)
-    {
-      // スキップしたフレーム数は0に初期化
-      num_skipped_frames = 0;
-      frames_drawn_count++;
-    }
 
       // 内部フレーム数が実機を上回る場合
-    if(real_frame_count < virtual_frame_count)
-    {
-      num_skipped_frames = 0;
-      frames_drawn_count++;
-    }
+      if(real_frame_count < virtual_frame_count)
+      {
+        num_skipped_frames = 0;
+        frames_drawn_count++;
+      }
 
-    // 内部フレーム数が実機を上回る場合
-    if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
-    {
-      // VBANK待ち
-      synchronize_sound();
-      sceDisplayWaitVblankStart();
+      // 内部フレーム数が実機を上回る場合
+      if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
+      {
+        // VBANK待ち
+        synchronize_sound();
+        sceDisplayWaitVblankStart();
+        real_frame_count = 0;
+        virtual_frame_count = 0;
+      }
+      break;
+
+    // マニュアルフレームスキップ時
+    case manual_frameskip:
+      virtual_frame_count++;
+      // フレームスキップ数増加
+      num_skipped_frames = (num_skipped_frames + 1) % (game_config_frameskip_value + 1);
+      if(game_config_random_skip)
+      {
+        if(num_skipped_frames != (rand() % (game_config_frameskip_value + 1)))
+          skip_next_frame_flag = 1;
+        else
+          frames_drawn_count++;
+      }
+      else
+      {
+        // フレームスキップ数=0の時だけ画面更新
+        if(num_skipped_frames != 0)
+          skip_next_frame_flag = 1;
+        else
+          frames_drawn_count++;
+      }
+
+      // 内部フレーム数が実機を上回る場合
+      if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
+      {
+        // VBANK待ち
+        synchronize_sound();
+        sceDisplayWaitVblankStart();
+      }
       real_frame_count = 0;
       virtual_frame_count = 0;
-    }
-  }
+      break;
 
-  // マニュアルフレームスキップ時
-  if(game_config_frameskip_type == manual_frameskip)
-  {
-    virtual_frame_count++;
-    // フレームスキップ数増加
-    num_skipped_frames = (num_skipped_frames + 1) % (game_config_frameskip_value + 1);
-    if(game_config_random_skip)
-    {
-      if(num_skipped_frames != (rand() % (game_config_frameskip_value + 1)))
-        skip_next_frame_flag = 1;
-      else
-        frames_drawn_count++;
-    }
-    else
-    {
-      // フレームスキップ数=0の時だけ画面更新
-      if(num_skipped_frames != 0)
-        skip_next_frame_flag = 1;
-      else
-        frames_drawn_count++;
-    }
-
-    // 内部フレーム数が実機を上回る場合
-    if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
-    {
-      // VBANK待ち
-      synchronize_sound();
-      sceDisplayWaitVblankStart();
-    }
-    real_frame_count = 0;
-    virtual_frame_count = 0;
-  }
-
-  // フレームスキップなし時
-  if(game_config_frameskip_type == no_frameskip)
-  {
-    frames_drawn_count++;
-    virtual_frame_count++;
-    if((real_frame_count < virtual_frame_count) && (synchronize_flag))
-    {
-      // 内部フレーム数が実機を上回る場合
-      // VBANK待ち
-      synchronize_sound();
-      sceDisplayWaitVblankStart();
-    }
-    real_frame_count = 0;
-    virtual_frame_count = 0;
+    // フレームスキップなし時
+    case no_frameskip:
+      frames_drawn_count++;
+      virtual_frame_count++;
+      if((real_frame_count < virtual_frame_count) && (synchronize_flag))
+      {
+        // 内部フレーム数が実機を上回る場合
+        // VBANK待ち
+        synchronize_sound();
+        sceDisplayWaitVblankStart();
+     }
+      real_frame_count = 0;
+      virtual_frame_count = 0;
+      break;
   }
 
   // FPSのカウント

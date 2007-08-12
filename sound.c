@@ -291,7 +291,7 @@
 #define sound_savestate_body(type)                                          \
 {                                                                           \
   FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
-  FILE_##type##_VARIABLE(savestate_file, sound_buffer_base);                \
+  FILE_##type##_VARIABLE(savestate_file, sound_read_offset);                \
   FILE_##type##_VARIABLE(savestate_file, sound_last_cpu_ticks);             \
   FILE_##type##_VARIABLE(savestate_file, gbc_sound_buffer_index);           \
   FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
@@ -447,7 +447,7 @@ s8 square_pattern_duty[4][8] =
     { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
     { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
     { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 }, 
-};
+  };
 
 s8 wave_samples[64];
 
@@ -458,10 +458,33 @@ u32 gbc_sound_master_volume_table[4] =
   { 1, 2, 4, 0 };
 
 u32 gbc_sound_channel_volume_table[8] =
-  { FIXED_DIV(0, 7, 12), FIXED_DIV(1, 7, 12), FIXED_DIV(2, 7, 12), FIXED_DIV(3, 7, 12), FIXED_DIV(4, 7, 12), FIXED_DIV(5, 7, 12), FIXED_DIV(6, 7, 12), FIXED_DIV(7, 7, 12) };
+  { FIXED_DIV(0, 7, 12), 
+    FIXED_DIV(1, 7, 12), 
+    FIXED_DIV(2, 7, 12), 
+    FIXED_DIV(3, 7, 12), 
+    FIXED_DIV(4, 7, 12), 
+    FIXED_DIV(5, 7, 12), 
+    FIXED_DIV(6, 7, 12), 
+    FIXED_DIV(7, 7, 12)
+  };
 
 u32 gbc_sound_envelope_volume_table[16] =
-  { FIXED_DIV(0, 15, 14), FIXED_DIV(1, 15, 14), FIXED_DIV(2, 15, 14), FIXED_DIV(3, 15, 14), FIXED_DIV(4, 15, 14), FIXED_DIV(5, 15, 14), FIXED_DIV(6, 15, 14), FIXED_DIV(7, 15, 14), FIXED_DIV(8, 15, 14), FIXED_DIV(9, 15, 14), FIXED_DIV(10, 15, 14), FIXED_DIV(11, 15, 14), FIXED_DIV(12, 15, 14), FIXED_DIV(13, 15, 14), FIXED_DIV(14, 15, 14), FIXED_DIV(15, 15, 14) };
+  { FIXED_DIV(0, 15, 14), 
+    FIXED_DIV(1, 15, 14), 
+    FIXED_DIV(2, 15, 14), 
+    FIXED_DIV(3, 15, 14), 
+    FIXED_DIV(4, 15, 14), 
+    FIXED_DIV(5, 15, 14), 
+    FIXED_DIV(6, 15, 14), 
+    FIXED_DIV(7, 15, 14), 
+    FIXED_DIV(8, 15, 14), 
+    FIXED_DIV(9, 15, 14), 
+    FIXED_DIV(10, 15, 14), 
+    FIXED_DIV(11, 15, 14), 
+    FIXED_DIV(12, 15, 14), 
+    FIXED_DIV(13, 15, 14), 
+    FIXED_DIV(14, 15, 14), 
+    FIXED_DIV(15, 15, 14) };
 
 volatile static u32 gbc_sound_buffer_index = 0;
 u32 gbc_sound_last_cpu_ticks = 0;
@@ -593,8 +616,7 @@ void init_sound()
     reset_sound();
 
     // サウンド スレッドの作成
-    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread,
-        0x08, 3 * 1024, 0, NULL);
+    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x10, 3 * 1024, 0, NULL);
     if (sound_thread < 0)
     {
       quit();
@@ -692,6 +714,8 @@ static int sound_update_thread(SceSize args, void *argp)
     while(!audio_thread_exit_flag)
     {
 
+      left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
+
       while( (pause_sound_flag != 0) && (CHECK_BUFFER() < audio_buffer_size) )
       {
         sceKernelDelayThread(1);
@@ -699,16 +723,20 @@ static int sound_update_thread(SceSize args, void *argp)
 
       while(CHECK_BUFFER() < SAMPLE_SIZE)
       {
-        sceKernelDelayThread(0);
+//        for(i = 0; i < SAMPLE_SIZE; i++)
+//        {
+//          buffer[i] = 0;
+//        }
+        sceKernelDelayThread(1);
       }
 
-      left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
-
-      for(i = 0; i < SAMPLE_SIZE; i++)
       {
-        buffer[i] = sound_buffer[sound_read_offset] << 4;
-        sound_buffer[sound_read_offset] = 0;
-        sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
+        for(i = 0; i < SAMPLE_SIZE; i++)
+        {
+          buffer[i] = sound_buffer[sound_read_offset] << 4;
+          sound_buffer[sound_read_offset] = 0;
+          sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
+        }
       }
 
       sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
