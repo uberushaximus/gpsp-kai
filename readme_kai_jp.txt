@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 08 svn rev.165
+-UnOfficial gpSP kai 3.1 test 08 svn rev.170
 	ステートセーブのデータが読めないバグを修正
 		申し訳ありませんが、test 8で保存したデータは読めません
 	サウンドスレッドの調整
