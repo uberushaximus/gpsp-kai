@@ -321,7 +321,6 @@ u32 left_buffer;
  * ローカル変数の定義
  ******************************************************************************/
 static u32 audio_buffer_size;
-static u32 audio_buffer_size_x2;
 volatile static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
 volatile static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
