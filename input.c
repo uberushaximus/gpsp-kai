@@ -322,7 +322,7 @@ u32 update_input()
       }
 
       case BUTTON_ID_FASTFORWARD:
-        print_string("FASTFORWARD", 0xFFFF, 0x0000, 0, 50);
+//        print_string("FASTFORWARD", 0xFFFF, 0x0000, 0, 50);
         synchronize_flag ^= 1;
         return 0;
 

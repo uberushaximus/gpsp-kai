@@ -72,30 +72,30 @@ void init_memory_gamepak();
 u8 waitstate_cycles_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
-  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
+  { 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 }, /* 8,16bit */
+  { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9,17,17, 4, 0 }  /* 32bit */
 };
 
 u8 waitstate_cycles_non_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-  { 1, 1, 3, 1, 1, 1, 1, 1, 5, 5, 5, 5, 5, 5, 5, 1 }, /* 8,16bit */
-  { 1, 1, 6, 1, 1, 2, 2, 1, 7, 7, 9, 9,13,13, 1, 1 }  /* 32bit */
+  { 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 }, /* 8,16bit */
+  { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9,17,17, 4, 0 }  /* 32bit */
 };
 
 // Different settings for gamepak ws0-2 sequential (2nd) access
 
 u8 gamepak_waitstate_seq[2][2][3] =
 {
-  {{ 3, 5, 9 }, { 5, 9,17 }},
-  {{ 2, 2, 2 }, { 3, 3, 3 }}
+  {{ 2, 4, 8 }, { 4, 9,17 }},
+  {{ 1, 1, 1 }, { 2, 2, 2 }}
 };
 
 u8 cpu_waitstate_cycles_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
-  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
+    { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
+    { 1, 1, 6, 1, 1, 2, 2, 1, 6, 6,10,10,18,18, 5, 1 }  /* 32bit */
 };
 
 u16 palette_ram[512];
@@ -620,7 +620,7 @@ u32 read_eeprom()
 #define waitstate_control()                                                   \
 {                                                                             \
   u8 i;                                                                       \
-  u8 waitstate_table[4] = { 5, 4, 3, 9 };                                     \
+  u8 waitstate_table[4] = { 4, 3, 2, 8 };                                     \
                                                                               \
   waitstate_cycles_non_seq[0][0x0e] = waitstate_cycles_seq[0][0x0e]           \
    = waitstate_table[value & 0x03];                                           \
@@ -644,11 +644,11 @@ u32 read_eeprom()
                                                                               \
   /* 32bit access ( split into two 16bit accsess ) */                         \
   waitstate_cycles_non_seq[1][0x08] = waitstate_cycles_non_seq[1][0x09]       \
-   = (waitstate_cycles_non_seq[0][0x08] + waitstate_cycles_seq[0][0x08] - 1); \
+   = (waitstate_cycles_non_seq[0][0x08] + waitstate_cycles_seq[0][0x08] + 1); \
   waitstate_cycles_non_seq[1][0x0A] = waitstate_cycles_non_seq[1][0x0B]       \
-   = (waitstate_cycles_non_seq[0][0x0A] + waitstate_cycles_seq[0][0x0A] - 1); \
+   = (waitstate_cycles_non_seq[0][0x0A] + waitstate_cycles_seq[0][0x0A] + 1); \
   waitstate_cycles_non_seq[1][0x0C] = waitstate_cycles_non_seq[1][0x0D]       \
-  =  (waitstate_cycles_non_seq[0][0x0C] + waitstate_cycles_seq[0][0x0C] - 1); \
+  =  (waitstate_cycles_non_seq[0][0x0C] + waitstate_cycles_seq[0][0x0C] + 1); \
                                                                               \
   /* gamepak prefetch */                                                      \
   if(value & 0x4000)                                                          \

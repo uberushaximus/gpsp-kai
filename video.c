@@ -1777,7 +1777,6 @@ bitmap_layer_render_struct bitmap_mode_renderers[3] =
   }                                                                           \
 }                                                                             \
 
-
 #define obj_rotate_offset_1D(color_depth)                                     \
   obj_tile_pitch = (max_x / 8) * tile_size_##color_depth                      \
 
@@ -1923,18 +1922,8 @@ u32 obj_alpha_count[160];
 
 // Build obj rendering functions
 
-#ifdef RENDER_COLOR16_NORMAL
-
-#define render_scanline_obj_extra_variables_normal(bg_type)                   \
-  const u32 pixel_combine = (1 << 8)                                          \
-
-#else
-
 #define render_scanline_obj_extra_variables_normal(bg_type)                   \
   u16 *palette = palette_ram_converted + 256                                  \
-
-#endif
-
 
 #define render_scanline_obj_extra_variables_color()                           \
   u32 dest;                                                                   \
@@ -2141,31 +2130,11 @@ void order_obj(u32 video_mode)
   s32 obj_width, obj_height;
   u32 obj_priority;
   u32 obj_attribute_0, obj_attribute_1, obj_attribute_2;
-//  s32 vcount = io_registers[REG_VCOUNT];
-//  u32 partial_tile_run, partial_tile_offset;
-//  u32 pixel_run;
   u32 current_count;
   u16 *oam_ptr = oam_ram + 508;
-//  u16 *dest_ptr;
-//  u8 *tile_base = vram + 0x10000;
-//  u8 *tile_ptr;
-/*
-  for(priority = 0; priority < 5; priority++)
-  {
-    for(row = 0; row < 160; row++)
-    {
-      obj_priority_count[priority][row] = 0;
-    }
-  }
-*/
+
   memset( obj_priority_count, 0, 5*160*4 );
 
-/*
-  for(row = 0; row < 160; row++)
-  {
-    obj_alpha_count[row] = 0;
-  }
-*/
   memset( obj_alpha_count, 0, 160*4 );
 
   for(obj_num = 127; obj_num >= 0; obj_num--, oam_ptr -= 4)
@@ -3259,8 +3228,8 @@ void update_scanline()
 
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
 
-  if(skip_next_frame_flag)
-    return;
+//  if(skip_next_frame_flag)
+//    return;
 
   // If the screen is in in forced blank draw pure white.
   if(dispcnt & 0x80)

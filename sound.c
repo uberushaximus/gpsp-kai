@@ -33,7 +33,7 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(128) // サンプル数
+#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
 #define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
@@ -306,6 +306,10 @@
 
 #define CHECK_BUFFER()                                                      \
   ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)              \
+
+#define SET_AUDIO_BUFFER_SIZE()                                             \
+    audio_buffer_size = SAMPLE_SIZE * (5 + audio_buffer_size_number)        \
+
 /******************************************************************************
  * グローバル変数の定義
  ******************************************************************************/
@@ -323,7 +327,7 @@ u32 left_buffer;
 static u32 audio_buffer_size;
 volatile static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
-volatile static s32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
+volatile static u32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
@@ -605,7 +609,7 @@ void update_gbc_sound(u32 cpu_ticks)
 
 void init_sound()
   {
-    audio_buffer_size = SAMPLE_SIZE * (10 + audio_buffer_size_number);
+    SET_AUDIO_BUFFER_SIZE();
 
     gbc_sound_tick_step = FLOAT_TO_FP16_16(256.0 / SOUND_FREQUENCY);
 
@@ -672,7 +676,7 @@ void reset_sound()
 void pause_sound(u32 flag)
   {
     pause_sound_flag = flag;
-    audio_buffer_size = SAMPLE_SIZE * (15 + audio_buffer_size_number);
+    SET_AUDIO_BUFFER_SIZE();
   }
 
 void sound_exit()
@@ -700,6 +704,7 @@ static int sound_update_thread(SceSize args, void *argp)
   {
     int audio_handle; // オーディオチャンネルのハンドル。
     s16 buffer[SAMPLE_SIZE];
+    u32 write_offset;
     u32 i;
 
     // オーディオチャンネルの取得。
@@ -710,6 +715,7 @@ static int sound_update_thread(SceSize args, void *argp)
     sound_read_offset = 0;
     memset(buffer, 0, sizeof(buffer));
     left_buffer = 0;
+    write_offset = 0;
 
     while(!audio_thread_exit_flag)
     {
@@ -723,13 +729,19 @@ static int sound_update_thread(SceSize args, void *argp)
 
       while(CHECK_BUFFER() < SAMPLE_SIZE)
       {
-//        for(i = 0; i < SAMPLE_SIZE; i++)
-//        {
-//          buffer[i] = 0;
-//        }
         sceKernelDelayThread(1);
       }
 
+      if (global_enable_audio == 0)
+      {
+        for(i = 0; i < SAMPLE_SIZE; i++)
+        {
+          buffer[i] = 0;
+          sound_buffer[sound_read_offset] = 0;
+          sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
+        }
+      }
+      else
       {
         for(i = 0; i < SAMPLE_SIZE; i++)
         {
@@ -738,7 +750,6 @@ static int sound_update_thread(SceSize args, void *argp)
           sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
         }
       }
-
       sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
     }
 

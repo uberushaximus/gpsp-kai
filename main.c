@@ -490,6 +490,7 @@ u32 check_power()
 u32 update_gba()
 {
   irq_type irq_raised = IRQ_NONE;
+  u32 i;
 
   do {
     cpu_ticks += execute_cycles;
@@ -512,25 +513,23 @@ u32 update_gba()
       u32 vcount = io_registers[REG_VCOUNT];
       u32 dispstat = io_registers[REG_DISPSTAT];
 
-      if((dispstat & 0x02) == 0) {
+      if((dispstat & 0x02) == 0)
+      {
         // Transition from hrefresh to hblank
         video_count += (272);
         dispstat |= 0x02;
 
-        if((dispstat & 0x01) == 0) {
-//          u32 i;
-
-          update_scanline();
+        if((dispstat & 0x01) == 0)
+        {
+          if(!skip_next_frame_flag)
+            update_scanline();
 
           // If in visible area also fire HDMA
-          if(dma[0].start_type == DMA_START_HBLANK)
-            dma_transfer(dma);
-          if(dma[1].start_type == DMA_START_HBLANK)
-            dma_transfer(dma + 1);
-          if(dma[2].start_type == DMA_START_HBLANK)
-            dma_transfer(dma + 2);
-          if(dma[3].start_type == DMA_START_HBLANK)
-            dma_transfer(dma + 3);
+          for(i = 0; i < 4; i++)
+          {
+            if(dma[i].start_type == DMA_START_HBLANK)
+              dma_transfer(dma + i);
+          }
         }
 
         if(dispstat & 0x10)
@@ -544,7 +543,8 @@ u32 update_gba()
 
         vcount++;
 
-        if(vcount == 160) {
+        if(vcount == 160)
+        {
           // Transition from vrefresh to vblank
 //          u32 i;
 
@@ -554,23 +554,16 @@ u32 update_gba()
             irq_raised |= IRQ_VBLANK;
           }
 
-          affine_reference_x[0] =
-           (s32)(ADDRESS32(io_registers, 0x28) << 4) >> 4;
-          affine_reference_y[0] =
-           (s32)(ADDRESS32(io_registers, 0x2C) << 4) >> 4;
-          affine_reference_x[1] =
-           (s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4;
-          affine_reference_y[1] =
-           (s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4;
+          affine_reference_x[0] = (s32)(ADDRESS32(io_registers, 0x28) << 4) >> 4;
+          affine_reference_y[0] = (s32)(ADDRESS32(io_registers, 0x2C) << 4) >> 4;
+          affine_reference_x[1] = (s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4;
+          affine_reference_y[1] = (s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4;
 
-          if(dma[0].start_type == DMA_START_VBLANK)
-            dma_transfer(dma);
-          if(dma[1].start_type == DMA_START_VBLANK)
-            dma_transfer(dma + 1);
-          if(dma[2].start_type == DMA_START_VBLANK)
-            dma_transfer(dma + 2);
-          if(dma[3].start_type == DMA_START_VBLANK)
-            dma_transfer(dma + 3);
+          for(i = 0; i < 4; i++)
+          {
+            if(dma[i].start_type == DMA_START_VBLANK)
+              dma_transfer(dma + i);
+          }
         }
         else
 
@@ -768,7 +761,7 @@ void synchronize()
         // VBANK待ち
         synchronize_sound();
         sceDisplayWaitVblankStart();
-     }
+      }
       real_frame_count = 0;
       virtual_frame_count = 0;
       break;
@@ -786,7 +779,7 @@ void synchronize()
   }
 
   if(!synchronize_flag)
-    print_string("--FF--", 0xFFFF, 0x000, 0, 0);
+    print_string("--FF--", 0xFFFF, 0x000, 0, 10);
 }
 
 void reset_gba()
