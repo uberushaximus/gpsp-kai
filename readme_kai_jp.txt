@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 10 svn rev.***
+-UnOfficial gpSP kai 3.1 test 10 svn rev.177
 	サウンドのON/OFFを有効にした
 	傾きセンサを実装(アナログPADで操作できます/使用時は割り当てを全てNONEにして下さい)
 	各所微調整
