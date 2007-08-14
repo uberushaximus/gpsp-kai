@@ -221,7 +221,7 @@ static int home_button_thread(SceSize args, void *argp)
   {
     sceCtrlPeekBufferPositive(&paddata, 1);
     home_button = paddata.Buttons & PSP_CTRL_HOME;
-    sceKernelDelayThread(500);
+    sceKernelDelayThread(200);
   }
 
   sceKernelExitThread(0);
@@ -231,7 +231,7 @@ static int home_button_thread(SceSize args, void *argp)
 int exit_callback(int arg1, int arg2, void *common)
 {
   quit_flag = 1;
-  sceKernelDelayThread(500);
+  sceKernelDelayThread(200);
   return 0;
 }
 
@@ -265,7 +265,7 @@ int SetupCallbacks()
 {
   int callback_thread_id = 0;
 
-  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x12, 0xFA0, 0, 0);
   if (callback_thread_id >= 0)
   {
     sceKernelStartThread(callback_thread_id, 0, 0);
@@ -658,7 +658,7 @@ void synchronize()
   if(psp_fps_debug)
   {
     char print_buffer[256];
-    sprintf(print_buffer, "%02d (%02d) %02d", (int)fps, (int)frames_drawn, (int)left_buffer);
+    sprintf(print_buffer, "%02d (%02d) %02d X:%04d Y:%04d", (int)fps, (int)frames_drawn, (int)left_buffer, sensorX, sensorY);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 

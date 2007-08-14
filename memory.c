@@ -217,6 +217,25 @@ char nds_md5[16] = { 0x1C, 0x0D, 0x67, 0xDB, 0x9E, 0x12, 0x08, 0xB9, 0x5A, 0x15,
 u8 read_backup(u32 address)
 {
   u8 value = 0;
+  if(backup_type == BACKUP_EEPROM)
+  { DBGOUT("read %04X\n",address);
+    switch(address & 0x8f00)
+    {
+      case 0x8200:
+        value = sensorX & 255;
+        break;
+      case 0x8300:
+        value = (sensorX >> 8) | 0x80;
+        break;
+      case 0x8400:
+        value = sensorY & 255;
+        break;
+      case 0x8500:
+        value = sensorY >> 8;
+        break;
+    }
+    return value;
+  }
 
   if(backup_type == BACKUP_NONE)
     backup_type = BACKUP_SRAM;

@@ -1,7 +1,12 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 08 svn rev.170
+-UnOfficial gpSP kai 3.1 test 10 svn rev.***
+	サウンドのON/OFFを有効にした
+	傾きセンサを実装(アナログPADで操作できます/使用時は割り当てを全てNONEにして下さい)
+	各所微調整
+
+-UnOfficial gpSP kai 3.1 test 09 svn rev.170
 	ステートセーブのデータが読めないバグを修正
 		申し訳ありませんが、test 8で保存したデータは読めません
 	サウンドスレッドの調整

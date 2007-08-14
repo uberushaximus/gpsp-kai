@@ -620,7 +620,7 @@ void init_sound()
     reset_sound();
 
     // サウンド スレッドの作成
-    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x10, 3 * 1024, 0, NULL);
+    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 3 * 1024, 0, NULL);
     if (sound_thread < 0)
     {
       quit();
@@ -706,7 +706,7 @@ static int sound_update_thread(SceSize args, void *argp)
     s16 buffer[SAMPLE_SIZE];
     u32 write_offset;
     u32 i;
-
+    u32 temp;
     // オーディオチャンネルの取得。
     audio_handle
         = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
@@ -774,7 +774,7 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
     u32 current_entry;
     u32 table_period = (period + 31) / 32;
 
-    // Bits are stored in reverse order so they can be more easily moved to
+    // Bits are stored in reverse  order so they can be more easily moved to
     // bit 31, for sign extended shift down.
 
     for (table_pos = 0; table_pos < table_period; table_pos++)

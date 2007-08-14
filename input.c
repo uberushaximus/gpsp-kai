@@ -88,6 +88,9 @@ button_repeat_state_type button_repeat_state = BUTTON_NOT_HELD;
 u32 button_repeat = 0;
 gui_action_type cursor_repeat = CURSOR_NONE;
 
+u32 sensorX;
+u32 sensorY;
+
 #define BUTTON_REPEAT_START    200000
 #define BUTTON_REPEAT_CONTINUE 50000
 
@@ -270,17 +273,27 @@ u32 update_input()
 
   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
+    sensorX = ctrl_data.Lx * 2 + (914 - 128);  // センター 914(0x392) 最小値 687(0x2AF) 最大値 1143(0x477) 幅 456
+    sensorY = ctrl_data.Ly * 2 + (928 - 128);  //センター 928(0x3A0) 最小値 707(0x2C3) 最大値 1152(0x480) 幅 445
     if(ctrl_data.Lx < analog_sensitivity)
+    {
       buttons |= PSP_CTRL_ANALOG_LEFT;
+    }
 
     if(ctrl_data.Lx > inv_analog_sensitivity)
+    {
       buttons |= PSP_CTRL_ANALOG_RIGHT;
+    }
 
     if(ctrl_data.Ly < analog_sensitivity)
+    {
       buttons |= PSP_CTRL_ANALOG_UP;
+    }
 
     if(ctrl_data.Ly > inv_analog_sensitivity)
+    {
       buttons |= PSP_CTRL_ANALOG_DOWN;
+    }
   }
 
   non_repeat_buttons = (last_buttons ^ buttons) & buttons;
@@ -324,7 +337,8 @@ u32 update_input()
       case BUTTON_ID_FASTFORWARD:
 //        print_string("FASTFORWARD", 0xFFFF, 0x0000, 0, 50);
         synchronize_flag ^= 1;
-        return 0;
+        break;
+//        return 0;
 
       case BUTTON_ID_VOLUP:
 //        gp2x_sound_volume(1);

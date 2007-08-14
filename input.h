@@ -87,6 +87,8 @@ void input_read_savestate(FILE_TAG_TYPE savestate_file);
 extern u32 gamepad_config_map[16];
 extern u32 global_enable_analog;
 extern u32 analog_sensitivity_level;
+extern u32 sensorX;
+extern u32 sensorY;
 
 #endif
 
