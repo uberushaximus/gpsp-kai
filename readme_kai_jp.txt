@@ -5,6 +5,7 @@
 	サウンドのON/OFFを有効にした
 	傾きセンサを実装(アナログPADで操作できます/使用時は割り当てを全てNONEにして下さい)
 	各所微調整
+	BIOSの0xD/getChecksumの実装
 
 -UnOfficial gpSP kai 3.1 test 09 svn rev.170
 	ステートセーブのデータが読めないバグを修正
