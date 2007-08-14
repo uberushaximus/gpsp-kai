@@ -273,8 +273,10 @@ u32 update_input()
 
   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
-    sensorX = ctrl_data.Lx * 2 + (914 - 128);  // センター 914(0x392) 最小値 687(0x2AF) 最大値 1143(0x477) 幅 456
-    sensorY = ctrl_data.Ly * 2 + (928 - 128);  //センター 928(0x3A0) 最小値 707(0x2C3) 最大値 1152(0x480) 幅 445
+    sensorX = ctrl_data.Lx * 2 + (914 - 256);  // センター 914(0x392) 最小値 687(0x2AF) 最大値 1143(0x477) 幅 456
+    sensorY = ctrl_data.Ly * 2 + (928 - 256);  //センター 928(0x3A0) 最小値 707(0x2C3) 最大値 1152(0x480) 幅 445
+//    sensorX = (255 - ctrl_data.Lx) * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4095
+//    sensorY = ctrl_data.Ly * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4095
     if(ctrl_data.Lx < analog_sensitivity)
     {
       buttons |= PSP_CTRL_ANALOG_LEFT;

@@ -218,7 +218,7 @@ u8 read_backup(u32 address)
 {
   u8 value = 0;
   if(backup_type == BACKUP_EEPROM)
-  { DBGOUT("read %04X\n",address);
+  {
     switch(address & 0x8f00)
     {
       case 0x8200:

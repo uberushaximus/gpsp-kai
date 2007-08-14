@@ -2504,7 +2504,7 @@ u8 swi_hle_handle[256][2] =
   { 0x0, 0x0 },    // SWI A:  ArcTan2
   { 0x0, 0x1 },    // SWI B:  CpuSet
   { 0x0, 0x1 },    // SWI C:  CpuFastSet
-  { 0x0, 0x0 },    // SWI D:  GetBIOSCheckSum
+  { 0x1, 0x0 },    // SWI D:  GetBIOSCheckSum
   { 0x0, 0x1 },    // SWI E:  BgAffineSet
   { 0x0, 0x1 },    // SWI F:  ObjAffineSet
   { 0x0, 0x0 },    // SWI 10: BitUnpack
@@ -2589,6 +2589,12 @@ u8 swi_hle_handle[256][2] =
       mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                          \
       mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                          \
       generate_function_call(bios_cpufastset);                                \
+    }                                                                         \
+                                                                              \
+    /* GetBIOSCheckSum */                                                     \
+    if(swi_number == 0x0D)                                                    \
+    {                                                                         \
+      generate_load_imm(reg_r0, 0xBAAE187F);                                  \
     }                                                                         \
                                                                               \
     /* BgAffineSet */                                                         \
