@@ -1411,8 +1411,8 @@ typedef enum
 
 #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
   mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-/*  generate_add_flags_prologue(_rn, _rm); */                                 \
-  generate_add_flags_prologue(_rn, reg_temp);                                 \
+  generate_add_flags_prologue(_rn, _rm);                                      \
+  /*generate_add_flags_prologue(_rn, reg_temp);*/                                 \
   mips_emit_addu(_rd, _rn, reg_temp);                                         \
   generate_add_flags_epilogue(_rd)                                            \
 

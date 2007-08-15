@@ -98,7 +98,8 @@
       else                                                                    \
         rate = rate + (rate >> gs->sweep_shift);                              \
                                                                               \
-      rate %= 2048;                                                           \
+      if (rate > 2047)                                                        \
+        rate = 2047;                                                          \
       frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0)  \
         / SOUND_FREQUENCY);                                                   \
                                                                               \
@@ -256,33 +257,6 @@
     current_sample = wave_ram[i];                                             \
     wave_bank[i2] = (((current_sample >> 4) & 0x0F) - 8);                     \
     wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
-  }                                                                           \
-
-#define SOUND_COPY_NORMAL()                                                   \
-  current_sample = source[i]                                                  \
-
-#define SOUND_COPY(source_offset, length, render_type)                        \
-  _length = (length) / 2;                                                     \
-  source = (s16 *)(sound_buffer + source_offset);                             \
-  for(i = 0; i < _length; i++)                                                \
-  {                                                                           \
-    SOUND_COPY_##render_type();                                               \
-    if(current_sample > 2047)                                                 \
-      current_sample = 2047;                                                  \
-    if(current_sample < -2048)                                                \
-      current_sample = -2048;                                                 \
-                                                                              \
-    stream_base[i] = current_sample << 4;                                     \
-    source[i] = 0;                                                            \
-  }                                                                           \
-
-#define SOUND_COPY_NULL(source_offset, length)                                \
-  _length = (length) >> 2;                                                    \
-  source = (s16 *)(sound_buffer + source_offset);                             \
-  {                                                                           \
-    u32 *ptr1 = (u32 *) stream_base;                                          \
-    u32 *ptr2 = (u32 *) source;                                               \
-    while (_length--) *ptr1++ = *ptr2++ = 0;                                  \
   }                                                                           \
 
 #define sound_savestate_body(type)                                          \
@@ -719,7 +693,7 @@ static int sound_update_thread(SceSize args, void *argp)
 
       left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
 
-      while( (pause_sound_flag != 0) && (CHECK_BUFFER() < audio_buffer_size) )
+      while( (pause_sound_flag != 0)/* && (CHECK_BUFFER() < audio_buffer_size)*/ )
       {
         sceKernelDelayThread(1);
       }

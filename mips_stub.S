@@ -440,9 +440,12 @@ mips_indirect_branch_dual:
 
 
 .macro translate_region_vram_core
+  addiu $2, $2, -3                # see if it's 3
   ext $4, $4, 0, 17               # generate 17bit offset
-  bnel $2, $0, 1f                 # if address >= 0x10000
-  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+  bne $2, $0, 1f                  # if $2 != $0 then j 1:
+  lui $1, %hi(vram)               # start loading vram address (delay)
+
+  addiu $4, $4, -0x8000           # move address into VRAM region
 
 1:
   lui $1, %hi(vram)               # start loading vram address
@@ -451,40 +454,46 @@ mips_indirect_branch_dual:
 
 .macro translate_region_vram patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align16 align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 1                # mask out lower bit of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align32 align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 2                # mask out lower two bits of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_store_align16 patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 1                # mask out lower bit of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_store_align32 patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+#  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 2                # mask out lower two bits of address
   translate_region_vram_core
 .endm

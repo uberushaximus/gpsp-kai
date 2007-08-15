@@ -517,10 +517,10 @@ u32 read_eeprom()
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      if(address & 0x10000)                                                   \
-        value = ADDRESS##type(vram, address & 0x17FFF);                       \
-      else                                                                    \
-        value = ADDRESS##type(vram, address & 0x1FFFF);                       \
+      address &= 0x1FFFF;                                                     \
+      if(address >= 0x18000)                                                  \
+        address -= 0x8000;                                                    \
+      value = ADDRESS##type(vram, address);                                    \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
@@ -1631,22 +1631,22 @@ void write_backup(u32 address, u32 value)
 #define write_backup32()                                                      \
 
 #define write_vram8()                                                         \
-  if(address & 0x10000)                                                       \
-    ADDRESS16(vram, address & 0x17FFe) = ((value << 8) | value);              \
-  else                                                                        \
-    ADDRESS16(vram, address & 0x1FFFe) = ((value << 8) | value)               \
+  address &= 0x1FFFE;                                                         \
+  if(address >= 0x18000)                                                      \
+    address -= 0x8000;                                                        \
+  ADDRESS16(vram, address) = ((value << 8) | value)                           \
 
 #define write_vram16()                                                        \
-  if(address & 0x10000)                                                       \
-    ADDRESS16(vram, address & 0x17FFF) = value;                               \
-  else                                                                        \
-    ADDRESS16(vram, address & 0x1FFFF) = value                                \
+  address &= 0x1FFFF;                                                         \
+  if(address >= 0x18000)                                                      \
+    address -= 0x8000;                                                        \
+  ADDRESS16(vram, address) = value                                            \
 
 #define write_vram32()                                                        \
-  if(address & 0x10000)                                                       \
-    ADDRESS32(vram, address & 0x17FFF) = value;                               \
-  else                                                                        \
-    ADDRESS32(vram, address & 0x1FFFF) = value                                \
+  address &= 0x1FFFF;                                                         \
+  if(address >= 0x18000)                                                      \
+    address -= 0x8000;                                                        \
+  ADDRESS32(vram, address) = value                                            \
 
 #define write_oam_ram8()                                                      \
 /*  Write 8bit data is ignore */                                              \
@@ -2375,6 +2375,8 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
   return -1;
 }
 
+#define LOAD_ON_MEMORY -1
+
 s32 load_gamepak_raw(char *name)
 {
   FILE_ID gamepak_file;
@@ -2391,7 +2393,7 @@ s32 load_gamepak_raw(char *name)
       FILE_READ(gamepak_file, gamepak_rom, gamepak_size);
       FILE_CLOSE(gamepak_file);
 
-      gamepak_file_large = -1;
+      gamepak_file_large = LOAD_ON_MEMORY;
     }
     else
     {
@@ -2565,8 +2567,9 @@ dma_region_type dma_region_map[16] =
   dma_smc_vars_##type()                                                       \
 
 #define dma_vars_vram(type)                                                   \
-  if(type##_ptr & 0x10000)                                                    \
-    type##_ptr &= ~0x08000                                                    \
+  type##_ptr &= 0x1FFFF;                                                      \
+  if(type##_ptr >= 0x18000)                                                   \
+    type##_ptr -= 0x8000                                                      \
 
 #define dma_vars_palette_ram(type)                                            \
 

@@ -1,6 +1,13 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.1 test 10 svn rev.***
+	サウンドのノイズの対応
+	傾きセンサの調整
+	チートの生コード(VBAコード)のROM書込に対応(6aaaaaaa 0000ddddのパターン)
+	アイコンの変更(frmb0001さんからの提供です)
+	BIOSエラーのメッセージを意訳
+
 -UnOfficial gpSP kai 3.1 test 10 svn rev.177
 	サウンドのON/OFFを有効にした
 	傾きセンサを実装(アナログPADで操作できます/使用時は割り当てを全てNONEにして下さい)

@@ -1447,34 +1447,17 @@ render_scanline_affine_builder(transparent, alpha);
 #define render_scanline_vram_setup_mode5()                                    \
   u16 *src_ptr;                                                               \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u16 *)(vram + 0xA000);                                         \
+    src_ptr = (u16 *)vram + 0xA000;                                         \
   else                                                                        \
     src_ptr = (u16 *)vram                                                     \
-
-#ifdef RENDER_COLOR16_NORMAL
-
-#define render_scanline_vram_setup_mode4()                                    \
-  const u32 pixel_combine = 0;                                                \
-  u8 *src_ptr;                                                                \
-  if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u8 *)(vram + 0xA000);                                                  \
-  else                                                                        \
-    src_ptr = (u8 *)vram                                                            \
-
-
-#else
 
 #define render_scanline_vram_setup_mode4()                                    \
   u16 *palette = palette_ram_converted;                                       \
   u8 *src_ptr;                                                                \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u8 *)(vram + 0xA000);                                                  \
+    src_ptr = (u8 *)vram + 0xA000;                                                  \
   else                                                                        \
     src_ptr = (u8 *)vram                                                            \
-
-#endif
-
-
 
 // Build bitmap scanline rendering functions.
 
@@ -2140,21 +2123,22 @@ void order_obj(u32 video_mode)
   for(obj_num = 127; obj_num >= 0; obj_num--, oam_ptr -= 4)
   {
     obj_attribute_0 = oam_ptr[0];
+    obj_attribute_1 = oam_ptr[1];
     obj_attribute_2 = oam_ptr[2];
     obj_size = obj_attribute_0 & 0xC000;
+    obj_priority = (obj_attribute_2 >> 10) & 0x03;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
     if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
-     (obj_mode != 3) && ((video_mode < 3) ||
-     ((obj_attribute_2 & 0x3FF) >= 512)))
+     (obj_mode != 3) && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
     {
       obj_y = obj_attribute_0 & 0xFF;
       if(obj_y > 160)
         obj_y -= 256;
 
-      obj_attribute_1 = oam_ptr[1];
+//      obj_attribute_1 = oam_ptr[1];
       obj_size = ((obj_size >> 12) & 0x0C) | (obj_attribute_1 >> 14);
-      obj_priority = (obj_attribute_2 >> 10) & 0x03;
+//      obj_priority = (obj_attribute_2 >> 10) & 0x03;
       obj_height = obj_height_table[obj_size];
       obj_width = obj_width_table[obj_size];
 
