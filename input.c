@@ -90,6 +90,7 @@ gui_action_type cursor_repeat = CURSOR_NONE;
 
 u32 sensorX;
 u32 sensorY;
+u32 sensorR;
 
 #define BUTTON_REPEAT_START    200000
 #define BUTTON_REPEAT_CONTINUE 50000
@@ -266,6 +267,9 @@ u32 update_input()
   u32 new_key = 0;
   u32 analog_sensitivity = 92 - (analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
+  sensorX = 0x800;
+  sensorY = 0x800;
+  sensorR = 0x650;
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
 
@@ -273,29 +277,20 @@ u32 update_input()
 
   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
-    sensorX = ctrl_data.Lx * 2 + (914 - 256);  // センター 914(0x392) 最小値 687(0x2AF) 最大値 1143(0x477) 幅 456
-    sensorY = ctrl_data.Ly * 2 + (928 - 256);  //センター 928(0x3A0) 最小値 707(0x2C3) 最大値 1152(0x480) 幅 445
-//    sensorX = (255 - ctrl_data.Lx) * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4095
-//    sensorY = ctrl_data.Ly * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4095
+    sensorX = ctrl_data.Lx * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
+    sensorY = ctrl_data.Ly * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
+    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
     if(ctrl_data.Lx < analog_sensitivity)
-    {
       buttons |= PSP_CTRL_ANALOG_LEFT;
-    }
 
     if(ctrl_data.Lx > inv_analog_sensitivity)
-    {
       buttons |= PSP_CTRL_ANALOG_RIGHT;
-    }
 
     if(ctrl_data.Ly < analog_sensitivity)
-    {
       buttons |= PSP_CTRL_ANALOG_UP;
-    }
 
     if(ctrl_data.Ly > inv_analog_sensitivity)
-    {
       buttons |= PSP_CTRL_ANALOG_DOWN;
-    }
   }
 
   non_repeat_buttons = (last_buttons ^ buttons) & buttons;

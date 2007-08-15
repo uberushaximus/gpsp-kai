@@ -658,7 +658,7 @@ void synchronize()
   if(psp_fps_debug)
   {
     char print_buffer[256];
-    sprintf(print_buffer, "%02d (%02d) %02d X:%04d Y:%04d", (int)fps, (int)frames_drawn, (int)left_buffer, sensorX, sensorY);
+    sprintf(print_buffer, "%02d (%02d) %02d X:%04d Y:%04d R:%04d", (int)fps, (int)frames_drawn, (int)left_buffer, sensorX, sensorY, sensorR);
     print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 

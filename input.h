@@ -89,6 +89,7 @@ extern u32 global_enable_analog;
 extern u32 analog_sensitivity_level;
 extern u32 sensorX;
 extern u32 sensorY;
+extern u32 sensorR;
 
 #endif
 

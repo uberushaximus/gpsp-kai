@@ -404,13 +404,13 @@ void write_eeprom(u32 address, u32 value)
 }
 
 #define read_memory_gamepak(type)                                             \
-  u32 gamepak_index = address >> 15;                                          \
-  u8 *map = memory_map_read[gamepak_index];                                   \
+    u32 gamepak_index = address >> 15;                                        \
+    u8 *map = memory_map_read[gamepak_index];                                 \
                                                                               \
-  if(map == NULL)                                                             \
-    map = load_gamepak_page(gamepak_index & 0x3FF);                           \
+    if(map == NULL)                                                           \
+      map = load_gamepak_page(gamepak_index & 0x3FF);                         \
                                                                               \
-  value = ADDRESS##type(map, address & 0x7FFF)                                \
+    value = ADDRESS##type(map, address & 0x7FFF);                             \
 
 #define read_open8()                                                          \
   if(!(reg[REG_CPSR] & 0x20))                                                 \
