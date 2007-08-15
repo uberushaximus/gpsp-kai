@@ -98,10 +98,7 @@
       else                                                                    \
         rate = rate + (rate >> gs->sweep_shift);                              \
                                                                               \
-      if(rate > 2047)                                                         \
-      {                                                                       \
-        rate = 2047;                                                          \
-      }                                                                       \
+      rate %= 2048;                                                           \
       frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0)  \
         / SOUND_FREQUENCY);                                                   \
                                                                               \
@@ -745,7 +742,7 @@ static int sound_update_thread(SceSize args, void *argp)
       {
         for(i = 0; i < SAMPLE_SIZE; i++)
         {
-          buffer[i] = sound_buffer[sound_read_offset] << 4;
+          buffer[i] = sound_buffer[sound_read_offset] << 3;
           sound_buffer[sound_read_offset] = 0;
           sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
         }
