@@ -851,11 +851,12 @@
 #beg other people if you want, but don't hold me accountable\n
 #if you get hated or banned for it), it'll be exactly 16384\n
 #bytes large and should have the following md5sum value:\n\n
-!Sorry, but gpSP requires a Gameboy Advance BIOS image to run\n
-!correctly. Make sure to get an authentic one (search the web,\n
-!beg other people if you want, but don't hold me accountable\n
-!if you get hated or banned for it), it'll be exactly 16384\n
-!bytes large and should have the following md5sum value:\n\n
+!BIOSファイルが見つかりません。\n
+!gpSPはBIOSファイルがないと起動できません\n
+!16384バイトのBIOSファイルをgba_bios.binの名前で\n
+!EBOOT.PBPと同じフォルダに配置して下さい。\n
+!\n
+!\n
 
 # MSG_ERR_BIOS_2
 #a860e8c0b6d573d191e4ec7db1b1e4f6 or 1c0d67db9e1208b95a1506b1688a0ad6\n\n
@@ -864,12 +865,12 @@
 #When you do get it name it gba_bios.bin and put it in the\n
 #same directory as this EBOOT.\n\n
 #Good luck. Press any button to exit.\n
-!a860e8c0b6d573d191e4ec7db1b1e4f6 or 1c0d67db9e1208b95a1506b1688a0ad6\n\n
-!Other BIOS files might work either partially completely, I\n
-!really don't know.\n\n
-!When you do get it name it gba_bios.bin and put it in the\n
-!same directory as this EBOOT.\n\n
-!Good luck. Press any button to exit.\n
+!BIOSのMD5は以下の値になります\n
+!GBAの場合：A860E8C0B6D573D191E4EC7DB1B1E4F6\n
+!NDSの場合：1C0D67DB9E1208B95A1506B1688A0AD6\n
+!違う場合は不具合のでる可能性がありますので注意して下さい。\n
+!\n
+!ボタンを押すと終了します。\n
 
 # MSG_ERR_BIOS_MD5
 #This BIOS is not regular.\n
