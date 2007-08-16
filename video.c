@@ -3507,7 +3507,7 @@ void print_string(char *str, u16 fg_color, u16 bg_color,
  u32 x, u32 y)
 {
   fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), PIXEL_FORMAT, x, y,
-    str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
+    str, fg_color, bg_color, FBM_FONT_FILL/* | FBM_BACK_FILL*/, 100, 0);
 }
 
 void print_string_pad(char *str, u16 fg_color, u16 bg_color,

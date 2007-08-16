@@ -20,17 +20,12 @@
 
 #include "common.h"
 
-#define ROM_WRITE_FLAG    0
-#define ROM_WRITE_ADDRESS 1
-#define ROM_WRITE_DATA    2
-
 CHEAT_TYPE game_config_cheats[MAX_CHEATS];
 u32 num_cheats;
-u32 rom_write[MAX_CHEATS][3];
 
 void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant);
-void process_cheat_gs1(CHEAT_TYPE *cheat, u32 cheat_num);
-void process_cheat_gs3(CHEAT_TYPE *cheat, u32 cheat_num);
+void process_cheat_gs1(CHEAT_TYPE *cheat);
+void process_cheat_gs3(CHEAT_TYPE *cheat);
 
 void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant)
 {
@@ -188,7 +183,7 @@ void add_cheats(char *cheats_filename)
   }
 }
 
-void process_cheat_gs1(CHEAT_TYPE *cheat, u32 cheat_num)
+void process_cheat_gs1(CHEAT_TYPE *cheat)
 {
   u32 cheat_opcode;
   u32 *code_ptr = cheat->cheat_codes;
@@ -239,15 +234,9 @@ void process_cheat_gs1(CHEAT_TYPE *cheat, u32 cheat_num)
         break;
       }
 
-      // ROM patch not supported yet
       case 0x6:
         if(gamepak_file_large == -1)  // オンメモリのROMの場合だけ
-        {
-          rom_write[i][ROM_WRITE_FLAG] = 1;  // フラグを立てる
-          rom_write[i][ROM_WRITE_ADDRESS] = (address * 2) - 0x08000000;  // 元アドレス保存
-          rom_write[i][ROM_WRITE_DATA] = read_memory16(address * 2);  // 元データの保存
           ADDRESS16(gamepak_rom, (address * 2) - 0x08000000) = (value & 0xFFFF);  // データの書込み
-        }
         break;
 
       // GS button down not supported yet
@@ -281,7 +270,7 @@ void process_cheat_gs1(CHEAT_TYPE *cheat, u32 cheat_num)
 
 // These are especially incomplete.
 
-void process_cheat_gs3(CHEAT_TYPE *cheat, u32 cheat_num)
+void process_cheat_gs3(CHEAT_TYPE *cheat)
 {
   u32 cheat_opcode;
   u32 *code_ptr = cheat->cheat_codes;
@@ -418,25 +407,17 @@ void process_cheats()
       {
         case CHEAT_TYPE_GAMESHARK_V1:
         case CHEAT_TYPE_DIRECT_V1:
-          process_cheat_gs1(game_config_cheats + i, i);
+          process_cheat_gs1(game_config_cheats + i);
           break;
 
         case CHEAT_TYPE_GAMESHARK_V3:
         case CHEAT_TYPE_DIRECT_V3:
-          process_cheat_gs3(game_config_cheats + i, i);
+          process_cheat_gs3(game_config_cheats + i);
           break;
 
         default:
           ;
           break;
-      }
-    }
-    else
-    {
-      if(rom_write[i][ROM_WRITE_FLAG] == 1)
-      {
-        rom_write[i][ROM_WRITE_FLAG] = 0;  // フラグをリセット
-        ADDRESS16(gamepak_rom, rom_write[i][ROM_WRITE_ADDRESS]) = rom_write[i][ROM_WRITE_DATA];  // 元データの書込み
       }
     }
   }
