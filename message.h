@@ -23,7 +23,6 @@
 
 enum MSG
 {
-
   MSG_RETURN_MENU,
 
   MSG_MENU_DATE,
@@ -251,6 +250,7 @@ enum MSG
   MSG_END
 };
 
-char msg[MSG_END][512];
+char *msg[MSG_END];
+char msg_data[16 * 1024]; // メッセージ用のデータ 16kb
 
 #endif

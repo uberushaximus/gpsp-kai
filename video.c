@@ -165,19 +165,9 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
 #define tile_lookup_palette(palette, source)                                  \
   current_pixel = palette[source];                                            \
 
-
-#ifdef RENDER_COLOR16_NORMAL
-
-#define tile_expand_base_normal(index)                                        \
-  tile_expand_base_color16(index)                                             \
-
-#else
-
 #define tile_expand_base_normal(index)                                        \
   tile_lookup_palette(palette, current_pixel);                                \
   dest_ptr[index] = current_pixel                                             \
-
-#endif
 
 #define tile_expand_transparent_normal(index)                                 \
   tile_expand_base_normal(index)                                              \
@@ -2123,7 +2113,6 @@ void order_obj(u32 video_mode)
   for(obj_num = 127; obj_num >= 0; obj_num--, oam_ptr -= 4)
   {
     obj_attribute_0 = oam_ptr[0];
-    obj_attribute_1 = oam_ptr[1];
     obj_attribute_2 = oam_ptr[2];
     obj_size = obj_attribute_0 & 0xC000;
     obj_priority = (obj_attribute_2 >> 10) & 0x03;
@@ -2136,7 +2125,7 @@ void order_obj(u32 video_mode)
       if(obj_y > 160)
         obj_y -= 256;
 
-//      obj_attribute_1 = oam_ptr[1];
+      obj_attribute_1 = oam_ptr[1];
       obj_size = ((obj_size >> 12) & 0x0C) | (obj_attribute_1 >> 14);
 //      obj_priority = (obj_attribute_2 >> 10) & 0x03;
       obj_height = obj_height_table[obj_size];

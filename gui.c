@@ -1653,12 +1653,14 @@ u32 load_msgcfg(char *file_name)
   char current_str[256];
   FILE *msg_file;
   char msg_path[MAX_PATH];
+  u32 offset;
 
   sprintf(msg_path, "%s/%s", main_path, file_name);
 
   msg_file = fopen(msg_path, "r");
 
   next_line = 0;
+  offset = 0;
   if(msg_file)
   {
     loop = 0;
@@ -1667,20 +1669,21 @@ u32 load_msgcfg(char *file_name)
       if(parse_line(current_line, current_str) != -1)
       {
         if (loop <= (MSG_END + 1 + next_line)) {
-          if (next_line == 1) {
-            strcat(msg[loop - 1], current_str);
-          }
-          else
+          if (next_line == 0)
           {
-            strcpy(msg[loop], current_str);
-            loop++;
+            // 新しい行の場合
+            msg[loop] = &msg_data[offset];  // 新しい行
             next_line = 1;
+            loop++;
           }
+          strcpy(&msg_data[offset], current_str);
+          offset = offset + strlen(current_str);  // offset はNULLの位置を示す
         }
       }
       else
       {
         next_line = 0;
+        offset++;
       }
     }
     
