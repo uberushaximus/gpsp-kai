@@ -135,9 +135,9 @@ typedef struct
      gbc_sound_channel[channel].envelope_initial_ticks;                       \
     gbc_sound_channel[channel].envelope_volume =                              \
      gbc_sound_channel[channel].envelope_initial_volume;                      \
-    gbc_sound_channel[channel].sweep_ticks =                                  \
-     gbc_sound_channel[channel].sweep_initial_ticks;                          \
-}                                                                             \
+    /*gbc_sound_channel[channel].sweep_ticks =                                  \
+     gbc_sound_channel[channel].sweep_initial_ticks;*/                          \
+  }                                                                           \
                                                                               \
   gbc_sound_update = 1;                                                       \
   ADDRESS16(io_registers, address) = value;                                   \

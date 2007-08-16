@@ -117,7 +117,6 @@ u8 *gamepak_rom;
 u32 gamepak_size;
 
 DMA_TRANSFER_TYPE dma[4];
-//DMA_TRANSFER_TYPE *dma = (DMA_TRANSFER_TYPE *)0x010000; /* SPAD RAM use 0x2C * 4 = 0xB0 */
 
 u8 *memory_regions[16];
 u32 memory_limits[16];
@@ -166,7 +165,6 @@ u32 backup_update = 0;
 // Write out backup file this many cycles after the most recent
 // backup write.
 const u32 write_backup_delay = 10;
-
 
 typedef enum
 {
@@ -484,7 +482,7 @@ u32 read_eeprom()
         if(address < 0x4000)                                                  \
           value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
         else                                                                  \
-          read_open##type();                                                  \
+          break;/*read_open##type();*/                                                  \
       }                                                                       \
       else                                                                    \
       {                                                                       \
@@ -503,7 +501,7 @@ u32 read_eeprom()
       break;                                                                  \
                                                                               \
     case 0x04:                                                                \
-      /* I/O registers */                                                     \
+      /* I/O registers TODO*/                                                     \
       if(address < 0x04000400)                                                  /* IOは0x803まで存在 */ \
         value = ADDRESS##type(io_registers, address & 0x3FF);                   /* 0x800は0x800ごとにループしている:TODO */ \
       else                                                                    \
@@ -1649,7 +1647,8 @@ void write_backup(u32 address, u32 value)
   ADDRESS32(vram, address) = value                                            \
 
 #define write_oam_ram8()                                                      \
-/*  Write 8bit data is ignore */                                              \
+  oam_update = 1;                                                             \
+  ADDRESS16(oam_ram, address & 0x3FF) = ((value << 8) | value)                \
 
 #define write_oam_ram16()                                                     \
   oam_update = 1;                                                             \
@@ -3103,8 +3102,7 @@ CPU_ALERT_TYPE dma_transfer(DMA_TRANSFER_TYPE *dma)
    (dma->start_type == DMA_START_IMMEDIATELY))
   {
     dma->start_type = DMA_INACTIVE;
-    ADDRESS16(io_registers, (dma->dma_channel * 12) + 0xBA) &=
-     (~0x8000);
+    ADDRESS16(io_registers, (dma->dma_channel * 12) + 0xBA) &= (~0x8000);
   }
 
   if(dma->irq)

@@ -40,6 +40,8 @@
 #define render_scanline_dest_copy_tile      u16
 #define render_scanline_dest_copy_bitmap    u16
 
+#define PIXEL_FORMAT PSP_DISPLAY_PIXEL_FORMAT_5551
+
 static float *screen_vertex = (float *)0x441FC100;
 static u32 *ge_cmd = (u32 *)0x441FC000;
 static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
@@ -1985,7 +1987,7 @@ u32 obj_alpha_count[160];
 #define render_scanline_obj_partial_alpha(combine_op, alpha_op, map_space)    \
   if((obj_attribute_0 >> 10) & 0x03)                                          \
   {                                                                           \
-    pixel_combine = 0x00000300;                                               \
+    pixel_combine = 0x00000300;        /*todo*/                                       \
     render_scanline_obj_main(combine_op, alpha_obj, map_space);               \
   }                                                                           \
   else                                                                        \
@@ -2249,7 +2251,7 @@ fill_line_builder(color32);
 
 #define blend_pixel()                                                         \
   pixel_bottom = palette_ram_converted[(pixel_pair >> 16) & 0x1FF];           \
-  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x07E0F81F;          \
+  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x03E07C1F /*0x07E0F81F*/;          \
   pixel_top = ((pixel_top * blend_a) + (pixel_bottom * blend_b)) >> 4         \
 
 
@@ -2258,18 +2260,18 @@ fill_line_builder(color32);
 
 #define blend_saturate_pixel()                                                \
   pixel_bottom = palette_ram_converted[(pixel_pair >> 16) & 0x1FF];           \
-  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x07E0F81F;          \
+  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x03E07C1F /*0x07E0F81F*/;          \
   pixel_top = ((pixel_top * blend_a) + (pixel_bottom * blend_b)) >> 4;        \
-  if(pixel_top & 0x08010020)                                                  \
+  if(pixel_top & 0x04008020/*0x08010020*/)                                                  \
   {                                                                           \
-    if(pixel_top & 0x08000000)                                                \
-      pixel_top |= 0x07E00000;                                                \
+    if(pixel_top & 0x04000000/*0x08000000*/)                                                \
+      pixel_top |= 0x03E00000/*0x07E00000*/;                                                \
                                                                               \
-    if(pixel_top & 0x00010000)                                                \
-      pixel_top |= 0x0000F800;                                                \
+    if(pixel_top & 0x00008000/*0x00010000*/)                                                \
+      pixel_top |= 0x00007C00/*0x0000F800*/;                                                \
                                                                               \
-    if(pixel_top & 0x00000020)                                                \
-      pixel_top |= 0x0000001F;                                                \
+    if(pixel_top & 0x00000020/*0x00000020*/)                                                \
+      pixel_top |= 0x0000001F/*0x0000001F*/;                                                \
   }                                                                           \
 
 #define brighten_pixel()                                                      \
@@ -2285,9 +2287,9 @@ fill_line_builder(color32);
   ((pixel_source & 0x00000200) == 0x00000200)                                 \
 
 #define expand_pixel_no_dest(expand_type, pixel_source)                       \
-  pixel_top = (pixel_top | (pixel_top << 16)) & 0x07E0F81F;                   \
+  pixel_top = (pixel_top | (pixel_top << 16)) & 0x03E07C1F /*0x07E0F81F*/;                   \
   expand_type##_pixel();                                                      \
-  pixel_top &= 0x07E0F81F;                                                    \
+  pixel_top &= 0x03E07C1F /*0x07E0F81F*/;                                                    \
   pixel_top = (pixel_top >> 16) | pixel_top                                   \
 
 #define expand_pixel(expand_type, pixel_source)                               \
@@ -2423,7 +2425,7 @@ void expand_brighten(u16 *screen_src_ptr, u16 *screen_dest_ptr,
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
+  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
   blend = 16 - blend;
 
   expand_loop(brighten, effect_condition_fade(pixel_top), pixel_top);
@@ -2473,7 +2475,7 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
+  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
   blend = 16 - blend;
 
   if(blend_a > 16)
@@ -2663,7 +2665,7 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
           if(blend > 16)                                                      \
             blend = 16;                                                       \
                                                                               \
-          upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;                   \
+          upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;                   \
           blend = 16 - blend;                                                 \
                                                                               \
           expand_pixel_no_dest(brighten, pixel_top);                          \
@@ -3278,15 +3280,14 @@ void init_video()
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
   sceDisplayWaitVblankStart();
-  sceDisplaySetFrameBuf((void*)psp_gu_vram_base, PSP_LINE_SIZE,
-   PSP_DISPLAY_PIXEL_FORMAT_565, PSP_DISPLAY_SETBUF_NEXTFRAME);
+  // パレットを5551(RRRRGGGGBBBBA)にする GBAは0RRRRGGGGBBBBなのでシフトのみで変換可能
+  sceDisplaySetFrameBuf((void*)psp_gu_vram_base, PSP_LINE_SIZE, PSP_DISPLAY_PIXEL_FORMAT_5551/*565*/, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
   sceGuInit();
 
   sceGuStart(GU_DIRECT, display_list);
-  sceGuDrawBuffer(GU_PSM_5650, (void*)0, PSP_LINE_SIZE);
-  sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT,
-   (void*)0, PSP_LINE_SIZE);
+  sceGuDrawBuffer(GU_PSM_5551/*5650*/, (void*)0, PSP_LINE_SIZE);
+  sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
   sceGuClear(GU_COLOR_BUFFER_BIT);
 
   sceGuOffset(2048 - (PSP_SCREEN_WIDTH / 2), 2048 - (PSP_SCREEN_HEIGHT / 2));
@@ -3294,7 +3295,7 @@ void init_video()
 
   sceGuScissor(0, 0, PSP_SCREEN_WIDTH + 1, PSP_SCREEN_HEIGHT + 1);
   sceGuEnable(GU_SCISSOR_TEST);
-  sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
+  sceGuTexMode(GU_PSM_5551/*5650*/, 0, 0, GU_FALSE);
   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
   sceGuTexFilter(GU_LINEAR, GU_LINEAR);
   sceGuEnable(GU_TEXTURE_2D);
@@ -3500,21 +3501,21 @@ void blit_to_screen(u16 *src, u32 w, u32 h, u32 dest_x, u32 dest_y)
 void print_string_ext(char *str, u16 fg_color, u16 bg_color,
  u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad)
 {
-  fbm_printVRAM( _dest_ptr, pitch, 0, x, y,
+  fbm_printVRAM( _dest_ptr, pitch, PIXEL_FORMAT, x, y,
     str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad);
 }
 
 void print_string(char *str, u16 fg_color, u16 bg_color,
  u32 x, u32 y)
 {
-  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), 0, x, y,
+  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), PIXEL_FORMAT, x, y,
     str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
 }
 
 void print_string_pad(char *str, u16 fg_color, u16 bg_color,
  u32 x, u32 y, u32 pad)
 {
-  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), 0, x, y,
+  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), PIXEL_FORMAT, x, y,
     str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad);
 }
 

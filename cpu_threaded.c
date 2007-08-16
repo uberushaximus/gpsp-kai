@@ -2581,7 +2581,7 @@ typedef struct
       }                                                                       \
       break;                                                                  \
                                                                               \
-    /* TST, NEG, CMP, CMN */                                                  \
+    /* TODO:TST, NEG, CMP, CMN */                                                  \
     case 0x42:                                                                \
       if((opcode >> 6) & 0x03)                                                \
       {                                                                       \
@@ -2591,7 +2591,7 @@ typedef struct
       else                                                                    \
       {                                                                       \
         /* TST rd, rs */                                                      \
-        thumb_flag_modifies_zn();                                             \
+        thumb_flag_modifies_all/*zn*/();                                             \
       }                                                                       \
       break;                                                                  \
                                                                               \

@@ -623,7 +623,7 @@ u32 fbm_colmix1(void *vr, u32 color, int rate)
 	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
 	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
 
-	return r1 | (g1 << 5) | (b1 << 10);
+	return b1 | (g1 << 5) | (r1 << 10);
 }
 
 

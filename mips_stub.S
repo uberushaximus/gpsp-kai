@@ -498,8 +498,6 @@ mips_indirect_branch_dual:
   translate_region_vram_core
 .endm
 
-
-
 .macro translate_region_gamepak_core mask
   srl $2, $4, 15                  # $2 = page number of address (delay)
   sll $2, $2, 2                   # adjust to word index
@@ -2155,7 +2153,6 @@ execute_load_eeprom_u32a:
 
 execute_load_backup_u32a:
   backup_load_a patch_load_u32a
-  nop
 
 execute_load_open_u32a:
   open_load32_a patch_load_u32a
@@ -2222,20 +2219,24 @@ execute_store_palette_u8:
   addu $2, $2, $4
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
+#  sll $1, $5, 1                   # make green 6bits
+#  ins $1, $0, 0, 6                # make bottom bit 0
+#  ins $1, $5, 0, 5                # insert red channel into $1
   lui $2, %hi(palette_ram_converted)
   addu $2, $2, $4
   jr $ra                          # return
-  sh $1, %lo(palette_ram_converted)($2)
+#  sh $1, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram_converted)($2)
 
 execute_store_vram_u8:
   translate_region_vram_store_align16 patch_store_u8
   store_u8_double vram
 
 execute_store_oam_u8:
-  ignore_region 7, patch_store_u8 # Write 8bit data is ignore
+  translate_region 7, patch_store_u8, oam_ram, 0x3FE
+  lui $1, %hi(oam_update)         # write non-zero to oam_update
+  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+  store_u8_double oam_ram
 
 execute_store_ignore8_u8:
   ignore_region 8, patch_store_u8
@@ -2322,13 +2323,14 @@ execute_store_palette_u16:
   addu $2, $2, $4
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
+#  sll $1, $5, 1                   # make green 6bits
+#  ins $1, $0, 0, 6                # make bottom bit 0
+#  ins $1, $5, 0, 5                # insert red channel into $1
   lui $2, %hi(palette_ram_converted)
   addu $2, $2, $4
   jr $ra                          # return
-  sh $1, %lo(palette_ram_converted)($2)
+#  sh $1, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram_converted)($2)
 
 execute_store_vram_u16:
   translate_region_vram_store_align16 patch_store_u16
@@ -2428,13 +2430,14 @@ execute_store_palette_u32:
   addu $2, $2, $4
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
+#  sll $1, $5, 1                   # make green 6bits
+#  ins $1, $0, 0, 6                # make bottom bit 0
+#  ins $1, $5, 0, 5                # insert red channel into $1
   lui $2, %hi(palette_ram_converted)
   addu $2, $2, $4
   addiu $2, $2, %lo(palette_ram_converted)
-  sh $1, ($2)
+#  sh $1, ($2)
+  sh $5, ($2)
 
   srl $5, $5, 16                  # shift down to next palette value
   sll $1, $5, 1                   # make green 6bits
@@ -2541,13 +2544,14 @@ execute_store_palette_u32a:
   addu $2, $2, $4
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
+#  sll $1, $5, 1                   # make green 6bits
+#  ins $1, $0, 0, 6                # make bottom bit 0
+#  ins $1, $5, 0, 5                # insert red channel into $1
   lui $2, %hi(palette_ram_converted)
   addu $2, $2, $4
   addiu $2, $2, %lo(palette_ram_converted)
-  sh $1, ($2)
+#  sh $1, ($2)
+  sh $5, ($2)
 
   srl $5, $5, 16                  # shift down to next palette value
   sll $1, $5, 1                   # make green 6bits
@@ -2788,7 +2792,11 @@ write_io_epilogue:
   nop
   collapse_flags                  # make sure flags are good for update_gba
 
+alert_loop:
   jal update_gba                  # process the next event
+  nop
+  lw $1, CPU_HALT_STATE($16)      # check if CPU is sleeping
+  bne $1, $0, alert_loop          # see if it hasn't changed
   nop
 
   addu $17, $2, $0                # $17 = new cycle counter
@@ -2827,7 +2835,6 @@ ext_store_eeprom:
   jr $ra                          # we can return
   addiu $sp, $sp, 4               # fix the stack (delay)
 
-
 # 8bit ext memory routines
 
 ext_store_io8:
@@ -2848,21 +2855,29 @@ ext_store_palette8:
 
 ext_store_vram8:
   ins $5, $5, 8, 8                # value = (value << 8) | value
-  ext $1, $4, 16, 1               # $1 = bit 16 of address
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
   ins $4, $0, 0, 1                # align out bottom bit
-  bnel $1, $0, ext_store_vram8b   # if address >= 0x10000
-  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+  lui $1, %hi(0x18000)            # $1 = 0x18000
+  sltu $1, $4, $1                 # if $4 >= $1 then $1 = 0 else $1 = 1
+  bne $1, $0, ext_store_vram8b    # if $1 != 0 then j ext_store_vram8b
+  lui $2, %hi(vram)               # start loading vram address (delay)
 
+  addiu $4, $4, -0x8000           # move address into VRAM region
+ 
 ext_store_vram8b:
-  lui $2, %hi(vram)               # start loading vram address
-  addu $2, $2, $4                 # $2 = (hi)vram + address
-  jr $ra                          # return
-  sh $5, %lo(vram)($2)            # vram[address] = value (delay)
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
 
 ext_store_oam8:
-  jr $ra                          # Write 8bit data is ignore
-  nop
+  lui $1, %hi(oam_update)         # write non-zero to oam_update
+  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+  andi $4, $4, 0x3FE              # wrap around address and align to 16bits
+  ins $5, $5, 8, 8                # value = (value << 8) | value
+  lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
+  addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+  jr $ra                          # return
+  sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
 
 ext_store_backup:
   andi $5, $5, 0xFF               # make value 8bit
@@ -2950,25 +2965,28 @@ ext_store_palette16b:
   addu $2, $2, $4
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
+#  sll $1, $5, 1                   # make green 6bits
+#  ins $1, $0, 0, 6                # make bottom bit 0
+#  ins $1, $5, 0, 5                # insert red channel into $1
   lui $2, %hi(palette_ram_converted)
   addu $2, $2, $4
   jr $ra                          # return
-  sh $1, %lo(palette_ram_converted)($2)
+#  sh $1, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram_converted)($2)
 
 ext_store_vram16:
-  ext $1, $4, 16, 1               # $1 = bit 16 of address
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
-  bnel $1, $0, ext_store_vram16b  # if address >= 0x10000
-  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+  lui $1, %hi(0x18000)            # $1 = 0x18000
+  sltu $1, $4, $1                 # see if address < 0x18000
+  bne $1, $0, ext_store_vram16b
+  lui $2, %hi(vram)               # start loading vram address (delay)
 
+  addiu $4, $4, -0x8000           # move address into VRAM region
+ 
 ext_store_vram16b:
-  lui $2, %hi(vram)               # start loading vram address
-  addu $2, $2, $4                 # $2 = (hi)vram + address
-  jr $ra                          # return
-  sh $5, %lo(vram)($2)            # vram[address] = value (delay)
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
 
 ext_store_oam16:
   lui $1, %hi(oam_update)         # write non-zero to oam_update
@@ -2981,7 +2999,7 @@ ext_store_oam16:
   sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
 
 ext_store_rtc:
-  andi $4, $4, 0xFFFF             # wrap address
+  andi $4, $4, 0xFF               # wrap address
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
   save_registers
@@ -3062,16 +3080,18 @@ ext_store_palette32:
   addu $ra, $6, $0                # restore return address (delay)
 
 ext_store_vram32:
-  ext $1, $4, 16, 1               # $1 = bit 16 of address
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
-  bnel $1, $0, ext_store_vram32b  # if address >= 0x10000
-  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+  lui $1, %hi(0x18000)            # $1 = 0x18000
+  sltu $1, $4, $1                 # see if address < 0x18000
+  bne $1, $0, ext_store_vram32b
+  lui $2, %hi(vram)               # start loading vram address (delay)
 
+  addiu $4, $4, -0x8000           # move address into VRAM region
+ 
 ext_store_vram32b:
-  lui $2, %hi(vram)               # start loading vram address
-  addu $2, $2, $4                 # $2 = (hi)vram + address
-  jr $ra                          # return
-  sw $5, %lo(vram)($2)            # vram[address] = value (delay)
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sw $5, %lo(vram)($2)            # vram[address] = value (delay)
 
 ext_store_oam32:
   lui $1, %hi(oam_update)         # write non-zero to oam_update
@@ -3113,7 +3133,6 @@ ext_store_u32:
   nop
 
 #execute_store_u32:
-execute_store_full_u32:
   srl $1, $4, 28                  # check if the address is out of range
   bne $1, $0, ext_store_u32       # if it is, perform an extended write
   srl $2, $4, 15                  # $1 = page number of address (delay slot)
@@ -3234,9 +3253,9 @@ execute_read_spsr:
   lw $1, CPU_MODE($16)            # $1 = cpu_mode
   lui $2, %hi(spsr)
   sll $1, $1, 2                   # adjust to word offset size
-  addu $1, $2, $1
+  addu $2, $2, $1
   jr $ra                          # return
-  lw $2, %lo(spsr)($1)            # $2 = spsr[cpu_mode] (delay slot)
+  lw $2, %lo(spsr)($2)            # $2 = spsr[cpu_mode] (delay slot)
 
 # Switch into SWI, has to collapse flags
 # $4: Current pc
@@ -3276,12 +3295,12 @@ execute_spsr_restore:
   sll $1, $1, 2                   # adjust to word offset size
   addu $2, $2, $1
   lw $1, %lo(spsr)($2)            # $1 = spsr[cpu_mode]
+  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
+  extract_flags_body              # extract flags from $1
 
   addiu $sp, $sp, -4
   sw $ra, ($sp)
 
-  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
-  extract_flags_body              # extract flags from $1
   save_registers
   jal execute_spsr_restore_body   # do the dirty work in this C function
   nop
@@ -3432,17 +3451,28 @@ ror_zero_shift:
 # $4: cycle counter argument
 
 execute_arm_translate:
+  addu $17, $4, $0                # load cycle counter register
   lui $16, %hi(reg)               # load base register
   addiu $16, %lo(reg)
-  addu $17, $4, $0                # load cycle counter register
+  extract_flags                   # load flag variables
 
-  jal block_lookup_address_arm    # lookup initial jump address
+  and $1, $1, 0x20                # see if Thumb bit is set in flags
+
+  bne $1, $0, 1f
   lw $4, REG_PC($16)              # load PC into $4 (delay)
 
+  jal block_lookup_address_arm    # lookup initial jump address
+  nop
   restore_registers               # load initial register values
   jr $2                           # jump to return
   nop
 
+1:
+  jal block_lookup_address_thumb  # lookup initial jump address
+  nop
+  restore_registers               # load initial register values
+  jr $2                           # jump to return
+  nop
 
 # sceKernelInvalidateIcacheRange gives me problems, trying this instead
 # Invalidates an n byte region starting at the start address

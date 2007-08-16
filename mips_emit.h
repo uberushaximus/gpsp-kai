@@ -23,6 +23,7 @@
 #define MIPS_EMIT_H
 
 u32 mips_update_gba(u32 pc);
+u32 cycle_multiply(u32 _rs);
 
 // Although these are defined as a function, don't call them as
 // such (jump to it instead)
@@ -1411,8 +1412,8 @@ typedef enum
 
 #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
   mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-  generate_add_flags_prologue(_rn, _rm);                                      \
-  /*generate_add_flags_prologue(_rn, reg_temp);*/                                 \
+  /*generate_add_flags_prologue(_rn, _rm);*/                                      \
+  generate_add_flags_prologue(_rn, reg_temp);                                 \
   mips_emit_addu(_rd, _rn, reg_temp);                                         \
   generate_add_flags_epilogue(_rd)                                            \
 
@@ -1602,7 +1603,7 @@ typedef enum
   mips_emit_mflo(reg_temp);                                                   \
   mips_emit_addu(arm_to_mips_reg[rd], reg_temp, arm_to_mips_reg[rn])          \
 
-u32 cycle_multiply(_rs)
+u32 cycle_multiply(u32 _rs)
 {
   u32 mult_rs = arm_to_mips_reg[_rs];
   if(((s32)mult_rs) < 0)
@@ -1872,7 +1873,7 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   generate_load_reg(reg_a1, i)                                                \
 
 #define arm_block_memory_adjust_pc_store()                                    \
-  cycle_count++;                                                              \
+  cycle_count++                                                               \
 
 #define arm_block_memory_adjust_pc_load()                                     \
   cycle_count++;                                                              \
@@ -1970,6 +1971,7 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
     {                                                                         \
       if((reg_list >> i) & 0x01)                                              \
       {                                                                       \
+        cycle_count++;                                                        \
         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
         if(reg_list & ~((2 << i) - 1))                                        \
         {                                                                     \
@@ -2063,20 +2065,6 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
    arm_to_mips_reg[rs]);                                                      \
   check_store_reg_pc_thumb(dest_rd);                                          \
 }                                                                             \
-
-/*
-
-#define thumb_data_proc_hi(name)                                              \
-{                                                                             \
-  thumb_decode_hireg_op();                                                    \
-  check_load_reg_pc(arm_reg_a0, rs, 4);                                       \
-  check_load_reg_pc(arm_reg_a1, rd, 4);                                       \
-  generate_op_##name##_reg(arm_to_mips_reg[rd], arm_to_mips_reg[rd],          \
-   arm_to_mips_reg[rs]);                                                      \
-  check_store_reg_pc_thumb(rd);                                               \
-}                                                                             \
-
-*/
 
 #define thumb_data_proc_test_hi(name)                                         \
 {                                                                             \
@@ -2386,6 +2374,7 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
     {                                                                         \
       if((reg_list >> i) & 0x01)                                              \
       {                                                                       \
+        cycle_count++;                                                        \
         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
         if(reg_list & ~((2 << i) - 1))                                        \
         {                                                                     \
@@ -2464,7 +2453,7 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   thumb_decode_branch();                                                      \
   generate_alu_imm(addiu, addu, reg_a0, reg_r14, (offset * 2));               \
   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
-  generate_indirect_branch_cycle_update(thumb);                               \
+  generate_indirect_branch_cycle_update(dual);                                \
   break;                                                                      \
 }                                                                             \
 

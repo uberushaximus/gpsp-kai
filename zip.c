@@ -60,9 +60,6 @@ s32 load_file_zip(char *filename)
   if(!FILE_CHECK_VALID(fd))
     return -1;
 
-#if 0 // EDIT: Why this while(1) is used is unknown and can cause a crash.
-  while(1)
-#endif
   {
     FILE_READ(fd, &data, sizeof(struct SZIPFileHeader));
 

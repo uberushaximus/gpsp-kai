@@ -1496,7 +1496,7 @@ u32 menu(u16 *original_screen)
   return return_value;
 }
 
-u32 load_dircfg(char *file_name)
+u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 {
   int loop;
   int next_line;
@@ -1596,7 +1596,7 @@ u32 load_dircfg(char *file_name)
   return -1;
 }
 
-u32 load_fontcfg(char *file_name)
+u32 load_fontcfg(char *file_name)  // TODO:スマートな実装に書き直す
 {
   int loop;
   int next_line;
@@ -1977,12 +1977,12 @@ static void save_ss_bmp(u16 *image)
     for(x = 0; x < 240; x++)
     {
       col = image[x + y * 240];
-      r = (col >> 11);
-      g = (col >> 5) & 0x3F;
+      r = (col >> 10) & 0x1F;
+      g = (col >> 5) & 0x1F;
       b = (col) & 0x1F;
 
       rgb_data[159-y][x][2] = b * 255 / 31;
-      rgb_data[159-y][x][1] = g * 255 / 63;
+      rgb_data[159-y][x][1] = g * 255 / 31;
       rgb_data[159-y][x][0] = r * 255 / 31;
     }
   }
