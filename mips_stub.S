@@ -2217,16 +2217,9 @@ execute_store_palette_u8:
   ins $5, $5, 8, 8                # double value
   andi $4, $4, 0x3FE              # align palette address
   addu $2, $2, $4
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-#  sll $1, $5, 1                   # make green 6bits
-#  ins $1, $0, 0, 6                # make bottom bit 0
-#  ins $1, $5, 0, 5                # insert red channel into $1
-  lui $2, %hi(palette_ram_converted)
-  addu $2, $2, $4
   jr $ra                          # return
-#  sh $1, %lo(palette_ram_converted)($2)
-  sh $5, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
 execute_store_vram_u8:
   translate_region_vram_store_align16 patch_store_u8
@@ -2321,16 +2314,9 @@ execute_store_palette_u16:
   lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
   andi $4, $4, 0x3FE              # wrap/align palette address
   addu $2, $2, $4
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-#  sll $1, $5, 1                   # make green 6bits
-#  ins $1, $0, 0, 6                # make bottom bit 0
-#  ins $1, $5, 0, 5                # insert red channel into $1
-  lui $2, %hi(palette_ram_converted)
-  addu $2, $2, $4
   jr $ra                          # return
-#  sh $1, %lo(palette_ram_converted)($2)
-  sh $5, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
 execute_store_vram_u16:
   translate_region_vram_store_align16 patch_store_u16
@@ -2428,24 +2414,9 @@ execute_store_palette_u32:
   lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
   andi $4, $4, 0x3FC              # wrap/align palette address
   addu $2, $2, $4
-  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-
-#  sll $1, $5, 1                   # make green 6bits
-#  ins $1, $0, 0, 6                # make bottom bit 0
-#  ins $1, $5, 0, 5                # insert red channel into $1
-  lui $2, %hi(palette_ram_converted)
-  addu $2, $2, $4
-  addiu $2, $2, %lo(palette_ram_converted)
-#  sh $1, ($2)
-  sh $5, ($2)
-
-  srl $5, $5, 16                  # shift down to next palette value
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
 
   jr $ra                          # return
-  sh $1, 2($2)
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
 execute_store_vram_u32:
   translate_region_vram_store_align32 patch_store_u32
@@ -2544,22 +2515,8 @@ execute_store_palette_u32a:
   addu $2, $2, $4
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-#  sll $1, $5, 1                   # make green 6bits
-#  ins $1, $0, 0, 6                # make bottom bit 0
-#  ins $1, $5, 0, 5                # insert red channel into $1
-  lui $2, %hi(palette_ram_converted)
-  addu $2, $2, $4
-  addiu $2, $2, %lo(palette_ram_converted)
-#  sh $1, ($2)
-  sh $5, ($2)
-
-  srl $5, $5, 16                  # shift down to next palette value
-  sll $1, $5, 1                   # make green 6bits
-  ins $1, $0, 0, 6                # make bottom bit 0
-  ins $1, $5, 0, 5                # insert red channel into $1
-
   jr $ra                          # return
-  sh $1, 2($2)
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
 execute_store_vram_u32a:
   translate_region_vram_store_align32 patch_store_u32a
@@ -2965,14 +2922,8 @@ ext_store_palette16b:
   addu $2, $2, $4
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
-#  sll $1, $5, 1                   # make green 6bits
-#  ins $1, $0, 0, 6                # make bottom bit 0
-#  ins $1, $5, 0, 5                # insert red channel into $1
-  lui $2, %hi(palette_ram_converted)
-  addu $2, $2, $4
   jr $ra                          # return
-#  sh $1, %lo(palette_ram_converted)($2)
-  sh $5, %lo(palette_ram_converted)($2)
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
 
 ext_store_vram16:
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF

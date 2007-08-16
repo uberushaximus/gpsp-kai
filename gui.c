@@ -41,14 +41,14 @@
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
 #define COLOR16(red, green, blue)                                             \
-  (blue << 11) | (green << 5) | red                                           \
+  (blue << 10) | (green << 5) | red                                           \
 
-#define COLOR_BG            COLOR16(2, 8, 10)
-#define COLOR_ROM_INFO      COLOR16(22, 36, 26)
-#define COLOR_ACTIVE_ITEM   COLOR16(31, 63, 31)
-#define COLOR_INACTIVE_ITEM COLOR16(13, 40, 18)
-#define COLOR_FRAMESKIP_BAR COLOR16(15, 31, 31)
-#define COLOR_HELP_TEXT     COLOR16(16, 40, 24)
+#define COLOR_BG            COLOR16(2, 4, 10)
+#define COLOR_ROM_INFO      COLOR16(22, 18, 26)
+#define COLOR_ACTIVE_ITEM   COLOR16(31, 31, 31)
+#define COLOR_INACTIVE_ITEM COLOR16(13, 20, 18)
+#define COLOR_FRAMESKIP_BAR COLOR16(15, 15, 31)
+#define COLOR_HELP_TEXT     COLOR16(16, 20, 24)
 
 #define MAKE_MENU(name, init_function, passive_function)                      \
   MENU_TYPE name##_menu =                                                     \

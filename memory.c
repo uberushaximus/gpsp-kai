@@ -100,7 +100,6 @@ u8 cpu_waitstate_cycles_seq[2][16] =
 
 u16 palette_ram[512];
 u16 oam_ram[512];
-u16 palette_ram_converted[512];
 u16 io_registers[1024 * 16];
 u8 ewram[1024 * 256 * 2];
 u8 iwram[1024 * 32 * 2];
@@ -1469,28 +1468,18 @@ CPU_ALERT_TYPE write_io_register32(u32 address, u32 value)
   u32 palette_address = address & ~0x01;                                      \
   u16 double_value = ((value << 8) | value);                                  \
   ADDRESS16(palette_ram, palette_address) = double_value;                     \
-  CONVERT_PALETTE(double_value);                                              \
-  ADDRESS16(palette_ram_converted, palette_address) = double_value;           \
 }                                                                             \
 
 #define write_palette16(address, value)                                       \
 {                                                                             \
   u32 palette_address = address;                                              \
   ADDRESS16(palette_ram, palette_address) = value;                            \
-  CONVERT_PALETTE(value);                                                     \
-  ADDRESS16(palette_ram_converted, palette_address) = value;                  \
 }                                                                             \
 
 #define write_palette32(address, value)                                       \
 {                                                                             \
   u32 palette_address = address;                                              \
-  u32 value_high = value >> 16;                                               \
-  u32 value_low = value & 0xFFFF;                                             \
   ADDRESS32(palette_ram, palette_address) = value;                            \
-  CONVERT_PALETTE(value_high);                                                \
-  CONVERT_PALETTE(value_low);                                                 \
-  value = (value_high << 16) | value_low;                                     \
-  ADDRESS32(palette_ram_converted, palette_address) = value;                  \
 }                                                                             \
 
 
@@ -3469,13 +3458,6 @@ void load_state(char *savestate_filename)
 
         return;
       }
-    }
-
-    for(i = 0; i < 512; i++)
-    {
-      current_color = palette_ram[i];
-      palette_ram_converted[i] =
-       CONVERT_PALETTE(current_color);
     }
 
     // Oops, these contain raw pointers

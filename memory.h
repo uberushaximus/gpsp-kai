@@ -157,8 +157,8 @@ extern DMA_TRANSFER_TYPE dma[4];
 
 extern u8 *write_mem_ptr;
 
+extern u16 palette_ram[512];
 extern u16 oam_ram[512];
-extern u16 palette_ram_converted[512];
 extern u16 io_registers[1024 * 16];
 extern u8 ewram[1024 * 256 * 2];
 extern u8 iwram[1024 * 32 * 2];

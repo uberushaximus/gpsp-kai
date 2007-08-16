@@ -63,12 +63,6 @@ typedef u32 FIXED16_16;
 #define ROR(dest, value, shift)                                             \
   dest = ((value) >> (shift)) | ((value) << (32 - (shift)))                 \
 
-/*#define CONVERT_PALETTE(value)                                              \
-  value = (((value) & 0x7FE0) << 1) | ((value) & 0x1F)                      \
-*/
-#define CONVERT_PALETTE(value)                                              \
-  value = value                                                             \
-
 #define PSP_FILE_OPEN_APPEND (PSP_O_CREAT | PSP_O_APPEND | PSP_O_TRUNC)
 
 #define PSP_FILE_OPEN_READ PSP_O_RDONLY
