@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 10 svn rev.***
+-UnOfficial gpSP kai 3.1 test 10 svn rev.186
 	サウンドのノイズの対応
 	傾きセンサの調整
 	チートのROM書込に対応(6aaaaaaa 0000ddddのパターン)
