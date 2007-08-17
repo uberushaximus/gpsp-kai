@@ -3074,16 +3074,12 @@ CPU_ALERT_TYPE dma_transfer(DMA_TRANSFER_TYPE *dma)
   {
     src_ptr &= ~0x01;
     dest_ptr &= ~0x01;
-    // TODO:???
-//    cycle_dma16_words += length;
     dma_transfer_expand(16);
   }
   else
   {
     src_ptr &= ~0x03;
     dest_ptr &= ~0x03;
-    // TODO:???
-//    cycle_dma32_words += length;
     dma_transfer_expand(32);
   }
 
