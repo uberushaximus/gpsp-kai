@@ -29,12 +29,9 @@ void update_screen();
 void init_video();
 void video_resolution_large();
 void video_resolution_small();
-void print_string(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y);
-void print_string_pad(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y, u32 pad);
-void print_string_ext(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad);
+void print_string(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y);
+void print_string_pad(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, u32 pad);
+void print_string_ext(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad);
 void clear_screen(u16 color);
 void blit_to_screen(u16 *src, u32 w, u32 h, u32 x, u32 y);
 u16 *copy_screen();
@@ -89,9 +86,19 @@ typedef enum
   filter_bilinear
 } video_filter_type;
 
-//extern video_scale_type screen_scale;
-//extern video_scale_type current_scale;
-//extern video_filter_type screen_filter;
+extern u16 *screen_pixels;
+extern u32 screen_pitch;
+
+#define PIXEL_FORMAT PSP_DISPLAY_PIXEL_FORMAT_5551
+
+#define print_string_ext(str, fg_color, bg_color, x, y, dest_ptr, pitch, pad)                                                       \
+  fbm_printVRAM( dest_ptr, pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)             \
+
+#define print_string(str, fg_color, bg_color, x, y)                                                                                 \
+  fbm_printVRAM( screen_pixels, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0)   \
+
+#define print_string_pad(str, fg_color, bg_color, x, y, pad)                                                                        \
+  fbm_printVRAM( screen_pixels, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad) \
 
 extern u32 screen_scale;
 extern u32 current_scale;

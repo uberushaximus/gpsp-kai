@@ -1343,7 +1343,7 @@ u32 menu(u16 *original_screen)
   {
     first_load = 1;
     memset(original_screen, 0x00, 240 * 160 * 2);
-    print_string_ext(msg[MSG_NON_LOAD_GAME], 0xFFFF, 0x0000, 60, 75,original_screen, 240, 0);
+    fbm_printVRAM( original_screen, 240, 1, 60, 75, msg[MSG_NON_LOAD_GAME], 0xFFFF, 0x0000, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
   }
 
   choose_menu(&main_menu);
@@ -1843,7 +1843,7 @@ static void get_savestate_snapshot(char *savestate_filename)
   else
   {
     memset(snapshot_buffer, 0, 240 * 160 * 2);
-    print_string_ext(msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, 15, 75, snapshot_buffer, 240, 0);
+    fbm_printVRAM( snapshot_buffer, 240, 1, 15, 75, msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
     get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_NONE_0, 0, 0, 0, 0, 0, 0, 0, 0);
     print_string(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
   }

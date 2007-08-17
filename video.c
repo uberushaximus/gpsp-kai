@@ -40,8 +40,6 @@
 #define render_scanline_dest_copy_tile      u16
 #define render_scanline_dest_copy_bitmap    u16
 
-#define PIXEL_FORMAT PSP_DISPLAY_PIXEL_FORMAT_5551
-
 static float *screen_vertex = (float *)0x441FC100;
 static u32 *ge_cmd = (u32 *)0x441FC000;
 static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
@@ -134,8 +132,8 @@ void render_scanline_window_bitmap(u16 *scanline, u32 dispcnt);
 
 static u16 *screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
 //static u16 *current_screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
-static u16 *screen_pixels = (u16 *)(0x4000000 + (512 * 272 * 2));
-static u32 screen_pitch = 240;
+u16 *screen_pixels = (u16 *)(0x4000000 + (512 * 272 * 2));
+u32 screen_pitch = 240;
 
 static void Ge_Finish_Callback(int id, void *arg)
 {
@@ -3494,124 +3492,6 @@ void blit_to_screen(u16 *src, u32 w, u32 h, u32 dest_x, u32 dest_y)
     }
     dest_ptr += line_skip;
   }
-}
-
-void print_string_ext(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad)
-{
-  fbm_printVRAM( _dest_ptr, pitch, PIXEL_FORMAT, x, y,
-    str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad);
-}
-
-void print_string(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y)
-{
-  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), PIXEL_FORMAT, x, y,
-    str, fg_color, bg_color, FBM_FONT_FILL/* | FBM_BACK_FILL*/, 100, 0);
-}
-
-void print_string_pad(char *str, u16 fg_color, u16 bg_color,
- u32 x, u32 y, u32 pad)
-{
-  fbm_printVRAM( get_screen_pixels(), get_screen_pitch(), PIXEL_FORMAT, x, y,
-    str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad);
-}
-
-
-u32 debug_cursor_x = 0;
-u32 debug_cursor_y = 0;
-
-#ifdef STDIO_DEBUG
-
-void debug_screen_clear()
-{
-}
-
-void debug_screen_start()
-{
-}
-
-void debug_screen_end()
-{
-}
-
-void debug_screen_update()
-{
-}
-
-void debug_screen_printf(const char *format, ...)
-{
-  va_list ap;
-
-  va_start(ap, format);
-  vprintf(format, ap);
-  va_end(ap);
-}
-
-void debug_screen_newline(u32 count)
-{
-  printf("\n");
-}
-
-
-#else
-
-void debug_screen_clear()
-{
-  debug_cursor_x = 0;
-  debug_cursor_y = 0;
-  clear_screen(0x0000);
-}
-
-void debug_screen_start()
-{
-  video_resolution_large();
-  debug_screen_clear();
-}
-
-void debug_screen_end()
-{
-  video_resolution_small();
-}
-
-void debug_screen_update()
-{
-  flip_screen();
-}
-
-void debug_screen_printf(const char *format, ...)
-{
-  char str_buffer[512];
-  u32 str_buffer_length;
-  va_list ap;
-
-  va_start(ap, format);
-  str_buffer_length = vsnprintf(str_buffer, 512, format, ap);
-  va_end(ap);
-
-  printf("printing debug string %s at %d %d\n", str_buffer,
-   (int)debug_cursor_x, (int)debug_cursor_y);
-
-  print_string(str_buffer, 0xFFFF, 0x0000, debug_cursor_x, debug_cursor_y);
-  debug_cursor_x += FONT_WIDTH * str_buffer_length;
-}
-
-void debug_screen_newline(u32 count)
-{
-  debug_cursor_x = 0;
-  debug_cursor_y += FONT_HEIGHT * count;
-}
-
-#endif
-
-void debug_screen_printl(const char *format, ...)
-{
-  va_list ap;
-
-  va_start(ap, format);
-  debug_screen_printf(format, ap);
-  debug_screen_printf("\n");
-  va_end(ap);
 }
 
 #define video_savestate_body(type)                                            \
