@@ -1,14 +1,14 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 11 svn rev.***
+-UnOfficial gpSP kai 3.1 test 11 svn rev.191
 	サウンドのノイズの対応
 	傾きセンサの調整
 	チートのROM書込に対応(6aaaaaaa 0000ddddのパターン)
 		ただし、16MB以下のROMのみ
 		一度有効にすると無効になりません
 	アイコンの変更(frmb0001さんからの提供です)
-		背景を追加するとテキストのタイトルが表示されないので、test版は無しにしておきます
+		背景を追加するとタイトルが表示されないので、test版では無しにしておきます
 	BIOSエラーのメッセージを意訳
 	メッセージデータの内部フォーマットを変更して省メモリ化
 	パレットを変更して多少高速化
