@@ -121,11 +121,11 @@ u32 file_length(char *filename, s32 dummy);
 // TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
 // 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0x10000 - value;                               \
+  timer[timer_number].reload = 0xFFFF - value;                                \
   if(timer_number < 2)                                                        \
   {                                                                           \
     u32 timer_reload =                                                        \
-     timer[timer_number].reload << timer[timer_number].prescale;              \
+     timer[timer_number].reload;              \
     SOUND_UPDATE_FREQUENCY_STEP(timer_number);                                \
   }                                                                           \
 
@@ -166,7 +166,6 @@ u32 file_length(char *filename, s32 dummy);
         /* プリスケールモード */                                              \
         timer[timer_number].status = TIMER_PRESCALE;                          \
         u32 prescale = prescale_table[value & 0x03];                          \
-        timer_reload <<= prescale;                                            \
         /* プリスケールの設定 */                                              \
         timer[timer_number].prescale = prescale;                              \
       }                                                                       \
@@ -175,19 +174,18 @@ u32 file_length(char *filename, s32 dummy);
       timer[timer_number].irq = (value >> 6) & 0x01;                          \
                                                                               \
       /* カウンタを設定 */                                                    \
-      timer[timer_number].count = timer_reload;                               \
+      timer[timer_number].count = timer_reload << timer[timer_number].prescale; \
       ADDRESS16(io_registers, 0x100 + (timer_number * 4)) =                   \
        0x10000 - timer_reload;                                                \
                                                                               \
-      if(timer_reload < execute_cycles)                                       \
-        execute_cycles = timer_reload;                                        \
+      if(timer[timer_number].count < execute_cycles)                          \
+        execute_cycles = timer[timer_number].count;                           \
                                                                               \
       if(timer_number < 2)                                                    \
       {                                                                       \
         u32 buffer_adjust =                                                   \
          (u32)(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) *     \
          SOUND_FREQUENCY) / SYS_CLOCK) * 2;                                   \
-                                                                              \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
         ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
         ADJUST_SOUND_BUFFER(timer_number, 1);                                 \

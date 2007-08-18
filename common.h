@@ -52,7 +52,8 @@
 #include <psputility_osk.h>
 
 typedef s32 FILE_TAG_TYPE;
-typedef u32 FIXED16_16;
+typedef u32 FIXED16_16;    // 整数部16bit 実数部16bit の固定小数点
+typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 
 #define MAX_PATH 1024
 #define MAX_FILE 512

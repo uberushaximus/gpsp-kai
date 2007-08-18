@@ -33,8 +33,8 @@
  * マクロ等の定義
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
-#define SAMPLE_COUNT PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
-#define SAMPLE_SIZE  (SAMPLE_COUNT * 2)           // 1サンプルあたりのバッファ数
+#define SAMPLE_COUNT        PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
+#define SAMPLE_SIZE         (SAMPLE_COUNT * 2)          // 1サンプルあたりのバッファ数
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
 
@@ -62,13 +62,8 @@
   {                                                                           \
     RENDER_SAMPLE_##type();                                                   \
     fifo_fractional += frequency_step;                                        \
-    /* indexを進める */                                                       \
-    OFFSET_INC();                                                             \
+    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
   }                                                                           \
-
-#define OFFSET_INC()                                                          \
-  /* indexを進める */                                                         \
-  sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE                 \
 
 #define UPDATE_VOLUME_CHANNEL_ENVELOPE(channel)                               \
   volume_##channel = gbc_sound_envelope_volume_table[envelope_volume] *       \
@@ -100,8 +95,7 @@
                                                                               \
       if (rate > 2047)                                                        \
         rate = 2047;                                                          \
-      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0)  \
-        / SOUND_FREQUENCY);                                                   \
+      frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0) / SOUND_FREQUENCY); \
                                                                               \
       gs->frequency_step = frequency_step;                                    \
       gs->rate = rate;                                                        \
@@ -188,8 +182,7 @@
     GBC_SOUND_RENDER_SAMPLE_##type();                                         \
                                                                               \
     sample_index += frequency_step;                                           \
-    /* indexを進める */                                                       \
-    OFFSET_INC();                                                             \
+    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
@@ -215,8 +208,7 @@
     if(sample_index >= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type))           \
       sample_index -= U32_TO_FP16_16(GBC_NOISE_WRAP_##noise_type);            \
                                                                               \
-    /* indexを進める */                                                       \
-    OFFSET_INC();                                                             \
+    sound_write_offset = (sound_write_offset + 2) % BUFFER_SIZE;              \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
@@ -296,13 +288,12 @@ u32 left_buffer;
  * ローカル変数の定義
  ******************************************************************************/
 static u32 audio_buffer_size;
-volatile static u32 sound_buffer_base = 0; // サウンド バッファのベースポインタ
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
 volatile static u32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
-static u32 audio_thread_exit_flag; // オーディオスレッドの終了フラグ。
+volatile static u32 audio_thread_exit_flag; // オーディオスレッドの終了フラグ。
 volatile static u32 pause_sound_flag;
 
 /******************************************************************************
@@ -351,23 +342,19 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
       switch (ds->status)
         {
           case DIRECT_SOUND_INACTIVE:
-            RENDER_SAMPLES(NULL)
-            ;
+            RENDER_SAMPLES(NULL);
             break;
 
           case DIRECT_SOUND_RIGHT:
-            RENDER_SAMPLES(RIGHT)
-            ;
+            RENDER_SAMPLES(RIGHT);
             break;
 
           case DIRECT_SOUND_LEFT:
-            RENDER_SAMPLES(LEFT)
-            ;
+            RENDER_SAMPLES(LEFT);
             break;
 
           case DIRECT_SOUND_LEFTRIGHT:
-            RENDER_SAMPLES(BOTH)
-            ;
+            RENDER_SAMPLES(BOTH);
             break;
         }
     }
@@ -380,7 +367,7 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
     ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
 
     // マジカルバケーションで動作が遅くなるのが改善される
-    u8 fifo_length;
+/*    u8 fifo_length;
 
     if (ds->fifo_top > ds->fifo_base)
       fifo_length = ds->fifo_top - ds->fifo_base;
@@ -388,7 +375,7 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
       fifo_length = ds->fifo_top + (32 - ds->fifo_base);
 
     if (fifo_length <= 16)
-
+*/
       if (((ds->fifo_top - ds->fifo_base) % 32) <= 16)
       {
         if (dma[1].direct_sound_channel == channel)
@@ -402,7 +389,6 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
 void sound_reset_fifo(u32 channel)
   {
     DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
-
     memset(ds->fifo, 0, 32);
   }
 
@@ -461,7 +447,7 @@ u32 gbc_sound_envelope_volume_table[16] =
     FIXED_DIV(14, 15, 14), 
     FIXED_DIV(15, 15, 14) };
 
-volatile static u32 gbc_sound_buffer_index = 0;
+volatile /*static*/ u32 gbc_sound_buffer_index = 0;
 u32 gbc_sound_last_cpu_ticks = 0;
 u32 gbc_sound_partial_ticks = 0;
 
@@ -471,6 +457,7 @@ u32 gbc_sound_master_volume;
 
 void update_gbc_sound(u32 cpu_ticks)
   {
+    // TODO 実数部のビット数を多くした方がいい？
     FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
     u32 i, i2;
     GBC_SOUND_STRUCT *gs = gbc_sound_channel;
@@ -484,7 +471,6 @@ void update_gbc_sound(u32 cpu_ticks)
     s8 *sample_data;
     s8 *wave_bank;
     u8 *wave_ram = ((u8 *)io_registers) + 0x90;
-    u32 temp;
 
     gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks);
     buffer_ticks = FP16_16_TO_U32(buffer_ticks);
@@ -494,11 +480,6 @@ void update_gbc_sound(u32 cpu_ticks)
       buffer_ticks += 1;
       gbc_sound_partial_ticks &= 0xFFFF;
     }
-
-    if (gbc_sound_buffer_index >= sound_read_offset)
-    temp = gbc_sound_buffer_index - sound_read_offset;
-    else
-    temp = gbc_sound_buffer_index + (BUFFER_SIZE - sound_read_offset);
 
     if (sound_on == 1)
     {
@@ -608,9 +589,8 @@ void reset_sound()
     GBC_SOUND_STRUCT *gs = gbc_sound_channel;
     u32 i;
 
+    audio_thread_exit_flag = 0;
     sound_on = 0;
-    sound_buffer_base = 0;
-    sound_last_cpu_ticks = 0;
     memset(sound_buffer, 0, BUFFER_SIZE * 2);
 
     for (i = 0; i < 2; i++, ds++)
@@ -652,10 +632,7 @@ void pause_sound(u32 flag)
 
 void sound_exit()
   {
-    //  gbc_sound_buffer_index =
-    //   (sound_buffer_base + audio_buffer_size) % BUFFER_SIZE;
-    //  SDL_PauseAudio(1);
-    //  SDL_CondSignal(sound_cv);
+    audio_thread_exit_flag = 1;
   }
 
 void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
@@ -674,58 +651,46 @@ void sound_read_savestate(FILE_TAG_TYPE savestate_file)
 static int sound_update_thread(SceSize args, void *argp)
   {
     int audio_handle; // オーディオチャンネルのハンドル。
-    s16 buffer[SAMPLE_SIZE];
-    u32 write_offset;
-    u32 i;
-    u32 temp;
+    s16 buffer[1][SAMPLE_SIZE];
+    u32 loop;
+    u32 buffer_num;
+    s16 sample;
     // オーディオチャンネルの取得。
-    audio_handle
-        = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+    audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
 
     // TODO:初期設定に移動
     sound_read_offset = 0;
     memset(buffer, 0, sizeof(buffer));
     left_buffer = 0;
-    write_offset = 0;
 
+    // メインループ
     while(!audio_thread_exit_flag)
     {
 
       left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
+      buffer_num = global_enable_audio;
 
-      while( (pause_sound_flag != 0)/* && (CHECK_BUFFER() < audio_buffer_size)*/ )
+      if((CHECK_BUFFER() >= SAMPLE_SIZE) && (pause_sound_flag == 0))
       {
-        sceKernelDelayThread(1);
-      }
-
-      while(CHECK_BUFFER() < SAMPLE_SIZE)
-      {
-        sceKernelDelayThread(1);
-      }
-
-      if (global_enable_audio == 0)
-      {
-        for(i = 0; i < SAMPLE_SIZE; i++)
+        // todo memcopy*2と どっちが速い？
+        for(loop = 0; loop < SAMPLE_SIZE; loop++)
         {
-          buffer[i] = 0;
+          sample = sound_buffer[sound_read_offset];
+          if (sample >  2047) sample =  2047;
+          if (sample < -2048) sample = -2048;
+          buffer[1][loop] = sample << 4;
           sound_buffer[sound_read_offset] = 0;
           sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
         }
       }
       else
       {
-        for(i = 0; i < SAMPLE_SIZE; i++)
-        {
-          buffer[i] = sound_buffer[sound_read_offset] << 3;
-          sound_buffer[sound_read_offset] = 0;
-          sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
-        }
+        buffer_num = 0;  // オール0のサウンドデータを再生
       }
-      sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer);
+      sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
+      sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.5);
     }
 
-    memset(buffer, 0, sizeof(buffer));
-    sceAudioOutputPannedBlocking(audio_handle, 0, 0, &buffer);
     sceAudioChRelease(audio_handle);
     sceKernelExitThread(0);
     return 0;

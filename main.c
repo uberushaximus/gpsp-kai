@@ -121,7 +121,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
       timer[timer_number].count -= execute_cycles;                            \
       /* レジスタに書込 */                                                    \
       io_registers[REG_TM##timer_number##D] =                                 \
-       0x10000 - (timer[timer_number].count >> timer[timer_number].prescale); \
+       0x10000 - (timer[timer_number].count >> timer[timer_number].prescale);  \
     }                                                                         \
                                                                               \
     if(timer[timer_number].count <= 0)                                        \
@@ -139,7 +139,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
         timer[timer_number + 1].count--;                                      \
         /* レジスタに書込 */                                                  \
         io_registers[REG_TM0D + (timer_number + 1) * 2] =                     \
-          0x10000 - (timer[timer_number + 1].count);                          \
+          0xFFFF - (timer[timer_number + 1].count);                           \
       }                                                                       \
                                                                               \
       if(timer_number < 2)                                                    \
@@ -155,7 +155,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
       timer[timer_number].count +=                                            \
         (timer[timer_number].reload << timer[timer_number].prescale);         \
       io_registers[REG_TM##timer_number##D] =                                 \
-        0x10000 - (timer[timer_number].count >> timer[timer_number].prescale);\
+        0x10000 - (timer[timer_number].count >> timer[timer_number].prescale); \
     }                                                                         \
   }                                                                           \
 
@@ -516,7 +516,7 @@ u32 update_gba()
       if((dispstat & 0x02) == 0)
       {
         // Transition from hrefresh to hblank
-        video_count += (272);
+        video_count += 272;
         dispstat |= 0x02;
 
         if((dispstat & 0x01) == 0)
@@ -583,7 +583,7 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
           synchronize();
-
+//          DBGOUT("E,%0lX,V,%0lX,S,%0lX,0,%0lX,1,%0lX\n",execute_cycles, video_count, gbc_sound_buffer_index, direct_sound_channel[0].buffer_index, direct_sound_channel[1].buffer_index);
           update_screen();
 
           if(update_backup_flag)
@@ -646,7 +646,7 @@ void vblank_interrupt_handler(u32 sub, u32 *parg)
   vblank_count++;
 }
 
-// TODO:最適化
+// TODO:最適化/タイマー使った方が良いかも
 void synchronize()
 {
 //  char char_buffer[64];

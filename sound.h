@@ -124,8 +124,7 @@ typedef struct
 {                                                                             \
   u32 rate = value & 0x7FF;                                                   \
   gbc_sound_channel[channel].rate = rate;                                     \
-  gbc_sound_channel[channel].frequency_step =                                 \
-   FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0) / SOUND_FREQUENCY);  \
+  gbc_sound_channel[channel].frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0) / SOUND_FREQUENCY);  \
   gbc_sound_channel[channel].length_status = (value >> 14) & 0x01;            \
   if(value & 0x8000)                                                          \
   {                                                                           \
@@ -192,8 +191,7 @@ typedef struct
 {                                                                             \
   u32 rate = value & 0x7FF;                                                   \
   gbc_sound_channel[2].rate = rate;                                           \
-  gbc_sound_channel[2].frequency_step =                                       \
-   FLOAT_TO_FP16_16((2097152.0 / (2048.0 - rate)) / SOUND_FREQUENCY);         \
+  gbc_sound_channel[2].frequency_step = FLOAT_TO_FP16_16((2097152.0 / (2048.0 - rate)) / SOUND_FREQUENCY);         \
   gbc_sound_channel[2].length_status = (value >> 14) & 0x01;                  \
   if(value & 0x8000)                                                          \
   {                                                                           \
@@ -288,7 +286,7 @@ typedef struct
 
 #define SOUND_UPDATE_FREQUENCY_STEP(timer_number)                             \
   timer[timer_number].frequency_step =                                        \
-   FLOAT_TO_FP16_16(SYS_CLOCK / (timer_reload * SOUND_FREQUENCY))            \
+   FLOAT_TO_FP16_16(SYS_CLOCK / (timer_reload * SOUND_FREQUENCY))             \
 
 /******************************************************************************
  * グローバル変数の宣言
@@ -306,6 +304,8 @@ extern u32 global_enable_audio;
 extern u32 left_buffer;
 extern u32 audio_buffer_size_number;
 extern u32 gbc_sound_wave_volume[4];
+
+extern volatile u32 gbc_sound_buffer_index;
 
 void sound_timer_queue32(u8 channel);
 void sound_timer(FIXED16_16 frequency_step, u32 channel);
