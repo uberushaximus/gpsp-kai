@@ -4,10 +4,11 @@
                                                                       by mok
 ****************************************************************************/
 
+// gpSP用に不必要な部分を削除(32bit modeなど)
 
-#include <pspdisplay.h>
-#include <stdlib.h>
-#include <string.h>
+//#include <pspdisplay.h>
+//#include <stdlib.h>
+//#include <string.h>
 #include "common.h"
 
 #define FBM_PSP_WIDTH			(480)
@@ -331,24 +332,9 @@ int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, ch
 
 	switch (pixelformat)
 	{
-		case 0:
-			fbmPrintSUB = fbm_printSUB16;
-			fbmColMix = (rate < 0) ? fbm_colmixrev0: fbm_colmix0;
-			break;
-
 		case 1:
 			fbmPrintSUB = fbm_printSUB16;
 			fbmColMix = (rate < 0) ? fbm_colmixrev1: fbm_colmix1;
-			break;
-
-		case 2:
-			fbmPrintSUB = fbm_printSUB16;
-			fbmColMix = (rate < 0) ? fbm_colmixrev2: fbm_colmix2;
-			break;
-
-		case 3:
-			fbmPrintSUB = fbm_printSUB32;
-			fbmColMix = (rate < 0) ? fbm_colmixrev3: fbm_colmix3;
 			break;
 
 		default:
@@ -512,252 +498,54 @@ void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int he
 	nextx = nextx + *(font->width);
 }
 
-
-void fbm_printSUB32(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate)
-{
-	int           i;
-	int           j;
-	int           shift;
-	u8            pt;
-	u32           *vptr;
-	fbm_font_t    *font;
-
-
-	if (index < 0) return;
-
-	font = fbm_getfont(index, isdouble);
-
-	if (nextx + *(font->width) > FBM_PSP_WIDTH)
-	{
-		nextx = 0;
-		nexty += fbmControl[0].height;
-	}
-
-	if (nexty + height > FBM_PSP_HEIGHT)
-	{
-		nexty = 0;
-	}
-
-	vram = (u32 *)vram + nextx + nexty * bufferwidth;
-
-	for (i = 0; i < height; i++)
-	{
-		vptr = (u32 *)vram;
-		shift = 0;
-
-		index = i * byteperline;
-		pt = font->font[index++];
-
-		for (j = 0; j < *(font->width); j++)
-		{
-			if (shift >= 8)
-			{
-				shift = 0;
-				pt = font->font[index++];
-			}
-
-			if (pt & 0x80)
-			{
-				if (fill & 0x01 && rate > 0)
-					*vptr = color;
-			}
-			else if (fill & 0x10 && rate > 0)
-			{
-				*vptr = back;
-			}
-
-			vptr++;
-
-			shift++;
-			pt <<= 1;
-		}
-
-		vram = (u32 *)vram + bufferwidth;
-	}
-
-	nextx = nextx + *(font->width);
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // VRAM Color Mix
 // vr: VRAM Address, color: Mix Color, rate: Mix Rate (0-100)
 /////////////////////////////////////////////////////////////////////////////
-u32 fbm_colmix0(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0x1f;
-	g1 = (color >> 5) & 0x3f;
-	b1 = (color >> 11) & 0x1f;
-
-	r2 = *(u16 *)vr & 0x1f;
-	g2 = (*(u16 *)vr >> 5) & 0x3f;
-	b2 = (*(u16 *)vr >> 11) & 0x1f;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return r1 | (g1 << 5) | (b1 << 11);
-}
-
-
 u32 fbm_colmix1(void *vr, u32 color, int rate)
 {
-	int r1, g1, b1;
-	int r2, g2, b2;
+	u32 r1, g1, b1;
+	u32 r2, g2, b2;
 
+  if (rate !=0 )
+  {
+    r1 = color & 0x1f;
+    g1 = (color >> 5) & 0x1f;
+    b1 = (color >> 10)& 0x1f;
 
-	r1 = color & 0x1f;
-	g1 = (color >> 5) & 0x1f;
-	b1 = (color >> 10) & 0x1f;
+    r2 = (*(u16 *)vr >> 10)& 0x1f;
+    g2 = (*(u16 *)vr >> 5) & 0x1f;
+    b2 = *(u16 *)vr & 0x1f;
 
-	r2 = *(u16 *)vr & 0x1f;
-	g2 = (*(u16 *)vr >> 5) & 0x1f;
-	b2 = (*(u16 *)vr >> 10) & 0x1f;
+    r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
+    g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
+    b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
 
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
+    color = (b1 << 10) | (g1 << 5) | r1;
+  }
 
-	return b1 | (g1 << 5) | (r1 << 10);
+  return color;
 }
-
-
-u32 fbm_colmix2(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0xf;
-	g1 = (color >> 4) & 0xf;
-	b1 = (color >> 8) & 0xf;
-
-	r2 = *(u16 *)vr & 0xf;
-	g2 = (*(u16 *)vr >> 4) & 0xf;
-	b2 = (*(u16 *)vr >> 8) & 0xf;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return r1 | (g1 << 4) | (b1 << 8);
-}
-
-
-u32 fbm_colmix3(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0xff;
-	g1 = (color >> 8) & 0xff;
-	b1 = (color >> 16) & 0xff;
-
-	r2 = *(u32 *)vr & 0xff;
-	g2 = (*(u32 *)vr >> 8) & 0xff;
-	b2 = (*(u32 *)vr >> 16) & 0xff;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return r1 | (g1 << 8) | (b1 << 16);
-}
-
-
-u32 fbm_colmixrev0(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0x1f;
-	g1 = (color >> 5) & 0x3f;
-	b1 = (color >> 11) & 0x1f;
-
-	r2 = ~*(u16 *)vr & 0x1f;
-	g2 = ~(*(u16 *)vr >> 5) & 0x3f;
-	b2 = ~(*(u16 *)vr >> 11) & 0x1f;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return r1 | (g1 << 5) | (b1 << 11);
-}
-
 
 u32 fbm_colmixrev1(void *vr, u32 color, int rate)
 {
 	int r1, g1, b1;
 	int r2, g2, b2;
 
+  r1 = (color >>10)& 0x1f;
+  g1 = (color >> 5) & 0x1f;
+  b1 = color & 0x1f;
 
-	r1 = color & 0x1f;
-	g1 = (color >> 5) & 0x1f;
-	b1 = (color >> 10) & 0x1f;
-
-	r2 = ~*(u16 *)vr & 0x1f;
-	g2 = ~(*(u16 *)vr >> 5) & 0x1f;
-	b2 = ~(*(u16 *)vr >> 10) & 0x1f;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return b1 | (g1 << 5) | (r1 << 10);
-}
-
-
-u32 fbm_colmixrev2(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0xf;
-	g1 = (color >> 4) & 0xf;
-	b1 = (color >> 8) & 0xf;
-
-	r2 = ~*(u16 *)vr & 0xf;
-	g2 = ~(*(u16 *)vr >> 4) & 0xf;
-	b2 = ~(*(u16 *)vr >> 8) & 0xf;
+  r2 = (*(u16 *)vr >> 10)& 0x1f;
+  g2 = (*(u16 *)vr >> 5) & 0x1f;
+  b2 = *(u16 *)vr & 0x1f;
 
 	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
 	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
 	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
 
-	return r1 | (g1 << 4) | (b1 << 8);
+	return (r1 << 10) | (g1 << 5) | b1;
 }
-
-
-u32 fbm_colmixrev3(void *vr, u32 color, int rate)
-{
-	int r1, g1, b1;
-	int r2, g2, b2;
-
-
-	r1 = color & 0xff;
-	g1 = (color >> 8) & 0xff;
-	b1 = (color >> 16) & 0xff;
-
-	r2 = ~*(u32 *)vr & 0xff;
-	g2 = ~(*(u32 *)vr >> 8) & 0xff;
-	b2 = ~(*(u32 *)vr >> 16) & 0xff;
-
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
-
-	return r1 | (g1 << 8) | (b1 << 16);
-}
-
 
 void *fbm_malloc(size_t size)
 {
