@@ -3276,13 +3276,13 @@ void init_video()
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
   sceDisplayWaitVblankStart();
-  // パレットを5551(RRRRGGGGBBBBA)にする GBAは0RRRRGGGGBBBBなのでシフトのみで変換可能
-  sceDisplaySetFrameBuf((void*)psp_gu_vram_base, PSP_LINE_SIZE, PSP_DISPLAY_PIXEL_FORMAT_5551/*565*/, PSP_DISPLAY_SETBUF_NEXTFRAME);
+  // パレットを5551(0RRRRGGGGBBBB)にする GBAは0RRRRGGGGBBBBなので変換の必要がない
+  sceDisplaySetFrameBuf((void*)psp_gu_vram_base, PSP_LINE_SIZE, PSP_DISPLAY_PIXEL_FORMAT_5551, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
   sceGuInit();
 
   sceGuStart(GU_DIRECT, display_list);
-  sceGuDrawBuffer(GU_PSM_5551/*5650*/, (void*)0, PSP_LINE_SIZE);
+  sceGuDrawBuffer(GU_PSM_5551, (void*)0, PSP_LINE_SIZE);
   sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
   sceGuClear(GU_COLOR_BUFFER_BIT);
 
@@ -3291,7 +3291,7 @@ void init_video()
 
   sceGuScissor(0, 0, PSP_SCREEN_WIDTH + 1, PSP_SCREEN_HEIGHT + 1);
   sceGuEnable(GU_SCISSOR_TEST);
-  sceGuTexMode(GU_PSM_5551/*5650*/, 0, 0, GU_FALSE);
+  sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
   sceGuTexFilter(GU_LINEAR, GU_LINEAR);
   sceGuEnable(GU_TEXTURE_2D);

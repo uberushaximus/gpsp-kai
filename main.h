@@ -117,12 +117,12 @@ u32 file_length(char *filename, s32 dummy);
 // タイマーリロード時のカウンタの設定(この時点ではタイマーにセットされない)
 // タイマースタート時にカウンタに設定される
 // ただし、32bitアクセス時には即座にタイマーにセットされる
-// 実機では0~0xFFFFだが、gpSP内部では (0xFFFF~0)<<prescale(0,6,8,10)の値をとる
+// 実機では0~0xFFFFだが、gpSP内部では (0x10000~1)<<prescale(0,6,8,10)の値をとる
 // 各カウンターにリロードする際にprescale分シフトされる
 // TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
 // 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0xFFFF - value;                                \
+  timer[timer_number].reload = 0x10000 - value;                                \
   if(timer_number < 2)                                                        \
   {                                                                           \
     u32 timer_reload =                                                        \
@@ -177,7 +177,7 @@ u32 file_length(char *filename, s32 dummy);
       /* カウンタを設定 */                                                    \
       timer[timer_number].count = timer_reload << timer[timer_number].prescale; \
       ADDRESS16(io_registers, 0x100 + (timer_number * 4)) =                   \
-       0x10000 - timer_reload;                                                \
+      0x10000 - timer_reload;                                                 \
                                                                               \
       if(timer[timer_number].count < execute_cycles)                          \
         execute_cycles = timer[timer_number].count;                           \

@@ -55,6 +55,7 @@ s32 load_file_zip(char *filename)
   char *ext;
   FILE_ID fd;
 
+  chdir(rom_path);
   FILE_OPEN(fd, filename, READ);
 
   if(!FILE_CHECK_VALID(fd))
@@ -150,5 +151,6 @@ s32 load_file_zip(char *filename)
 outcode:
   FILE_CLOSE(fd);
 
+  chdir(main_path);
   return retval;
 }
