@@ -7,12 +7,13 @@
 PSPSDK          = ${shell psp-config --pspsdk-path}
 PREFIX          = ${shell psp-config --psp-prefix}
 COMMON_FILE     = common.h cpu.h memory.h video.h input.h sound.h main.h gui.h zip.h cheats.h fbm_print.h message.h
+COMMON_FILE    += draw.h blend.h
 
 PSP_EBOOT_ICON  = icon1.png
 #PSP_EBOOT_PIC1  = pic1.png 文字列が表示されないので保留
 
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
-OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o adhoc.o
+OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o adhoc.o draw.o blend.o
 
 TARGET          = UO_gpSP_kai
 
@@ -67,5 +68,9 @@ fbm_print.o    : ${COMMON_FILE} fbm_print.c
 bios.o         : ${COMMON_FILE} bios.c bios.h
 
 adhoc.o         : ${COMMON_FILE} adhoc.c adhoc.h
+
+draw.o         : ${COMMON_FILE} draw.c draw.h
+
+blend.o         : ${COMMON_FILE} blend.c blend.h
 
 all:

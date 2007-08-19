@@ -586,6 +586,8 @@ u32 update_gba()
           update_gbc_sound(cpu_ticks);
           synchronize();
 //          DBGOUT("E,%0lX,V,%0lX,S,%0lX,0,%0lX,1,%0lX\n",execute_cycles, video_count, gbc_sound_buffer_index, direct_sound_channel[0].buffer_index, direct_sound_channel[1].buffer_index);
+          boxfill_alpha(screen_width/2, screen_height/2,screen_width/2+50, screen_height/2+50, 0x7777,7);
+
           update_screen();
 
           if(update_backup_flag)

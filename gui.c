@@ -40,14 +40,10 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
-#define COLOR16(red, green, blue)                                             \
-  (blue << 10) | (green << 5) | red                                           \
-
 #define COLOR_BG            COLOR16(2, 4, 10)
 #define COLOR_ROM_INFO      COLOR16(22, 18, 26)
 #define COLOR_ACTIVE_ITEM   COLOR16(31, 31, 31)
 #define COLOR_INACTIVE_ITEM COLOR16(13, 20, 18)
-#define COLOR_FRAMESKIP_BAR COLOR16(15, 15, 31)
 #define COLOR_HELP_TEXT     COLOR16(16, 20, 24)
 
 #define MAKE_MENU(name, init_function, passive_function)                      \
@@ -1367,6 +1363,7 @@ u32 menu(u16 *original_screen)
 
   current_menu->init_function();
 
+  // メニューのメインループ
   while(repeat)
   {
 
@@ -1406,8 +1403,9 @@ u32 menu(u16 *original_screen)
     }
 
     print_string(current_option->help_string, COLOR_HELP_TEXT, COLOR_BG, 30, 210);
+    boxfill_alpha(0, 0,50, 50, COLOR_HELP_TEXT,7);
 
-    flip_screen();
+//    flip_screen();
 
     gui_action = get_gui_input();
 

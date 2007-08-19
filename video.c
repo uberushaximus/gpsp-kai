@@ -132,15 +132,17 @@ void render_scanline_window_bitmap(u16 *scanline, u32 dispcnt);
 
 static u16 *screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
 //static u16 *current_screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
-u16 *screen_pixels = (u16 *)(0x4000000 + (512 * 272 * 2));
+u16 *screen_address = (u16 *)(0x4000000 + (512 * 272 * 2));
 u32 screen_pitch = 240;
+u32 screen_width = 240;
+u32 screen_height = 160;
 
 static void Ge_Finish_Callback(int id, void *arg)
 {
 }
 
 #define get_screen_pixels()                                                   \
-  screen_pixels                                                               \
+  screen_address                                                               \
 
 #define get_screen_pitch()                                                    \
   screen_pitch                                                                \
@@ -956,19 +958,8 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
     return;                                                                   \
   }                                                                           \
 
-
-#ifdef RENDER_COLOR16_NORMAL
-
-#define render_scanline_extra_variables_base_normal(bg_type)                  \
-  const u32 pixel_combine = 0                                                 \
-
-#else
-
 #define render_scanline_extra_variables_base_normal(bg_type)                  \
   u16 *palette = palette_ram                                                  \
-
-#endif
-
 
 #define render_scanline_extra_variables_base_alpha(bg_type)                   \
   u32 bg_combine = color_combine_mask(5);                                     \
@@ -2242,7 +2233,7 @@ fill_line_builder(alpha);
 fill_line_builder(color16);
 fill_line_builder(color32);
 
-
+// TODO テーブルを利用したものに書き換える(テーブルが大きすぎるかも 32(a1)*32(a2)*32(c1)*32(c2)=1mb)
 // Alpha blend two pixels (pixel_top and pixel_bottom).
 
 #define blend_pixel()                                                         \
@@ -3246,8 +3237,8 @@ void flip_screen()
 
     // Render the current screen
     ge_cmd_ptr = ge_cmd + 2;
-    GE_CMD(TBP0, ((u32)screen_pixels & 0x00FFFFFF));
-    GE_CMD(TBW0, (((u32)screen_pixels & 0xFF000000) >> 8) |
+    GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
+    GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) |
      GBA_SCREEN_WIDTH);
     ge_cmd_ptr = old_ge_cmd_ptr;
 
@@ -3257,9 +3248,9 @@ void flip_screen()
     screen_flip ^= 1;
 
     if(screen_flip)
-      screen_pixels = screen_texture + (240 * 160 * 2);
+      screen_address = screen_texture + (240 * 160 * 2);
     else
-      screen_pixels = screen_texture;
+      screen_address = screen_texture;
   }
 }
 
@@ -3276,7 +3267,7 @@ void init_video()
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
   sceDisplayWaitVblankStart();
-  // パレットを5551(0RRRRGGGGBBBB)にする GBAは0RRRRGGGGBBBBなので変換の必要がない
+  // パレットを5551(0BBBBBGGGGGRRRRR)にする GBAも0BBBBBGGGGGRRRRRなので変換の必要がない
   sceDisplaySetFrameBuf((void*)psp_gu_vram_base, PSP_LINE_SIZE, PSP_DISPLAY_PIXEL_FORMAT_5551, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
   sceGuInit();
@@ -3368,8 +3359,10 @@ void video_resolution_large()
   if(video_direct != 1)
   {
     video_direct = 1;
-    screen_pixels = psp_gu_vram_base;
+    screen_address = psp_gu_vram_base;
     screen_pitch = 512;
+    screen_width = PSP_SCREEN_WIDTH;
+    screen_height = PSP_SCREEN_HEIGHT;
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT,
      (void*)0, PSP_LINE_SIZE);
@@ -3434,9 +3427,11 @@ void video_resolution_small()
   {
     set_gba_resolution(screen_scale);
     video_direct = 0;
-    screen_pixels = screen_texture;
+    screen_address = screen_texture;
     screen_flip = 0;
     screen_pitch = 240;
+    screen_width = GBA_SCREEN_WIDTH;
+    screen_height = GBA_SCREEN_HEIGHT;
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT,
      (void*)0, PSP_LINE_SIZE);

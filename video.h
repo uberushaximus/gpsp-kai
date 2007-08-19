@@ -86,8 +86,10 @@ typedef enum
   filter_bilinear
 } video_filter_type;
 
-extern u16 *screen_pixels;
+extern u16 *screen_address;
 extern u32 screen_pitch;
+extern u32 screen_width;
+extern u32 screen_height;
 
 #define PIXEL_FORMAT PSP_DISPLAY_PIXEL_FORMAT_5551
 
@@ -95,10 +97,10 @@ extern u32 screen_pitch;
   fbm_printVRAM( dest_ptr, pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)             \
 
 #define print_string(str, fg_color, bg_color, x, y)                                                                                 \
-  fbm_printVRAM( screen_pixels, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0)   \
+  fbm_printVRAM( screen_address, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0)   \
 
 #define print_string_pad(str, fg_color, bg_color, x, y, pad)                                                                        \
-  fbm_printVRAM( screen_pixels, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad) \
+  fbm_printVRAM( screen_address, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad) \
 
 extern u32 screen_scale;
 extern u32 current_scale;

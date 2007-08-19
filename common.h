@@ -171,5 +171,7 @@ FILE *dbg_file;
 #include "message.h"
 #include "bios.h"
 #include "adhoc.h"
+#include "draw.h"
+#include "blend.h"
 
 #endif /* COMMON_H */
