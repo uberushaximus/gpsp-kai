@@ -678,6 +678,8 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
               repeat = 0;
               return_value = 0;
               strcpy(result, file_list[current_file_selection]);
+              // ROMのフルパスを取得
+              getcwd(rom_path, MAX_PATH);
             }
           }
           break;
@@ -715,8 +717,9 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
     free(dir_list);
   }
 
-  clear_screen(COLOR_BG);
+  chdir(main_path);
 
+  clear_screen(COLOR_BG);
   return return_value;
 }
 

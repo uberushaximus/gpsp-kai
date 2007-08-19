@@ -2368,6 +2368,8 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
 s32 load_gamepak_raw(char *name)
 {
   FILE_ID gamepak_file;
+
+  chdir(rom_path);
   FILE_OPEN(gamepak_file, name, READ);
 
   if(FILE_CHECK_VALID(gamepak_file))
@@ -2388,8 +2390,6 @@ s32 load_gamepak_raw(char *name)
       // Read in just enough for the header
       FILE_READ(gamepak_file, gamepak_rom, 0x100);
       gamepak_file_large = gamepak_file;
-//      strcpy(gamepak_filename_raw, name);
-//      FILE_CLOSE(gamepak_file);
       // ファイルリストでカレントディレクトリを変更された場合
       // ファイルが読めなくなるので、フルパス指定
       char temp_path[MAX_PATH];
@@ -2397,6 +2397,7 @@ s32 load_gamepak_raw(char *name)
       sprintf(gamepak_filename_raw, "%s/%s", temp_path, name);
     }
 
+    chdir(main_path);
     return gamepak_size;
   }
 

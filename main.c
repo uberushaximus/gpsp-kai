@@ -72,6 +72,7 @@ u32 update_backup_flag = 1;
 u32 hold_state = 0;
 
 char main_path[MAX_PATH];
+char rom_path[MAX_PATH];
 
 u32 quit_flag;
 u32 power_flag;
@@ -450,9 +451,10 @@ int user_main(SceSize argc, char *argv)
     {
       if(load_gamepak(load_filename) == -1)
       {
+        video_resolution_large();
         printf("Failed to load gamepak %s, exiting.\n", load_filename);
         delay_us(5000000);
-        exit(-1);
+        quit();
       }
 
       set_gba_resolution(screen_scale);

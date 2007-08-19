@@ -84,6 +84,7 @@ extern u32 cycle_dma32_words;
 extern u32 flush_ram_count;
 extern u64 base_timestamp;
 extern char main_path[MAX_PATH];
+extern char rom_path[MAX_PATH];
 extern u32 update_backup_flag;
 extern u32 game_config_clock_speed;
 extern u32 hold_state;
