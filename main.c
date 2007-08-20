@@ -322,10 +322,10 @@ int main(int argc, char *argv[])
 
   // adhoc用モジュールのロード
   if (pspSdkLoadAdhocModules() != 0)
-    error_msg("not load inet modules\n");
+    error_msg("not load adhoc modules!!\n");
 
   home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
-  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 600 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(home_thread, 0, 0);
   sceKernelStartThread(main_thread, 0, 0);
@@ -364,11 +364,14 @@ int user_main(SceSize argc, char *argv)
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
+  printf("load adhoc modules.\n");
+
   if (load_dircfg("settings/dir.cfg") != 0)
   {
     error_msg("dir.cfg Error!!");
     quit();
   }
+  printf("load dir.cfg.\n");
 
   sprintf(filename,"settings/%s.fnt",lang[lang_num]);
   if (load_fontcfg(filename) != 0)
@@ -376,6 +379,7 @@ int user_main(SceSize argc, char *argv)
     error_msg("font.cfg Error!!");
     quit();
   }
+  printf("load font.cfg.\n");
 
   sprintf(filename,"settings/%s.msg",lang[lang_num]);
   if (load_msgcfg(filename) != 0)
@@ -383,30 +387,21 @@ int user_main(SceSize argc, char *argv)
     error_msg("message.cfg Error!!");
     quit();
   }
+  printf("load message.cfg.\n");
 
   if (load_font() != 0)
   {
     error_msg("font init Error!!");
     quit();
   }
-
-  // adhoc接続のテスト
+  printf("font init.\n");
 
   init_gamepak_buffer();
 
   load_config_file();
+  printf("load config file.\n");
 
   gamepak_filename[0] = 0;
-
-//  delay_us(1500000);
-
-  init_main();
-  init_sound();
-
-  init_video();
-  init_input();
-
-  video_resolution_large();
 
   u32 bios_ret = load_bios("gba_bios.bin");
 
@@ -417,12 +412,34 @@ int user_main(SceSize argc, char *argv)
     error_msg("");
     quit();
   }
+  printf("load bios file.\n");
 
   if(bios_ret == -2) // MD5が違う場合
   {
     print_string(msg[MSG_ERR_BIOS_MD5], 0xFFFF, 0x0000, 0, 0);
     delay_us(5000000);
   }
+  printf("bios MD5 Ok.\n");
+
+  delay_us(1 * 1000 * 1000);  // 1.0sec
+
+  init_main();
+  init_sound();
+
+  init_video();
+  init_input();
+
+  video_resolution_large();
+  clear_screen(COLOR_BG);
+
+//  init_progress(100, "CONNECTING");
+//  u32 i;
+//  for(i=0;i<100;i++)
+//  {   delay_us(0.1 * 1000 * 1000);  // 1.0sec
+//    update_progress();}
+//  error_msg("");
+  // adhoc接続のテスト
+//  adhocInit("test");
 
   if(argc > 1)
   {
@@ -548,7 +565,6 @@ u32 update_gba()
         if(vcount == 160)
         {
           // Transition from vrefresh to vblank
-//          u32 i;
 
           dispstat |= 0x01;
           if(dispstat & 0x8)
@@ -585,8 +601,6 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
           synchronize();
-//          DBGOUT("E,%0lX,V,%0lX,S,%0lX,0,%0lX,1,%0lX\n",execute_cycles, video_count, gbc_sound_buffer_index, direct_sound_channel[0].buffer_index, direct_sound_channel[1].buffer_index);
-          boxfill_alpha(screen_width/2, screen_height/2,screen_width/2+50, screen_height/2+50, 0x7777,7);
 
           update_screen();
 

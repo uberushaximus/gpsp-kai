@@ -40,12 +40,6 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
-#define COLOR_BG            COLOR16(2, 4, 10)
-#define COLOR_ROM_INFO      COLOR16(22, 18, 26)
-#define COLOR_ACTIVE_ITEM   COLOR16(31, 31, 31)
-#define COLOR_INACTIVE_ITEM COLOR16(13, 20, 18)
-#define COLOR_HELP_TEXT     COLOR16(16, 20, 24)
-
 #define MAKE_MENU(name, init_function, passive_function)                      \
   MENU_TYPE name##_menu =                                                     \
   {                                                                           \
@@ -1329,10 +1323,7 @@ u32 menu(u16 *original_screen)
 
   video_resolution_large();
 
-//  SDL_LockMutex(sound_mutex);
-    pause_sound(1);
-//  sceKernelSleepThread();
-//  SDL_UnlockMutex(sound_mutex);
+  pause_sound(1);
 
   clock_speed_number = (game_config_clock_speed / 33) - 1;
   // MENU時は222MHz
@@ -1403,9 +1394,6 @@ u32 menu(u16 *original_screen)
     }
 
     print_string(current_option->help_string, COLOR_HELP_TEXT, COLOR_BG, 30, 210);
-    boxfill_alpha(0, 0,50, 50, COLOR_HELP_TEXT,7);
-
-//    flip_screen();
 
     gui_action = get_gui_input();
 
@@ -1478,8 +1466,9 @@ u32 menu(u16 *original_screen)
       default:
         ;
         break;
-    }
-  }
+    }  // end swith
+    flip_screen();
+  }  // end while
 
 // menu終了時の処理
 
@@ -1994,85 +1983,7 @@ static void save_ss_bmp(u16 *image)
     fwrite( header, sizeof(header), 1, ss );
     fwrite( rgb_data, 240*160*3, 1, ss);
     fclose( ss );
-
 }
-
-#ifdef progress
-/******************************************************************************
-  プログレスバー表示
-******************************************************************************/
-
-static int progress_total;
-static int progress_current;
-static char progress_message[64];
-
-/*--------------------------------------------------------
-  プログレスバー初期化
---------------------------------------------------------*/
-
-void init_progress(int total, const char *text)
-{
-  progress_current = 0;
-  progress_total   = total;
-  strcpy(progress_message, text);
-
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
-  boxfill(240-151, 138+2, 240+151, 138+14, 0, 0, 0);
-
-  uifont_print_shadow_center(118, 255,255,255, text);
-  draw_battery_status(1);
-
-  video_flip_screen(1);
-}
-
-
-/*--------------------------------------------------------
-  プログレスバー更新
---------------------------------------------------------*/
-
-void update_progress(void)
-{
-  int width = (++progress_current * 100 / progress_total) * 3;
-
-  show_background();
-
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
-  boxfill(240-151, 138+2, 240+151, 138+14, 0, 0, 0);
-
-  uifont_print_shadow_center(118, 255,255,255, progress_message);
-  draw_battery_status(1);
-
-  boxfill(240-150, 138+3, 240-150+width-1, 138+13, 128, 128, 128);
-
-  video_flip_screen(1);
-}
-
-
-/*--------------------------------------------------------
-  プログレスバー結果表示
---------------------------------------------------------*/
-
-void show_progress(const char *text)
-{
-  show_background();
-
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
-  boxfill(240-151, 138+2, 240+151, 138+14, 0, 0, 0);
-
-  uifont_print_shadow_center(118, 255,255,255, text);
-  draw_battery_status(1);
-
-  if (progress_current)
-  {
-    int width = (progress_current * 100 / progress_total) * 3;
-    boxfill(240-150, 138+3, 240-150+width-1, 138+13, 128, 128, 128);
-  }
-
-  video_flip_screen(1);
-
-  sceKernelDelayThread(1000000);
-}
-#endif
 
 void _flush_cache()
 {

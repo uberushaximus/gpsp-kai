@@ -103,7 +103,7 @@ static int ahdoc_pos;
 
 static void adhoc_init_progress(int total, const char *text)
   {
-    char buf[32];
+    char buf[MAX_FILE];
 
     // 画面の設定
 //    load_background(WP_LOGO);
@@ -119,7 +119,7 @@ static void adhoc_init_progress(int total, const char *text)
 //    video_copy_rect(draw_frame, work_frame, &full_rect, &full_rect);
 
     // プログレスバーの表示
-//    init_progress(total, text);
+    init_progress(total, text);
   }
 
 /*--------------------------------------------------------
@@ -378,24 +378,20 @@ int adhocInit(const char *matchingData)
 
     strcpy(g_matchingData, matchingData);
 
-//    adhoc_init_progress(10, TEXT(CONNECTING));
+    adhoc_init_progress(10, "CONNECTING");
 
     if ((error = sceNetInit(0x20000, 0x20, 0x1000, 0x20, 0x1000)) == 0)
       {
-        DBGOUT("sceNetInit\n");
-//        update_progress();
+        update_progress();
         if ((error = sceNetAdhocInit()) == 0)
           {
-            DBGOUT("sceNetAdhocInit\n");
-//            update_progress();
+            update_progress();
             if ((error = sceNetAdhocctlInit(0x2000, 0x20, &product)) == 0)
               {
-                DBGOUT("sceNetAdhocctlInit\n");
-//                update_progress();
+                update_progress();
                 if ((error = sceNetAdhocctlConnect((int *)"")) == 0)
                   {
-                    DBGOUT("sceNetAdhocctlConnect\n");
-//                    update_progress();
+                    update_progress();
                     do
                       {
                         if ((error = sceNetAdhocctlGetState(&state)) != 0) break;
@@ -405,24 +401,24 @@ int adhocInit(const char *matchingData)
 
                     if (!error)
                       {
-//                        update_progress();
+                        update_progress();
 
                         sceWlanGetEtherAddr((u8 *)mac);
-//                        update_progress();
+                        update_progress();
 
                         if ((pdpId = sceNetAdhocPdpCreate((unsigned char *)mac, 0x309, 0x400, 0)) > 0)
                           {
-//                            update_progress();
+                            update_progress();
                             if ((error = sceNetAdhocMatchingInit(0x20000)) == 0)
                               {
-//                                update_progress();
+                                update_progress();
                                 if ((matchingId = sceNetAdhocMatchingCreate(MATCHING_CREATE_PARAMS)) >= 0)
                                   {
-//                                    update_progress();
+                                    update_progress();
                                     if ((error = sceNetAdhocMatchingStart(MATCHING_START_PARAMS)) == 0)
                                       {
-//                                        update_progress();
-//                                        show_progress(TEXT(CONNECTED));
+                                        update_progress();
+                                        show_progress("CONNECTED");
                                         return 0;
                                       }
                                     sceNetAdhocMatchingDelete(matchingId);
@@ -450,11 +446,11 @@ int adhocInit(const char *matchingData)
         default: sprintf(buf, "%s (Error Code = %08x)", "failed", error); DBGOUT("%s\n",buf);break;
       }
 
-//    show_progress(buf);
+    show_progress(buf);
 
 //    pad_wait_clear();
 //    pad_wait_press(PAD_WAIT_INFINITY);
-
+error_msg("");
     return -1;
   }
 

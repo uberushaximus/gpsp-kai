@@ -504,11 +504,11 @@ void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int he
 /////////////////////////////////////////////////////////////////////////////
 u32 fbm_colmix1(void *vr, u32 color, int rate)
 {
-	u32 r1, g1, b1;
-	u32 r2, g2, b2;
-
-  if (rate !=0 )
+  if (rate !=100 )
   {
+    u32 r1, g1, b1;
+    u32 r2, g2, b2;
+
     r1 = color & 0x1f;
     g1 = (color >> 5) & 0x1f;
     b1 = (color >> 10)& 0x1f;
@@ -529,22 +529,26 @@ u32 fbm_colmix1(void *vr, u32 color, int rate)
 
 u32 fbm_colmixrev1(void *vr, u32 color, int rate)
 {
-	int r1, g1, b1;
-	int r2, g2, b2;
+  if (rate !=100 )
+  {
+    u32 r1, g1, b1;
+    u32 r2, g2, b2;
 
-  r1 = (color >>10)& 0x1f;
-  g1 = (color >> 5) & 0x1f;
-  b1 = color & 0x1f;
+    r1 = (color >>10)& 0x1f;
+    g1 = (color >> 5) & 0x1f;
+    b1 = color & 0x1f;
 
-  r2 = (*(u16 *)vr >> 10)& 0x1f;
-  g2 = (*(u16 *)vr >> 5) & 0x1f;
-  b2 = *(u16 *)vr & 0x1f;
+    r2 = (*(u16 *)vr >> 10)& 0x1f;
+    g2 = (*(u16 *)vr >> 5) & 0x1f;
+    b2 = *(u16 *)vr & 0x1f;
 
-	r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
-	g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
-	b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
+    r1 = ((r1 * rate) + (r2 * (100 - rate)) + 50) / 100;
+    g1 = ((g1 * rate) + (g2 * (100 - rate)) + 50) / 100;
+    b1 = ((b1 * rate) + (b2 * (100 - rate)) + 50) / 100;
 
-	return (r1 << 10) | (g1 << 5) | b1;
+    color = (r1 << 10) | (g1 << 5) | b1;
+  }
+  return color;
 }
 
 void *fbm_malloc(size_t size)

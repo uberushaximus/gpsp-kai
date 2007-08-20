@@ -42,6 +42,9 @@
  ******************************************************************************/
 extern void boxfill(u32 sx, u32 sy, u32 ex, u32 ey, u32 color);
 extern void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha);
+extern void init_progress(int total, const char *text);
+extern void update_progress(void);
+extern void show_progress(const char *text);
 
 #endif
 

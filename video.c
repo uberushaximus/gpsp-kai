@@ -21,15 +21,15 @@
 
 #include "common.h"
 
-#include <pspctrl.h>
-
-#include <pspkernel.h>
-#include <pspdebug.h>
-#include <pspdisplay.h>
-
-#include <pspgu.h>
-#include <psppower.h>
-#include <psprtc.h>
+//#include <pspctrl.h>
+//
+//#include <pspkernel.h>
+//#include <pspdebug.h>
+//#include <pspdisplay.h>
+//
+//#include <pspgu.h>
+//#include <psppower.h>
+//#include <psprtc.h>
 
 #define render_scanline_dest_normal         u16
 #define render_scanline_dest_alpha          u32
@@ -46,6 +46,11 @@ static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
 static u32 video_direct = 0;
+static u16 *screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
+u16 *screen_address = (u16 *)(0x4000000 + (512 * 272 * 2));
+u32 screen_pitch = 240;
+u32 screen_width = 240;
+u32 screen_height = 160;
 
 static u32 __attribute__((aligned(32))) display_list[32];
 
@@ -130,35 +135,19 @@ void render_scanline_window_bitmap(u16 *scanline, u32 dispcnt);
   *ge_cmd_ptr = (((GE_CMD_##cmd) << 24) | (operand));                       \
   ge_cmd_ptr++                                                              \
 
-static u16 *screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
-//static u16 *current_screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
-u16 *screen_address = (u16 *)(0x4000000 + (512 * 272 * 2));
-u32 screen_pitch = 240;
-u32 screen_width = 240;
-u32 screen_height = 160;
-
 static void Ge_Finish_Callback(int id, void *arg)
 {
 }
 
-#define get_screen_pixels()                                                   \
-  screen_address                                                               \
-
-#define get_screen_pitch()                                                    \
-  screen_pitch                                                                \
-
 void render_scanline_conditional_tile(u32 start, u32 end, u16 *scanline,
  u32 enable_flags, u32 dispcnt, u32 bldcnt, tile_layer_render_struct
  *layer_renderers);
+
 void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
  u32 enable_flags, u32 dispcnt, u32 bldcnt, bitmap_layer_render_struct
  *layer_renderers);
 
 #define no_op                                                                 \
-
-// This old version is not necessary if the palette is either being converted
-// transparently or the ABGR 1555 format is being used natively. The direct
-// version (without conversion) is much faster.
 
 #define tile_lookup_palette_full(palette, source)                             \
   current_pixel = palette[source];                                            \
@@ -612,21 +601,9 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
 
 // Draws eight background pixels for the normal renderer, just a bunch of
 // zeros.
-
-#ifdef RENDER_COLOR16_NORMAL
-
-#define tile_4bpp_draw_eight_base_zero_normal()                               \
-  current_pixel = 0;                                                          \
-  tile_4bpp_draw_eight_base_zero(current_pixel)                               \
-
-#else
-
 #define tile_4bpp_draw_eight_base_zero_normal()                               \
   current_pixel = palette[0];                                                 \
   tile_4bpp_draw_eight_base_zero(current_pixel)                               \
-
-#endif
-
 
 // Draws eight 4bpp pixels.
 
@@ -3174,10 +3151,10 @@ u32 resolution_width, resolution_height;
 
 void update_scanline()
 {
-  u32 pitch = get_screen_pitch();
+  u32 pitch = screen_pitch;
   u32 dispcnt = io_registers[REG_DISPCNT];
   u32 vcount = io_registers[REG_VCOUNT];
-  u16 *screen_offset = get_screen_pixels() + (vcount * pitch);
+  u16 *screen_offset = screen_address + (vcount * pitch);
   u32 video_mode = dispcnt & 0x07;
 
   // If OAM has been modified since the last scanline has been updated then
@@ -3227,32 +3204,6 @@ void update_scanline()
 }
 
 u32 screen_flip = 0;
-
-void flip_screen()
-{
-  if(video_direct == 0)
-  {
-    u32 *old_ge_cmd_ptr = ge_cmd_ptr;
-    sceKernelDcacheWritebackAll();
-
-    // Render the current screen
-    ge_cmd_ptr = ge_cmd + 2;
-    GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
-    GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) |
-     GBA_SCREEN_WIDTH);
-    ge_cmd_ptr = old_ge_cmd_ptr;
-
-    sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
-
-    // Flip to the next screen
-    screen_flip ^= 1;
-
-    if(screen_flip)
-      screen_address = screen_texture + (240 * 160 * 2);
-    else
-      screen_address = screen_texture;
-  }
-}
 
 u32 frame_to_render;
 
@@ -3346,13 +3297,34 @@ void init_video()
   GE_CMD(NOP, 0);
 }
 
-//video_scale_type screen_scale = scaled_aspect;
-//video_scale_type current_scale = scaled_aspect;
-//video_filter_type screen_filter = filter_bilinear;
-
 u32 screen_scale = scaled_aspect;
 u32 current_scale = scaled_aspect;
 u32 screen_filter = filter_bilinear;
+
+void flip_screen()
+{
+  if(video_direct == 0)
+  {
+    u32 *old_ge_cmd_ptr = ge_cmd_ptr;
+    sceKernelDcacheWritebackAll();
+
+    // Render the current screen
+    ge_cmd_ptr = ge_cmd + 2;
+    GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
+    GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) | GBA_SCREEN_WIDTH);
+    ge_cmd_ptr = old_ge_cmd_ptr;
+
+    // Flip to the next screen
+    screen_flip ^= 1;
+
+    if(screen_flip)
+      screen_address = screen_texture + 240 * 160 *2;
+    else
+      screen_address = screen_texture;
+
+    sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
+  }
+}
 
 void video_resolution_large()
 {
@@ -3364,8 +3336,24 @@ void video_resolution_large()
     screen_width = PSP_SCREEN_WIDTH;
     screen_height = PSP_SCREEN_HEIGHT;
     sceGuStart(GU_DIRECT, display_list);
-    sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT,
-     (void*)0, PSP_LINE_SIZE);
+    sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
+    sceGuFinish();
+  }
+}
+
+void video_resolution_small()
+{
+  if(video_direct != 0)
+  {
+    set_gba_resolution(screen_scale);
+    video_direct = 0;
+    screen_address = screen_texture;
+    screen_flip = 0;
+    screen_pitch = 240;
+    screen_width = GBA_SCREEN_WIDTH;
+    screen_height = GBA_SCREEN_HEIGHT;
+    sceGuStart(GU_DIRECT, display_list);
+    sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
     sceGuFinish();
   }
 }
@@ -3421,28 +3409,10 @@ void set_gba_resolution(video_scale_type scale)
   clear_screen(0x0000);
 }
 
-void video_resolution_small()
-{
-  if(video_direct != 0)
-  {
-    set_gba_resolution(screen_scale);
-    video_direct = 0;
-    screen_address = screen_texture;
-    screen_flip = 0;
-    screen_pitch = 240;
-    screen_width = GBA_SCREEN_WIDTH;
-    screen_height = GBA_SCREEN_HEIGHT;
-    sceGuStart(GU_DIRECT, display_list);
-    sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT,
-     (void*)0, PSP_LINE_SIZE);
-    sceGuFinish();
-  }
-}
-
 void clear_screen(u16 color)
 {
   u32 i = 512 * 272;
-  u16 *src_ptr = get_screen_pixels();
+  u16 *src_ptr = screen_address;
 
   sceGuSync(0, 0);
 
@@ -3466,14 +3436,14 @@ void clear_screen(u16 color)
 u16 *copy_screen()
 {
   u16 *copy = malloc(240 * 160 * 2);
-  memcpy(copy, get_screen_pixels(), 240 * 160 * 2);
+  memcpy(copy, screen_address, 240 * 160 * 2);
   return copy;
 }
 
 void blit_to_screen(u16 *src, u32 w, u32 h, u32 dest_x, u32 dest_y)
 {
-  u32 pitch = get_screen_pitch();
-  u16 *dest_ptr = get_screen_pixels() + dest_x + (dest_y * pitch);
+  u32 pitch = screen_pitch;
+  u16 *dest_ptr = screen_address + dest_x + (dest_y * pitch);
 
   u16 *src_ptr = src;
   u32 line_skip = pitch - w;

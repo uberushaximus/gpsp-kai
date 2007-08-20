@@ -72,15 +72,11 @@ void boxfill(u32 sx, u32 sy, u32 ex, u32 ey, u32 color)
 ------------------------------------------------------*/
 void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha)
 {
-  u32 x;
-  u32 y;
-  u32 dst_r;
-  u32 dst_g;
-  u32 dst_b;
+  u32 x, y;
+  u32 dst_r, dst_g, dst_b;
   u32 r = GET_R16(color);
   u32 g = GET_G16(color);
   u32 b = GET_B16(color);
-  u32 bg_color;
   u32 width  = (ex - sx) + 1;
   u32 height = (ey - sy) + 1;
   u16 *dst = screen_address + (sx + sy * screen_pitch);
@@ -89,11 +85,11 @@ void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha)
   {
     for (x = 0; x < width; x++)
     {
-      bg_color = dst[x];
+      color = dst[x];
 
-      dst_r = GET_R16(bg_color);
-      dst_g = GET_G16(bg_color);
-      dst_b = GET_B16(bg_color);
+      dst_r = GET_R16(color);
+      dst_g = GET_G16(color);
+      dst_b = GET_B16(color);
 
       dst_r = alpha_blend[alpha][r][dst_r];
       dst_g = alpha_blend[alpha][g][dst_g];
@@ -103,6 +99,74 @@ void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha)
     }
     dst += screen_pitch;
   }
+}
+
+/*--------------------------------------------------------
+  プログレスバー
+--------------------------------------------------------*/
+
+static int progress_total;
+static int progress_current;
+static char progress_message[128];
+
+/*--------------------------------------------------------
+  プログレスバー初期化
+--------------------------------------------------------*/
+void init_progress(int total, const char *text)
+{
+  progress_current = 0;
+  progress_total   = total;
+  strcpy(progress_message, text);
+
+//  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  boxfill(240-151, 138+2, 240+151, 138+14, 0);
+
+//  uifont_print_shadow_center(118, 255,255,255, text);
+
+}
+
+/*--------------------------------------------------------
+  プログレスバー更新
+--------------------------------------------------------*/
+void update_progress(void)
+{
+  int width = (++progress_current * 100 / progress_total) * 3;
+
+//  show_background();
+
+//  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  boxfill(240-151, 138+3, 240+151, 138+13, COLOR_ERROR);
+
+//  uifont_print_shadow_center(118, 255,255,255, progress_message);
+//  draw_battery_status(1);
+
+  boxfill(240-150, 138+3, 240-150+width-1, 138+13, COLOR16(15, 15, 15));
+
+//  video_flip_screen(1);
+}
+
+/*--------------------------------------------------------
+  プログレスバー結果表示
+--------------------------------------------------------*/
+void show_progress(const char *text)
+{
+//  show_background();
+
+//  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  boxfill(240-151, 138+2, 240+151, 138+14, 0);
+
+//  uifont_print_shadow_center(118, 255,255,255, text);
+//  draw_battery_status(1);
+
+  if (progress_current)
+  {
+    int width = (progress_current * 100 / progress_total) * 3;
+    boxfill(240-150, 138+3, 240-150+width-1, 138+13, COLOR16(15, 15, 15));
+  }
+
+//  video_flip_screen(1);
+
+  sceKernelDelayThread(1000000);
 }
 
 /******************************************************************************
