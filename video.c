@@ -21,16 +21,6 @@
 
 #include "common.h"
 
-//#include <pspctrl.h>
-//
-//#include <pspkernel.h>
-//#include <pspdebug.h>
-//#include <pspdisplay.h>
-//
-//#include <pspgu.h>
-//#include <psppower.h>
-//#include <psprtc.h>
-
 #define render_scanline_dest_normal         u16
 #define render_scanline_dest_alpha          u32
 #define render_scanline_dest_alpha_obj      u32
@@ -156,8 +146,11 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
   current_pixel = palette[source];                                            \
 
 #define tile_expand_base_normal(index)                                        \
-  tile_lookup_palette(palette, current_pixel);                                \
-  dest_ptr[index] = current_pixel                                             \
+  if (current_pixel != 0)                                                     \
+  {                                                                           \
+    tile_lookup_palette(palette, current_pixel);                              \
+    dest_ptr[index] = current_pixel;                                          \
+  }                                                                           \
 
 #define tile_expand_transparent_normal(index)                                 \
   tile_expand_base_normal(index)                                              \
@@ -1513,6 +1506,7 @@ bitmap_layer_render_struct bitmap_mode_renderers[3] =
   tile_layer_render_struct *layer_renderers =                                 \
    tile_mode_renderers[dispcnt & 0x07]                                        \
 
+// layer_renderersをVIDEO MODEより設定
 #define render_scanline_layer_functions_bitmap()                              \
   bitmap_layer_render_struct *layer_renderers =                               \
    bitmap_mode_renderers + ((dispcnt & 0x07) - 3)                             \
@@ -2153,6 +2147,7 @@ void order_obj(u32 video_mode)
 u32 layer_order[16];
 u32 layer_count;
 
+// レイヤーのソート
 void order_layers(u32 layer_flags)
 {
   s32 priority, layer_number;
@@ -2670,13 +2665,15 @@ void render_scanline_tile(u16 *scanline, u32 dispcnt)
    render_condition_alpha, render_condition_fade, 0, 240);
 }
 
+// VIDEO MODE 3,4,5/非ウィンドウモード時の描画
 void render_scanline_bitmap(u16 *scanline, u32 dispcnt)
 {
-//  u32 bldcnt = io_registers[REG_BLDCNT];
+  // layer_renderersをVIDEO MODEより設定
   render_scanline_layer_functions_bitmap();
   u32 current_layer;
   u32 layer_order_pos;
 
+  // ラインをパレット0で埋める
   fill_line_bg(normal, scanline, 0, 240);
 
   for(layer_order_pos = 0; layer_order_pos < layer_count; layer_order_pos++)
@@ -3143,56 +3140,67 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
 render_scanline_window_builder(tile);
 render_scanline_window_builder(bitmap);
 
+// VIDEO MODEごとの有効BG
 u32 active_layers[6] = { 0x1F, 0x17, 0x1C, 0x14, 0x14, 0x14 };
 
 u32 small_resolution_width = 240;
 u32 small_resolution_height = 160;
 u32 resolution_width, resolution_height;
 
+// 1ラインの描画
 void update_scanline()
 {
-  u32 pitch = screen_pitch;
-  u32 dispcnt = io_registers[REG_DISPCNT];
-  u32 vcount = io_registers[REG_VCOUNT];
-  u16 *screen_offset = screen_address + (vcount * pitch);
-  u32 video_mode = dispcnt & 0x07;
+  u32 pitch = screen_pitch;                               // フレームバッファの横幅(240/512)
+  u32 dispcnt = io_registers[REG_DISPCNT];                // IO DISPCNT
+  u32 vcount = io_registers[REG_VCOUNT];                  // IO VCOUNT 現在のライン値(0~277)
+  u16 *screen_offset = screen_address + (vcount * pitch); // 左端ピクセルのアドレス
+  u32 video_mode = dispcnt & 0x07;                        // VIDEO MODE(0~5)
 
   // If OAM has been modified since the last scanline has been updated then
   // reorder and reprofile the OBJ lists.
   if(oam_update)
   {
+    // OAMに変更があった場合、オブジェクトを並べ替える
     order_obj(video_mode);
     oam_update = 0;
   }
 
+  // レイヤーの並べ替え
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
 
-//  if(skip_next_frame_flag)
-//    return;
+  // フレームスキップ時は描画しない
+  if(skip_next_frame_flag)
+    return;
 
-  // If the screen is in in forced blank draw pure white.
   if(dispcnt & 0x80)
   {
-    fill_line_color16(0xFFFF, screen_offset, 0, 240);
+    // 強制ブランクモード時は白線を表示
+    fill_line_color16(0x7FFF, screen_offset, 0, 240);
   }
   else
   {
     if(video_mode < 3)
     {
+      // VIDEO MODE 0,1,2の時
       if(dispcnt >> 13)
       {
+        // ウィンドウモード時
         render_scanline_window_tile(screen_offset, dispcnt);
       }
       else
       {
+        // 非ウィンドウモード時
         render_scanline_tile(screen_offset, dispcnt);
       }
     }
     else
     {
+      // VIDEO MODE 3,4,5の時
       if(dispcnt >> 13)
+        // ウィンドウモード時
         render_scanline_window_bitmap(screen_offset, dispcnt);
       else
+        // 非ウィンドウモード時
         render_scanline_bitmap(screen_offset, dispcnt);
     }
   }

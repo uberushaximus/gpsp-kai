@@ -209,30 +209,10 @@ void init_main()
   flush_translation_cache_bios();
 }
 
-volatile u32 home_button;
-volatile u32 home_active;
-
-static int home_button_thread(SceSize args, void *argp)
-{
-  SceCtrlData paddata;
-
-  home_active = 1;
-
-  while (home_active)
-  {
-    sceCtrlPeekBufferPositive(&paddata, 1);
-    home_button = paddata.Buttons & PSP_CTRL_HOME;
-    sceKernelDelayThread(200);
-  }
-
-  sceKernelExitThread(0);
-
-  return 0;
-}
 int exit_callback(int arg1, int arg2, void *common)
 {
   quit_flag = 1;
-  sceKernelDelayThread(200);
+  sceKernelDelayThread(500);
   return 0;
 }
 
@@ -266,7 +246,7 @@ int SetupCallbacks()
 {
   int callback_thread_id = 0;
 
-  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x12, 0xFA0, 0, 0);
+  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
   if (callback_thread_id >= 0)
   {
     sceKernelStartThread(callback_thread_id, 0, 0);
@@ -310,7 +290,6 @@ void psp_exception_handler(PspDebugRegBlock *regs)
 int main(int argc, char *argv[])
 {
   SceUID main_thread;
-  SceUID home_thread;
 
   // カレントパスの取得
   getcwd(main_path, 512);
@@ -324,16 +303,11 @@ int main(int argc, char *argv[])
   if (pspSdkLoadAdhocModules() != 0)
     error_msg("not load adhoc modules!!\n");
 
-  home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
   main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
-  sceKernelStartThread(home_thread, 0, 0);
   sceKernelStartThread(main_thread, 0, 0);
 
   sceKernelWaitThreadEnd(main_thread, NULL);
-
-  home_active = 0;
-  sceKernelWaitThreadEnd(home_thread, NULL);
 
   sceKernelExitGame();
   return 0;
@@ -542,7 +516,7 @@ u32 update_gba()
 
         if((dispstat & 0x01) == 0)
         {
-          if(!skip_next_frame_flag)
+//          if(!skip_next_frame_flag)
             update_scanline();
 
           // If in visible area also fire HDMA

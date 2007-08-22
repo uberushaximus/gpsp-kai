@@ -300,6 +300,8 @@ u32 update_input()
   {
     if(non_repeat_buttons & button_psp_mask_to_config[i])
       button_id = gamepad_config_map[i];
+    // HOMEが押されたらMENUに移行
+    if (ctrl_data.Buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
 
     switch(button_id)
     {

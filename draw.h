@@ -36,7 +36,7 @@
 #define PRINT_STRING_EXT_BG(str, fg_color, bg_color, x, y, dest_ptr, pitch, pad)                                       \
   fbm_printVRAM( dest_ptr, pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)              \
 
-#define PRINT_STRING_BG(str, fg_color, x, y)                                                                           \
+#define PRINT_STRING(str, fg_color, x, y)                                                                              \
   fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL, 100, 0)                          \
 
 #define PRINT_STRING_BG(str, fg_color, bg_color, x, y)                                                                 \

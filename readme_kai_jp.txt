@@ -1,6 +1,12 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.1 test 15 svn rev.
+	HOMEボタンを押したときにメニューに移行する様にした
+	ロード時のプログレスバーの表示を追加
+	palette0の透明にとりあえず対応(Bit Generations/Dotstreamの表示されないOBJに対応)
+		他のROMで不具合があるかもしれないので、情報お待ちしています
+
 -UnOfficial gpSP kai 3.1 test 14 svn rev.209
 	セーブステート時のフレームスキップの動作を調整
 	UIの追加(NJ氏のCPS2 Emuのソースを再利用させていただきました)

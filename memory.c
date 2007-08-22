@@ -2419,12 +2419,16 @@ s32 load_gamepak(char *name)
   if(!strcasecmp(dot_position, ".zip"))
   {
     set_cpu_clock(333); 
+    // プログレスバーの表示
+    init_progress(5, "Load ZIP ROM.");  // TODO
     file_size = load_file_zip(name);
   }
   else
-  {
+  {  // プログレスバーの表示
+    init_progress(5, "Load ROM.");  // TODO
     file_size = load_gamepak_raw(name);
   }
+  update_progress();
 
   if(file_size != -1)
   {
@@ -2435,6 +2439,7 @@ s32 load_gamepak(char *name)
     change_ext(gamepak_filename, backup_filename, ".sav");
 
     load_backup(backup_filename);
+    update_progress();
 
     memcpy(gamepak_title, gamepak_rom + 0xA0, 12);
     memcpy(gamepak_code, gamepak_rom + 0xAC, 4);
@@ -2444,10 +2449,15 @@ s32 load_gamepak(char *name)
     gamepak_maker[2] = 0;
 
     load_game_config(gamepak_title, gamepak_code, gamepak_maker);
+    update_progress();
     load_game_config_file();
+    update_progress();
 
     change_ext(gamepak_filename, cheats_filename, ".cht");
     add_cheats(cheats_filename);
+    update_progress();
+
+    show_progress("Load ROM OK.");  // TODO
 
     return 0;
   }

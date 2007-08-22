@@ -463,21 +463,21 @@ int adhocTerm(void)
     adhoc_init_progress(5, "DISCONNECTING");
 
     sceNetAdhocctlDisconnect();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocPdpDelete(pdpId, 0);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocctlTerm();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocTerm();
-//    update_progress();
+    update_progress();
 
     sceNetTerm();
-//    update_progress();
+    update_progress();
 
-//    show_progress("DISCONNECTED");
+    show_progress("DISCONNECTED");
 
     return 0;
   }
