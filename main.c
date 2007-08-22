@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
     error_msg("not load adhoc modules!!\n");
 
   home_thread = sceKernelCreateThread("Home Button Thread", home_button_thread, 0x11, 0x200, 0, NULL);
-  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 600 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(home_thread, 0, 0);
   sceKernelStartThread(main_thread, 0, 0);
@@ -491,7 +491,7 @@ int user_main(SceSize argc, char *argv)
   pause_sound(0);
   real_frame_count = 0;
   virtual_frame_count = 0;
-  
+
   execute_arm_translate(execute_cycles);
 //  execute_arm(execute_cycles);
   return 0;
@@ -591,6 +591,8 @@ u32 update_gba()
           // Transition from vblank to next screen
           dispstat &= ~0x01;
           frame_ticks++;
+
+          sceKernelDelayThread(10);
 
           if (update_input())
             continue;
