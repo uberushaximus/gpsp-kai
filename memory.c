@@ -3433,8 +3433,6 @@ void load_state(char *savestate_filename)
 
     oam_update = 1;
     gbc_sound_update = 1;
-    real_frame_count = 0;
-    virtual_frame_count = 0;
 
     // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
     if(strcmp(current_gamepak_filename, gamepak_filename))
@@ -3455,6 +3453,8 @@ void load_state(char *savestate_filename)
           quit();
         }
 
+        real_frame_count = 0;
+        virtual_frame_count = 0;
         return;
       }
     }
@@ -3500,6 +3500,8 @@ void save_state(char *savestate_filename, u16 *screen_capture)
      sizeof(savestate_write_buffer));
     FILE_CLOSE(savestate_file);
   }
+  real_frame_count = 0;
+  virtual_frame_count = 0;
 }
 
 
