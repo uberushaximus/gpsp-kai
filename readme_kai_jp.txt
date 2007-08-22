@@ -1,9 +1,10 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 14 svn rev.
+-UnOfficial gpSP kai 3.1 test 14 svn rev.209
 	セーブステート時のフレームスキップの動作を調整
-	UIの追加
+	UIの追加(NJ氏のCPS2 Emuのソースを再利用させていただきました)
+		配色にセンスがないのは勘弁して下さい。よりよい配色をお待ちしてます
 	起動時にWLANがONになっていた場合、接続テストを行う
 	高負荷時にHOMEやVOL+/-キーが効かないのを修正
 
