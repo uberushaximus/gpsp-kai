@@ -341,10 +341,6 @@ int main(int argc, char *argv[])
 
 int user_main(SceSize argc, char *argv)
 {
-//  u32 i;
-//  u32 vcount = 0;
-//  u32 ticks;
-//  u32 dispstat;
   char load_filename[MAX_FILE];
   char filename[MAX_FILE];
 
@@ -364,65 +360,6 @@ int user_main(SceSize argc, char *argv)
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
-  printf("load adhoc modules.\n");
-
-  if (load_dircfg("settings/dir.cfg") != 0)
-  {
-    error_msg("dir.cfg Error!!");
-    quit();
-  }
-  printf("load dir.cfg.\n");
-
-  sprintf(filename,"settings/%s.fnt",lang[lang_num]);
-  if (load_fontcfg(filename) != 0)
-  {
-    error_msg("font.cfg Error!!");
-    quit();
-  }
-  printf("load font.cfg.\n");
-
-  sprintf(filename,"settings/%s.msg",lang[lang_num]);
-  if (load_msgcfg(filename) != 0)
-  {
-    error_msg("message.cfg Error!!");
-    quit();
-  }
-  printf("load message.cfg.\n");
-
-  if (load_font() != 0)
-  {
-    error_msg("font init Error!!");
-    quit();
-  }
-  printf("font init.\n");
-
-  init_gamepak_buffer();
-
-  load_config_file();
-  printf("load config file.\n");
-
-  gamepak_filename[0] = 0;
-
-  u32 bios_ret = load_bios("gba_bios.bin");
-
-  if(bios_ret == -1) // 読込めない場合
-  {
-    print_string(msg[MSG_ERR_BIOS_1], 0xFFFF, 0x0000, 0, 0);
-    print_string(msg[MSG_ERR_BIOS_2], 0xFFFF, 0x0000, 0, 60);
-    error_msg("");
-    quit();
-  }
-  printf("load bios file.\n");
-
-  if(bios_ret == -2) // MD5が違う場合
-  {
-    print_string(msg[MSG_ERR_BIOS_MD5], 0xFFFF, 0x0000, 0, 0);
-    delay_us(5000000);
-  }
-  printf("bios MD5 Ok.\n");
-
-  delay_us(1 * 1000 * 1000);  // 1.0sec
-
   init_main();
   init_sound();
 
@@ -432,14 +369,79 @@ int user_main(SceSize argc, char *argv)
   video_resolution_large();
   clear_screen(COLOR_BG);
 
-//  init_progress(100, "CONNECTING");
-//  u32 i;
-//  for(i=0;i<100;i++)
-//  {   delay_us(0.1 * 1000 * 1000);  // 1.0sec
-//    update_progress();}
-//  error_msg("");
-  // adhoc接続のテスト
-//  adhocInit("test");
+  // 初期設定用のプログレスバー
+  init_progress(8, "");
+
+  // ディレクトリ設定の読込み
+  if (load_dircfg("settings/dir.cfg") != 0)
+  {
+    error_msg("dir.cfg Error!!");
+    quit();
+  }
+  update_progress();
+
+  // フォント設定の読込み
+  sprintf(filename,"settings/%s.fnt",lang[lang_num]);
+  if (load_fontcfg(filename) != 0)
+  {
+    error_msg("font.cfg Error!!");
+    quit();
+  }
+  update_progress();
+
+  // メッセージファイルの読込み
+  sprintf(filename,"settings/%s.msg",lang[lang_num]);
+  if (load_msgcfg(filename) != 0)
+  {
+    error_msg("message.cfg Error!!");
+    quit();
+  }
+  update_progress();
+
+  // フォントの読込み
+  if (load_font() != 0)
+  {
+    error_msg("font init Error!!");
+    quit();
+  }
+  update_progress();
+
+  // ROMバッファの初期化
+  init_gamepak_buffer();
+  update_progress();
+
+  // 設定ファイルの読込み
+  load_config_file();
+  update_progress();
+
+  // ROMファイル名の初期化
+  gamepak_filename[0] = 0;
+
+  // BIOSの読込み
+  u32 bios_ret = load_bios("gba_bios.bin");
+  if(bios_ret == -1) // 読込めない場合
+  {
+    PRINT_STRING_BG(msg[MSG_ERR_BIOS_1], 0xFFFF, 0x0000, 0, 0);
+    PRINT_STRING_BG(msg[MSG_ERR_BIOS_2], 0xFFFF, 0x0000, 0, 60);
+    error_msg("");
+    quit();
+  }
+  update_progress();
+  if(bios_ret == -2) // MD5が違う場合
+  {
+    PRINT_STRING_BG(msg[MSG_ERR_BIOS_MD5], 0xFFFF, 0x0000, 0, 0);
+    delay_us(5000000);
+  }
+  update_progress();
+
+  show_progress("Initialization end"); // TODO:メッセージファイル化
+
+  // WLANのスイッチがONならばadhoc接続のテスト
+  if (sceWlanDevIsPowerOn() == 1)
+  {
+    adhocInit("test");
+    adhocTerm();
+  }
 
   if(argc > 1)
   {
@@ -677,7 +679,7 @@ void synchronize()
   {
     char print_buffer[256];
     sprintf(print_buffer, "%02d (%02d) %02d X:%04d Y:%04d R:%04d", (int)fps, (int)frames_drawn, (int)left_buffer, sensorX, sensorY, sensorR);
-    print_string(print_buffer, 0xFFFF, 0x000, 0, 0);
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
   // フレームスキップ フラグの初期化
@@ -797,7 +799,7 @@ void synchronize()
   }
 
   if(!synchronize_flag)
-    print_string("--FF--", 0xFFFF, 0x000, 0, 10);
+    PRINT_STRING_BG("--FF--", 0xFFFF, 0x000, 0, 10);
 }
 
 void reset_gba()

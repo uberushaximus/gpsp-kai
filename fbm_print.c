@@ -39,9 +39,7 @@ static char   *fbm_path[2];
 static int    fbm_whence[2];
 static int    fbm_fd[2] = {-1, -1};
 
-void (*fbmPrintSUB)(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate);
 u32 (*fbmColMix)(void *vr, u32 color, int rate);
-
 
 void *fbm_malloc(size_t size);
 void fbm_free(void **ptr);
@@ -53,51 +51,52 @@ int fbm_issingle(u16 c);
 int fbm_isdouble(u16 c);
 fbm_font_t * fbm_getfont(u16 index, u8 isdouble);
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Fbm Font Initialize
-// s_path: Single Byte Font (ex.ASCII), d_path: Double Byte Font (ex.SJIS),
-// mode: Font Read Mode (1=On Memory(fast), 0=Disk Access(slow))
-/////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------
+  フォントの初期設定
+  s_path: Single Byte Font (ex.ASCII)
+  d_path: Double Byte Font (ex.SJIS)
+  mode: Font Read Mode 1=On Memory(fast)
+                       0=Disk Access(slow)
+------------------------------------------------------*/
 int fbm_init(char *s_path, char *d_path, int mode)
 {
-	int  result;
+  int  result;
 
 
-	read_mode = mode;
-	use_double = (d_path) ? (d_path[0]) ? 1: 0: 0;
-	fbmMaxCol = fbmMaxRow = 0;
-	nextx = nexty = 0;
+  read_mode = mode;
+  use_double = (d_path) ? (d_path[0]) ? 1: 0: 0;
+  fbmMaxCol = fbmMaxRow = 0;
+  nextx = nexty = 0;
 
-	fbm_freeall();
+  fbm_freeall();
 
-	fbm_fd[0] = fbm_fopen(s_path);
+  fbm_fd[0] = fbm_fopen(s_path);
 
-	if (fbm_fd[0] < 0)
-	{
-		result = -1;
-		goto err_label;
-	}
+  if (fbm_fd[0] < 0)
+  {
+    result = -1;
+    goto err_label;
+  }
 
-	result = fbm_readfct(fbm_fd[0], &fbmControl[0], &fbmFontMap[0], &fbm_whence[0]);
+  result = fbm_readfct(fbm_fd[0], &fbmControl[0], &fbmFontMap[0], &fbm_whence[0]);
 
-	if (result)
-	{
-		result -= 1;
-		goto err_label;
-	}
+  if (result)
+  {
+    result -= 1;
+    goto err_label;
+  }
 
-	if (use_double)
-	{
-		fbm_fd[1] = fbm_fopen(d_path);
+  if (use_double)
+  {
+    fbm_fd[1] = fbm_fopen(d_path);
 
-		if (fbm_fd[1] < 0)
-		{
-			result = -5;
-			goto err_label;
-		}
+    if (fbm_fd[1] < 0)
+    {
+      result = -5;
+      goto err_label;
+    }
 
-		result = fbm_readfct(fbm_fd[1], &fbmControl[1], &fbmFontMap[1], &fbm_whence[1]);
+    result = fbm_readfct(fbm_fd[1], &fbmControl[1], &fbmFontMap[1], &fbm_whence[1]);
 
 		if (result)
 		{
@@ -177,10 +176,9 @@ err_label:
 	return result;
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Fbm Font Termination
-/////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------
+  フォントの解放
+------------------------------------------------------*/
 void fbm_freeall()
 {
 	fbm_free((void *)&fbm_path[0]);
@@ -202,10 +200,11 @@ void fbm_freeall()
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// Get Draw Width-Pixcels
-// str: Draw String
-/////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------
+  文字列の横幅を計算
+  str: Draw String
+  RET: Draw Width
+------------------------------------------------------*/
 int fbm_getwidth(char *str)
 {
 	int           i;
@@ -269,55 +268,17 @@ err_label:
 
 	return -1;
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Print String: Columns & Rows
-// col: Columns (0-fbmMaxCol), row: Rows (0-fbmMaxRow), str: Print String,
-// color: Font Color, back: Back Grand Color,
-// fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
-// rate: Mix Rate (0-100)
-/////////////////////////////////////////////////////////////////////////////
-int fbm_printCR(int col, int row, char *str, u32 color, u32 back, u8 fill, int rate)
-{
-	return fbm_printXY(col * fbmControl[0].width, row * fbmControl[0].height, str, color, back, fill, rate);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Print String: XY Pixel
-// x: X (0-479), y: Y (0-271), str: Print String,
-// color: Font Color, back: Back Grand Color,
-// fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
-// rate: Mix Rate (0-100 or -1--101)
-/////////////////////////////////////////////////////////////////////////////
-int fbm_printXY(int x, int y, char *str, u32 color, u32 back, u8 fill, int rate)
-{
-	void *vram;
-	int  bufferwidth;
-	int  pixelformat;
-	int  pwidth;
-	int  pheight;
-	int  unk;
-
-
-	sceDisplayGetMode(&unk, &pwidth, &pheight);
-	sceDisplayGetFrameBuf(&vram, &bufferwidth, &pixelformat, unk);
-
-	return fbm_printVRAM(vram, bufferwidth, pixelformat, x, y, str, color, back, fill, rate, 0);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Print String: Base VRAM Addr + XY Pixel
-// vram: Base VRAM Addr, bufferwidth: buffer-width per line,
-// pixelformat: pixel color format (0=16bit, 1=15bit, 2=12bit, 3=32bit)
-// x: X (0-479), y: Y (0-271), str: Print String,
-// color: Font Color, back: Back Grand Color,
-// fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
-// rate: Mix Rate (0-100 or -1--101)
-/////////////////////////////////////////////////////////////////////////////
-int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, char *str, u32 color, u32 back, u8 fill, int rate, u32 pad)
+/*------------------------------------------------------
+  指定したフレームバッファに文字列を書込む
+  Print String: Base VRAM Addr + XY Pixel
+  vram: Base VRAM Addr
+  bufferwidth: buffer-width per line,
+  x: X (0-479), y: Y (0-271), str: Print String,
+  color: Font Color, back: Back Grand Color,
+  fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
+  rate: Mix Rate (0-100 or -1--101)
+------------------------------------------------------*/
+int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 color, u32 back, u8 fill, int rate, u32 pad)
 {
 	int i;
 	int len;
@@ -330,16 +291,7 @@ int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, ch
 	if (x >= 0) nextx = x % FBM_PSP_WIDTH;
 	if (y >= 0) nexty = y % FBM_PSP_HEIGHT;
 
-	switch (pixelformat)
-	{
-		case 1:
-			fbmPrintSUB = fbm_printSUB16;
-			fbmColMix = (rate < 0) ? fbm_colmixrev1: fbm_colmix1;
-			break;
-
-		default:
-			return -1;
-	}
+	fbmColMix = (rate < 0) ? fbm_colmixrev: fbm_colmix;
 
 	if (rate < 0) rate = rate * -1 - 1;
 	if (rate > 100) rate = 100;
@@ -388,7 +340,7 @@ int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, ch
     				if (index < 0)
         				index = fbmControl[0].defaultchar;
      			}
-        		fbmPrintSUB(vram, bufferwidth, index, isdouble,
+        		fbm_printSUB(vram, bufferwidth, index, isdouble,
         			fbmControl[isdouble].height,
         			fbmControl[isdouble].byteperchar / fbmControl[isdouble].height,
         			color, back, fill, rate);
@@ -398,7 +350,7 @@ int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, ch
         {
 		    isdouble = 0;
     		index = fbmControl[0].defaultchar;
-    		fbmPrintSUB(vram, bufferwidth, index, isdouble,
+    		fbm_printSUB(vram, bufferwidth, index, isdouble,
 	    		fbmControl[isdouble].height,
 	    		fbmControl[isdouble].byteperchar / fbmControl[isdouble].height,
 	    		color, back, fill, rate);
@@ -433,7 +385,7 @@ err_label:
 // fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
 // rate: Mix Rate (0-100 or -1--101)
 /////////////////////////////////////////////////////////////////////////////
-void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate)
+void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate)
 {
 	int           i;
 	int           j;
@@ -478,12 +430,15 @@ void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int he
 
 			if (pt & 0x80)
 			{
+			  // 文字描画時
 				if (fill & 0x01 && rate > 0)
 					*vptr = (rate < 100) ? fbmColMix(vptr, color, rate) : color;
 			}
-			else if (fill & 0x10 && rate > 0)
+			// 背景描画時
+			else
 			{
-				*vptr = (rate < 100) ? fbmColMix(vptr, back, rate) : back;
+			  if (fill & 0x10 && rate > 0)
+			    *vptr = (rate < 100) ? fbmColMix(vptr, back, rate) : back;
 			}
 
 			vptr++;
@@ -502,7 +457,7 @@ void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int he
 // VRAM Color Mix
 // vr: VRAM Address, color: Mix Color, rate: Mix Rate (0-100)
 /////////////////////////////////////////////////////////////////////////////
-u32 fbm_colmix1(void *vr, u32 color, int rate)
+u32 fbm_colmix(void *vr, u32 color, int rate)
 {
   if (rate !=100 )
   {
@@ -527,7 +482,7 @@ u32 fbm_colmix1(void *vr, u32 color, int rate)
   return color;
 }
 
-u32 fbm_colmixrev1(void *vr, u32 color, int rate)
+u32 fbm_colmixrev(void *vr, u32 color, int rate)
 {
   if (rate !=100 )
   {

@@ -25,15 +25,6 @@
 #ifndef GUI_H
 #define GUI_H
 
-// 基本カラーの設定
-#define COLOR_TEXT          COLOR16(31, 31, 31)
-#define COLOR_ERROR         COLOR16(31,  0,  0)
-#define COLOR_BG            COLOR16(2,  4,  10)
-#define COLOR_ROM_INFO      COLOR16(22, 18, 26)
-#define COLOR_ACTIVE_ITEM   COLOR16(31, 31, 31)
-#define COLOR_INACTIVE_ITEM COLOR16(13, 20, 18)
-#define COLOR_HELP_TEXT     COLOR16(16, 20, 24)
-
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/

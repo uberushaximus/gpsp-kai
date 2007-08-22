@@ -491,30 +491,30 @@ static void adhocDisconnect(void)
     adhoc_init_progress(8, "DISCONNECTING");
 
     sceNetAdhocMatchingStop(matchingId);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocMatchingDelete(matchingId);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocMatchingTerm();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocctlDisconnect();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocPdpDelete(pdpId, 0);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocctlTerm();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocTerm();
-//    update_progress();
+    update_progress();
 
     sceNetTerm();
-//    update_progress();
+    update_progress();
 
-//    show_progress(TEXT(DISCONNECTED));
+    show_progress("DISCONNECTED");
   }
 
 /*--------------------------------------------------------
@@ -529,19 +529,19 @@ int adhocReconnect(char *ssid)
     adhoc_init_progress(6, "DISCONNECTING");
 
     sceNetAdhocMatchingStop(matchingId);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocMatchingDelete(matchingId);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocMatchingTerm();
-//    update_progress();
+    update_progress();
 
     sceNetAdhocPdpDelete(pdpId, 0);
-//    update_progress();
+    update_progress();
 
     sceNetAdhocctlDisconnect();
-//    update_progress();
+    update_progress();
 
     do
       {
@@ -550,14 +550,14 @@ int adhocReconnect(char *ssid)
         sceKernelDelayThread(1000000/60);
       } while (state == 1);
 
-//    update_progress();
-//    show_progress(TEXT(DISCONNECTED));
+    update_progress();
+    show_progress("DISCONNECTED");
 
     adhoc_init_progress(4, "CONNECTING");
 
     if ((error = sceNetAdhocctlConnect((int *)ssid)) == 0)
       {
-//        update_progress();
+        update_progress();
         do
           {
             if ((error = sceNetAdhocctlGetState(&state)) != 0)
@@ -567,16 +567,16 @@ int adhocReconnect(char *ssid)
 
         if (!error)
           {
-//            update_progress();
+            update_progress();
 
             sceWlanGetEtherAddr((u8 *)mac);
             memcpy(g_mymac, mac, 6);
-//            update_progress();
+            update_progress();
 
             if ((pdpId = sceNetAdhocPdpCreate((u8 *)mac, 0x309, 0x800, 0)) > 0)
               {
-//                update_progress();
-//                show_progress(TEXT(CONNECTED));
+                update_progress();
+                show_progress("CONNECTED");
                 if (Server)
                   {
                     // ほぼ同時に送受信が発生するとフリーズするため、
@@ -614,7 +614,7 @@ int adhocReconnect(char *ssid)
           break;
       }
 
-//    show_progress(buf);
+    show_progress(buf);
 
 //    pad_wait_clear();
 //    pad_wait_press(PAD_WAIT_INFINITY);

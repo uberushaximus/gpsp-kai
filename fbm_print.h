@@ -54,24 +54,6 @@ void fbm_freeall();
 int fbm_getwidth(char *str);
 
 /////////////////////////////////////////////////////////////////////////////
-// Print String: Columns & Rows
-// col: Columns (0-fbmMaxCol), row: Rows (0-fbmMaxRow), str: Print String,
-// color: Font Color, back: Back Grand Color,
-// fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
-// rate: Mix Rate (0-100 or -1--101)
-/////////////////////////////////////////////////////////////////////////////
-int fbm_printCR(int col, int row, char *str, u32 color, u32 back, u8 fill, int rate);
-
-/////////////////////////////////////////////////////////////////////////////
-// Print String: XY Pixel
-// x: X (0-479), y: Y (0-271), str: Print String,
-// color: Font Color, back: Back Grand Color,
-// fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
-// rate: Mix Rate (0-100 or -1--101)
-/////////////////////////////////////////////////////////////////////////////
-int fbm_printXY(int x, int y, char *str, u32 color, u32 back, u8 fill, int rate);
-
-/////////////////////////////////////////////////////////////////////////////
 // Print String: Base VRAM Addr + XY Pixel
 // vram: Base VRAM Addr, bufferwidth: buffer-width per line,
 // pixelformat: pixel color format (0=16bit, 1=15bit, 2=12bit, 3=32bit)
@@ -80,7 +62,7 @@ int fbm_printXY(int x, int y, char *str, u32 color, u32 back, u8 fill, int rate)
 // fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
 // rate: Mix Rate (0-100 or -1--101)
 /////////////////////////////////////////////////////////////////////////////
-int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, char *str, u32 color, u32 back, u8 fill, int rate, u32 pad);
+int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 color, u32 back, u8 fill, int rate, u32 pad);
 
 /////////////////////////////////////////////////////////////////////////////
 // Print String Subroutine (Draw VRAM)
@@ -91,20 +73,13 @@ int fbm_printVRAM(void *vram, int bufferwidth, int pixelformat, int x, int y, ch
 // fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
 // rate: Mix Rate (0-100 or -1--101)
 /////////////////////////////////////////////////////////////////////////////
-void fbm_printSUB16(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate);
-void fbm_printSUB32(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate);
+void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate);
 
 /////////////////////////////////////////////////////////////////////////////
 // VRAM Color Mix
 // vr: VRAM Address, color: Mix Color, rate: Mix Rate (0-100)
 /////////////////////////////////////////////////////////////////////////////
-u32 fbm_colmix0(void *vr, u32 color, int rate);
-u32 fbm_colmix1(void *vr, u32 color, int rate);
-u32 fbm_colmix2(void *vr, u32 color, int rate);
-u32 fbm_colmix3(void *vr, u32 color, int rate);
-u32 fbm_colmixrev0(void *vr, u32 color, int rate);
-u32 fbm_colmixrev1(void *vr, u32 color, int rate);
-u32 fbm_colmixrev2(void *vr, u32 color, int rate);
-u32 fbm_colmixrev3(void *vr, u32 color, int rate);
+u32 fbm_colmix(void *vr, u32 color, int rate);
+u32 fbm_colmixrev(void *vr, u32 color, int rate);
 
 #endif

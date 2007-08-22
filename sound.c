@@ -670,15 +670,15 @@ static int sound_update_thread(SceSize args, void *argp)
       left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
       buffer_num = global_enable_audio;
 
-      if((CHECK_BUFFER() >= SAMPLE_SIZE) && (pause_sound_flag == 0))
+      if((CHECK_BUFFER() > SAMPLE_SIZE) && (pause_sound_flag == 0))
       {
         // todo memcopy*2と どっちが速い？
         for(loop = 0; loop < SAMPLE_SIZE; loop++)
         {
           sample = sound_buffer[sound_read_offset];
-          if (sample >  2047) sample =  2047;
-          if (sample < -2048) sample = -2048;
-          buffer[1][loop] = sample << 4;
+          if (sample >  4095) sample =  4095;
+          if (sample < -4096) sample = -4096;
+          buffer[1][loop] = sample << 3;
           sound_buffer[sound_read_offset] = 0;
           sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
         }
@@ -731,5 +731,5 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 void synchronize_sound()
 {
   while( CHECK_BUFFER() >= audio_buffer_size ) // TODO:調整必要
-    ;
+    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 1.0);
 }

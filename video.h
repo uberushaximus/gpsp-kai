@@ -91,17 +91,6 @@ extern u32 screen_pitch;
 extern u32 screen_width;
 extern u32 screen_height;
 
-#define PIXEL_FORMAT PSP_DISPLAY_PIXEL_FORMAT_5551
-
-#define print_string_ext(str, fg_color, bg_color, x, y, dest_ptr, pitch, pad)                                                       \
-  fbm_printVRAM( dest_ptr, pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)             \
-
-#define print_string(str, fg_color, bg_color, x, y)                                                                                 \
-  fbm_printVRAM( screen_address, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0)   \
-
-#define print_string_pad(str, fg_color, bg_color, x, y, pad)                                                                        \
-  fbm_printVRAM( screen_address, screen_pitch, PIXEL_FORMAT, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad) \
-
 extern u32 screen_scale;
 extern u32 current_scale;
 extern u32 screen_filter;
