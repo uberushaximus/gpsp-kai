@@ -2488,7 +2488,7 @@ u8 swi_hle_handle[256][2] =
   { 0x0, 0x0 },    // SWI 5:  VBlankIntrWait
   { 0x1, 0x1 },    // SWI 6:  Div
   { 0x1, 0x1 },    // SWI 7:  DivArm
-  { 0x0, 0x1 },    // SWI 8:  Sqrt
+  { 0x1, 0x1 },    // SWI 8:  Sqrt
   { 0x0, 0x0 },    // SWI 9:  ArcTan
   { 0x0, 0x0 },    // SWI A:  ArcTan2
   { 0x0, 0x1 },    // SWI B:  CpuSet
@@ -2529,6 +2529,12 @@ u8 swi_hle_handle[256][2] =
   u32 swi_number = _swi_number;                                               \
   if(swi_hle_handle[swi_number][bios_mode])                                   \
   {                                                                           \
+    /* Halt */                                                                \
+    if(swi_number == 0x02)                                                    \
+    {                                                                         \
+      generate_function_call(bios_halt);                                      \
+    }                                                                         \
+    \
     /* Div */                                                                 \
     if(swi_number == 0x06)                                                    \
     {                                                                         \

@@ -24,21 +24,21 @@
 /******************************************************************************
  * グローバル関数の宣言
  ******************************************************************************/
-int pspSdkLoadAdhocModules(void);
+u32 pspSdkLoadAdhocModules(void);
 
-int adhocInit(const char *matchingData);
-int adhocTerm(void);
-int adhocSelect(void);
-int adhocReconnect(char *ssid);
+u32 adhocInit(const char *matchingData);
+u32 adhocTerm(void);
+u32 adhocSelect(void);
+u32 adhocReconnect(char *ssid);
 
-int adhocSend(void *buffer, int length);
-int adhocRecv(void *buffer, int length);
+u32 adhocSend(void *buffer, u32 length);
+u32 adhocRecv(void *buffer, u32 length);
 
-int adhocSendBlocking(void *buffer, int length);
-int adhocRecvBlocking(void *buffer, int length);
-int adhocRecvBlockingTimeout(void *buffer, int length, int timeout);
+u32 adhocSendBlocking(void *buffer, u32 length);
+u32 adhocRecvBlocking(void *buffer, u32 length);
+u32 adhocRecvBlockingTimeout(void *buffer, u32 length, u32 timeout);
 
-int adhocSendRecvAck(void *buffer, int length);
-int adhocRecvSendAck(void *buffer, int length);
+u32 adhocSendRecvAck(void *buffer, u32 length);
+u32 adhocRecvSendAck(void *buffer, u32 length);
 
 #endif

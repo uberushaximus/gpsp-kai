@@ -1,6 +1,10 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.1 test 16 svn rev.
+	一部のROMで画面が乱れるのを修正
+	サスペンドの反応速度向上
+
 -UnOfficial gpSP kai 3.1 test 15 svn rev.213
 	HOMEボタンを押したときにメニューに移行する様にした
 		HOMEを押したときの反応を向上

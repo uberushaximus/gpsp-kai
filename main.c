@@ -212,13 +212,12 @@ void init_main()
 int exit_callback(int arg1, int arg2, void *common)
 {
   quit_flag = 1;
-  sceKernelDelayThread(500);
   return 0;
 }
 
 int power_callback(int unknown, int powerInfo, void *common)
 {
-  if (powerInfo & PSP_POWER_CB_SUSPENDING)
+  if (powerInfo & PSP_POWER_CB_POWER_SWITCH)
     power_flag = 1;
   else
     power_flag = 0;

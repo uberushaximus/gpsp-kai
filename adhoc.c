@@ -71,17 +71,17 @@
  ローカル変数
  ***************************************************************************/
 
-static int Server;
+static u32 Server;
 static int pdpId;
 
-static char g_mac[16];
+static unsigned char g_mac[16];
 static char g_mymac[16];
-static int g_unk1;
-static int g_matchEvent;
-static int g_matchOptLen;
+static u32 g_unk1;
+static u32 g_matchEvent;
+static u32 g_matchOptLen;
 static char g_matchOptData[1000];
 static char g_matchingData[32];
-static int matchChanged;
+static u32 matchChanged;
 static int matchingId;
 
 static struct psplist_t
@@ -90,8 +90,8 @@ static struct psplist_t
     char mac[6];
   } psplist[NUM_ENTRIES];
 
-static int adhoc_max;
-static int ahdoc_pos;
+static u32 adhoc_max;
+static u32 ahdoc_pos;
 
 /***************************************************************************
  ローカル関数
@@ -101,7 +101,7 @@ static int ahdoc_pos;
  プログレスバー初期化
  --------------------------------------------------------*/
 
-static void adhoc_init_progress(int total, const char *text)
+static void adhoc_init_progress(u32 total, const char *text)
   {
     char buf[MAX_FILE];
 
@@ -137,9 +137,9 @@ static void ClearPspList(void)
  リストに追加
  --------------------------------------------------------*/
 
-static int AddPsp(char *mac, char *name, int length)
+static u32 AddPsp(char *mac, char *name, u32 length)
   {
-    int i;
+    u32 i;
 
     if (adhoc_max == NUM_ENTRIES)
       return 0;
@@ -173,9 +173,9 @@ static int AddPsp(char *mac, char *name, int length)
  リストから削除
  --------------------------------------------------------*/
 
-static int DelPsp(char *mac)
+static u32 DelPsp(char *mac)
   {
-    int i, j;
+    u32 i, j;
 
     for (i = 0; i < adhoc_max; i++)
       {
@@ -207,7 +207,7 @@ static int DelPsp(char *mac)
  リストを表示
  --------------------------------------------------------*/
 
-static void DisplayPspList(int top, int rows)
+static void DisplayPspList(u32 top, u32 rows)
   {
     if (adhoc_max == 0)
       {
@@ -216,7 +216,7 @@ static void DisplayPspList(int top, int rows)
       }
     else
       {
-        int i;
+        u32 i;
         char temp[20];
 
         // 画面表示
@@ -254,7 +254,7 @@ static void DisplayPspList(int top, int rows)
  選択中のPSPの情報を取得
  --------------------------------------------------------*/
 
-static int GetPspEntry(char *mac, char *name)
+static u32 GetPspEntry(char *mac, char *name)
   {
     if (adhoc_max == 0)
       return -1;
@@ -269,8 +269,7 @@ static int GetPspEntry(char *mac, char *name)
  Matching callback
  --------------------------------------------------------*/
 
-static void matchingCallback(int unk1, int event, char *mac2, int optLen,
-    char *optData)
+static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *optData)
   {
     switch (event)
       {
@@ -301,9 +300,9 @@ static void matchingCallback(int unk1, int event, char *mac2, int optLen,
  モジュールのロード
  --------------------------------------------------------*/
 
-int pspSdkLoadAdhocModules(void)
+u32 pspSdkLoadAdhocModules(void)
   {
-    int modID;
+    u32 modID;
 
     modID = pspSdkLoadStartModule("flash0:/kd/ifhandle.prx", PSP_MEMORY_PARTITION_KERNEL);
     if (modID < 0)
@@ -351,7 +350,7 @@ int pspSdkLoadAdhocModules(void)
  初期化
  --------------------------------------------------------*/
 
-int adhocInit(const char *matchingData)
+u32 adhocInit(const char *matchingData)
   {
     struct productStruct product;
     int error = 0, state = 0;
@@ -458,7 +457,7 @@ error_msg("");
  切断
  --------------------------------------------------------*/
 
-int adhocTerm(void)
+u32 adhocTerm(void)
   {
     adhoc_init_progress(5, "DISCONNECTING");
 
@@ -521,7 +520,7 @@ static void adhocDisconnect(void)
  SSIDを指定して再接続
  --------------------------------------------------------*/
 
-int adhocReconnect(char *ssid)
+u32 adhocReconnect(char *ssid)
   {
     int error = 0, state = 1;
     char mac[20], buf[256];
@@ -626,13 +625,13 @@ int adhocReconnect(char *ssid)
  接続先の選択
  --------------------------------------------------------*/
 
-int adhocSelect(void)
+u32 adhocSelect(void)
   {
-    int top = 0;
-    int rows = 11;
-    int currentState= PSP_LISTING;
-    int prev_max = 0;
-    int update = 1;
+    u32 top = 0;
+    u32 rows = 11;
+    u32 currentState= PSP_LISTING;
+    u32 prev_max = 0;
+    u32 update = 1;
     char mac[16];
     char name[64];
     char temp[64];
@@ -829,9 +828,9 @@ int adhocSelect(void)
  データ送信
  --------------------------------------------------------*/
 
-int adhocSend(void *buffer, int length)
+u32 adhocSend(void *buffer, u32 length)
   {
-    if (sceNetAdhocPdpSend(pdpId, g_mac, 0x309, buffer, length, 0, 1) < 0)
+    if (sceNetAdhocPdpSend(pdpId, g_mac, 0x309, buffer, (int)length, 0, 1) < 0)
       return 0;
     return length;
   }
@@ -840,10 +839,10 @@ int adhocSend(void *buffer, int length)
  データ受信
  --------------------------------------------------------*/
 
-int adhocRecv(void *buffer, int length)
+u32 adhocRecv(void *buffer, u32 length)
   {
-    int port = 0;
-    char mac[6];
+    unsigned short port = 0;
+    unsigned char mac[6];
 
     if (sceNetAdhocPdpRecv(pdpId, mac, &port, buffer, &length, 0, 1) < 0)
       return 0;
@@ -854,7 +853,7 @@ int adhocRecv(void *buffer, int length)
  データ送信を待つ
  --------------------------------------------------------*/
 
-int adhocSendBlocking(void *buffer, int length)
+u32 adhocSendBlocking(void *buffer, u32 length)
   {
     if (sceNetAdhocPdpSend(pdpId, g_mac, 0x309, buffer, length, ADHOC_TIMEOUT, 0) < 0)
       return 0;
@@ -865,10 +864,10 @@ int adhocSendBlocking(void *buffer, int length)
  データ受信を待つ
  --------------------------------------------------------*/
 
-int adhocRecvBlocking(void *buffer, int length)
+u32 adhocRecvBlocking(void *buffer, u32 length)
   {
-    int port = 0;
-    char mac[6];
+    unsigned short port = 0;
+    unsigned char mac[6];
 
     if (sceNetAdhocPdpRecv(pdpId, mac, &port, buffer, &length, ADHOC_TIMEOUT, 0)
         < 0)
@@ -880,10 +879,10 @@ int adhocRecvBlocking(void *buffer, int length)
  データ受信を待つ(タイムアウト指定)
  --------------------------------------------------------*/
 
-int adhocRecvBlockingTimeout(void *buffer, int length, int timeout)
+u32 adhocRecvBlockingTimeout(void *buffer, u32 length, u32 timeout)
   {
-    int port = 0;
-    char mac[6];
+    unsigned short port = 0;
+    unsigned char mac[6];
 
     if (sceNetAdhocPdpRecv(pdpId, mac, &port, buffer, &length, timeout, 0) < 0)
       return 0;
@@ -894,11 +893,11 @@ int adhocRecvBlockingTimeout(void *buffer, int length, int timeout)
  データを送信し、ackを受信するまで待つ
  --------------------------------------------------------*/
 
-int adhocSendRecvAck(void *buffer, int length)
+u32 adhocSendRecvAck(void *buffer, u32 length)
   {
-    int ack_data = 0;
-    int tempLen = length;
-    int sentCount = 0;
+    u32 ack_data = 0;
+    u32 tempLen = length;
+    u32 sentCount = 0;
     u8 *buf = (u8 *)buffer;
 
     do
@@ -908,7 +907,7 @@ int adhocSendRecvAck(void *buffer, int length)
 
         adhocSendBlocking(buf, tempLen);
 
-        if (adhocRecvBlocking(&ack_data, sizeof(int)) == 0)
+        if (adhocRecvBlocking(&ack_data, sizeof(u32)) == 0)
           return 0;
 
         if (ack_data != tempLen)
@@ -926,10 +925,10 @@ int adhocSendRecvAck(void *buffer, int length)
  データの受信を待ち、ackを送信する
  --------------------------------------------------------*/
 
-int adhocRecvSendAck(void *buffer, int length)
+u32 adhocRecvSendAck(void *buffer, u32 length)
   {
-    int tempLen = length;
-    int rcvdCount = 0;
+    u32 tempLen = length;
+    u32 rcvdCount = 0;
     u8 *buf = (u8 *)buffer;
 
     do
@@ -940,7 +939,7 @@ int adhocRecvSendAck(void *buffer, int length)
         if (adhocRecvBlocking(buf, tempLen) == 0)
           return 0;
 
-        adhocSendBlocking(&tempLen, sizeof(int));
+        adhocSendBlocking(&tempLen, sizeof(u32));
 
         buf += ADHOC_BLOCKSIZE;
         rcvdCount += ADHOC_BLOCKSIZE;

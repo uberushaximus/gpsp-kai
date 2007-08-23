@@ -145,12 +145,17 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
 #define tile_lookup_palette(palette, source)                                  \
   current_pixel = palette[source];                                            \
 
-#define tile_expand_base_normal(index)                                        \
+// palette 0 に対応
+#define tile_expand_base_normal_p0(index)                                     \
   if (current_pixel != 0)                                                     \
   {                                                                           \
     tile_lookup_palette(palette, current_pixel);                              \
     dest_ptr[index] = current_pixel;                                          \
   }                                                                           \
+
+#define tile_expand_base_normal(index)                                        \
+    tile_lookup_palette(palette, current_pixel);                              \
+    dest_ptr[index] = current_pixel                                           \
 
 #define tile_expand_transparent_normal(index)                                 \
   tile_expand_base_normal(index)                                              \
@@ -597,6 +602,7 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
 #define tile_4bpp_draw_eight_base_zero_normal()                               \
   current_pixel = palette[0];                                                 \
   tile_4bpp_draw_eight_base_zero(current_pixel)                               \
+
 
 // Draws eight 4bpp pixels.
 
@@ -1289,7 +1295,7 @@ render_scanline_affine_builder(transparent, alpha);
   *dest_ptr = current_pixel                                                   \
 
 #define bitmap_render_pixel_mode4(alpha_op)                                   \
-  tile_expand_base_##alpha_op(0)                                              \
+  tile_expand_base_##alpha_op##_p0(0)                                           \
 
 #define bitmap_render_pixel_mode5(alpha_op)                                   \
   bitmap_render_pixel_mode3(alpha_op)                                         \
@@ -1396,17 +1402,17 @@ render_scanline_affine_builder(transparent, alpha);
 #define render_scanline_vram_setup_mode5()                                    \
   u16 *src_ptr;                                                               \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u16 *)vram + 0xA000;                                         \
+    src_ptr = (u16*)(vram + 0xA000);                                          \
   else                                                                        \
-    src_ptr = (u16 *)vram                                                     \
+    src_ptr = (u16*)vram                                                      \
 
 #define render_scanline_vram_setup_mode4()                                    \
   u16 *palette = palette_ram;                                                 \
   u8 *src_ptr;                                                                \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u8 *)vram + 0xA000;                                                  \
+    src_ptr = (u8*)(vram + 0xA000);                                           \
   else                                                                        \
-    src_ptr = (u8 *)vram                                                            \
+    src_ptr = (u8*)(vram)                                                     \
 
 // Build bitmap scanline rendering functions.
 
@@ -1414,10 +1420,8 @@ render_scanline_affine_builder(transparent, alpha);
 void render_scanline_bitmap_##type##_##alpha_op(u32 start, u32 end,           \
  void *scanline)                                                              \
 {                                                                             \
-  /*u32 bg_control = io_registers[REG_BG2CNT];*/                                  \
   u32 current_pixel;                                                          \
   s32 source_x, source_y;                                                     \
-  /*u32 vcount = io_registers[REG_VCOUNT];*/                                      \
   s32 pixel_x, pixel_y;                                                       \
                                                                               \
   s32 dx = (s16)io_registers[REG_BG2PA];                                      \
@@ -2184,7 +2188,7 @@ void order_layers(u32 layer_flags)
 
 
 #define fill_line_color_normal()                                              \
-  color = palette_ram[color]                                        \
+  color = palette_ram[color]                                                  \
 
 #define fill_line_color_alpha()                                               \
 
@@ -2464,7 +2468,6 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
 #define fill_line_bg(type, dest, _start, _end)                                \
   fill_line_##type(0, dest, _start, _end)                                     \
 
-
 // Render all layers as they appear in the layer order.
 
 #define render_layers(tile_alpha, obj_alpha, dest)                            \
@@ -2672,9 +2675,12 @@ void render_scanline_bitmap(u16 *scanline, u32 dispcnt)
   render_scanline_layer_functions_bitmap();
   u32 current_layer;
   u32 layer_order_pos;
+  u32 *scanline2 = (u32*)scanline;
 
-  // ラインをパレット0で埋める
-  fill_line_bg(normal, scanline, 0, 240);
+  // ラインをパレット0で埋める(32bitアクセスで高速化)
+  u32 color = (u32)palette_ram[0];
+  color = color << 16 || color;
+  fill_line_color32(color, scanline2, 0, 240/2);
 
   for(layer_order_pos = 0; layer_order_pos < layer_count; layer_order_pos++)
   {
