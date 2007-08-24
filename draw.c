@@ -31,10 +31,10 @@
 /******************************************************************************
  * マクロ等の定義
  ******************************************************************************/
-#define progress_sx (240-150)
-#define progress_ex (240+150)
-#define progress_sy (138+3)
-#define progress_ey (138+13)
+#define progress_sx (screen_width2 - screen_width / 3)  // 中心から -160/-80
+#define progress_ex (screen_width2 + screen_width / 3)  // 中心から +160/+80
+#define progress_sy (screen_height2 + 3)                // 中心から+3
+#define progress_ey (screen_height2 + 13)               // 中心から+13
 #define progress_color COLOR16(15,15,15)
 #define progress_wait (1 * 1000 * 1000)
 
@@ -236,7 +236,7 @@ void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha)
 ------------------------------------------------------*/
 void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
 {
-//  draw_box_shadow(sx, sy, ex, ey);
+// 影の表示
   boxfill(sx + 5, sy + 5, ex + 5, ey + 5, COLOR_DIALOG_SHADOW);
 
   hline(sx, ex - 1, sy, COLOR_FRAME);
@@ -274,12 +274,12 @@ void init_progress(int total, const char *text)
   progress_total   = total;
   strcpy(progress_message, text);
 
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  draw_dialog(progress_sx - 8, progress_sy -29, progress_ex + 8, progress_ey + 13);
 
   boxfill(progress_sx - 1, progress_sy - 1, progress_ex + 1, progress_ey + 1, 0);
 
   if (text[0] != '\0')
-    print_string_center(118, COLOR_PROGRESS_TEXT, COLOR_DIALOG, text);
+    print_string_center(progress_sy - 21, COLOR_PROGRESS_TEXT, COLOR_DIALOG, text);
 }
 
 /*--------------------------------------------------------
@@ -287,13 +287,13 @@ void init_progress(int total, const char *text)
 --------------------------------------------------------*/
 void update_progress(void)
 {
-  int width = (++progress_current * 100 / progress_total) * 3;
+  int width = (++progress_current / progress_total) * (screen_width / 3 * 2);
 
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  draw_dialog(progress_sx - 8, progress_sy -29, progress_ex + 8, progress_ey + 13);
 
   boxfill(progress_sx - 1, progress_sy - 1, progress_ex + 1, progress_ey + 1, COLOR_BLACK);
   if (progress_message[0] != '\0')
-    print_string_center(118, COLOR_PROGRESS_TEXT, COLOR_DIALOG, progress_message);
+    print_string_center(progress_sy - 21, COLOR_PROGRESS_TEXT, COLOR_DIALOG, progress_message);
   boxfill(progress_sx, progress_sy, progress_sx+width, progress_ey, COLOR_PROGRESS_BAR);
 
   flip_screen();
@@ -304,18 +304,18 @@ void update_progress(void)
 --------------------------------------------------------*/
 void show_progress(const char *text)
 {
-  draw_dialog(240-158, 136-26, 240+158, 136+26);
+  draw_dialog(progress_sx - 8, progress_sy -29, progress_ex + 8, progress_ey + 13);
 
   boxfill(progress_sx - 1, progress_sy - 1, progress_ex + 1, progress_ey + 1, COLOR_BLACK);
     
   if (progress_current)
   {
-    int width = (progress_current * 100 / progress_total) * 3;
+    int width = (progress_current / progress_total) * (screen_width / 3 * 2);
     boxfill(progress_sx, progress_sy, progress_sx+width, progress_ey, COLOR_PROGRESS_BAR);
   }
 
   if (text[0] != '\0')
-    print_string_center(118, COLOR_PROGRESS_TEXT, COLOR_DIALOG,text);
+    print_string_center(progress_sy - 21, COLOR_PROGRESS_TEXT, COLOR_DIALOG,text);
 
   flip_screen();
   sceKernelDelayThread(progress_wait);

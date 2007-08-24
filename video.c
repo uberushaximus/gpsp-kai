@@ -41,6 +41,8 @@ u16 *screen_address = (u16 *)(0x4000000 + (512 * 272 * 2));
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
+u32 screen_width2 = 240 / 2;
+u32 screen_height2 = 160 / 2;
 
 static u32 __attribute__((aligned(32))) display_list[32];
 
@@ -3349,6 +3351,8 @@ void video_resolution_large()
     screen_pitch = 512;
     screen_width = PSP_SCREEN_WIDTH;
     screen_height = PSP_SCREEN_HEIGHT;
+    screen_width2 = screen_width / 2;
+    screen_height2 = screen_height / 2;
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
     sceGuFinish();
@@ -3366,6 +3370,8 @@ void video_resolution_small()
     screen_pitch = 240;
     screen_width = GBA_SCREEN_WIDTH;
     screen_height = GBA_SCREEN_HEIGHT;
+    screen_width2 = screen_width / 2;
+    screen_height2 = screen_height / 2;
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
     sceGuFinish();

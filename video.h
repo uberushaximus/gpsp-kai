@@ -90,6 +90,8 @@ extern u16 *screen_address;
 extern u32 screen_pitch;
 extern u32 screen_width;
 extern u32 screen_height;
+extern u32 screen_width2;
+extern u32 screen_height2;
 
 extern u32 screen_scale;
 extern u32 current_scale;
