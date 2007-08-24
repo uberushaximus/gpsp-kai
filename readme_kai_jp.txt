@@ -4,6 +4,8 @@
 -UnOfficial gpSP kai 3.1 test 16 svn rev.
 	一部のROMで画面が乱れるのを修正
 	サスペンドの反応速度向上
+	プログレスバーをGBA画面時の表示に対応
+	load/save state時にプログレスバーを表示
 
 -UnOfficial gpSP kai 3.1 test 15 svn rev.213
 	HOMEボタンを押したときにメニューに移行する様にした

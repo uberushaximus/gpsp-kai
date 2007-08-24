@@ -3400,17 +3400,24 @@ void bios_region_read_protect()
 // type = read / write_mem
 #define savestate_block(type)                                                 \
   cpu_##type##_savestate(savestate_file);                                     \
+  update_progress();                                                          \
   input_##type##_savestate(savestate_file);                                   \
+  update_progress();                                                          \
   main_##type##_savestate(savestate_file);                                    \
+  update_progress();                                                          \
   memory_##type##_savestate(savestate_file);                                  \
+  update_progress();                                                          \
   sound_##type##_savestate(savestate_file);                                   \
-  video_##type##_savestate(savestate_file)                                    \
+  update_progress();                                                          \
+  video_##type##_savestate(savestate_file);                                   \
+  update_progress();                                                          \
 
 void load_state(char *savestate_filename)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
 
+  pause_sound(1);
   if (*DEFAULT_SAVE_DIR != (char)NULL) {
     sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
   }
@@ -3426,6 +3433,8 @@ void load_state(char *savestate_filename)
     u32 i;
     u32 current_color;
 
+    init_progress(9, "Load State."); // TODO:メッセージファイル化
+
     u32 file_size = file_length(savestate_path, (s32)NULL);
     if (file_size == SAVESTATE_SIZE)
       FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u64), SEEK_SET);
@@ -3433,16 +3442,20 @@ void load_state(char *savestate_filename)
       FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u32), SEEK_SET);
 
     strcpy(current_gamepak_filename, gamepak_filename);
+    update_progress();
 
     savestate_block(read);
     FILE_CLOSE(savestate_file);
+    update_progress();
 
     flush_translation_cache_ram();
     flush_translation_cache_rom();
     flush_translation_cache_bios();
+    update_progress();
 
     oam_update = 1;
     gbc_sound_update = 1;
+    show_progress("Load State end."); // TODO:メッセージファイル化
 
     // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
     if(strcmp(current_gamepak_filename, gamepak_filename))
@@ -3465,6 +3478,7 @@ void load_state(char *savestate_filename)
 
         real_frame_count = 0;
         virtual_frame_count = 0;
+        pause_sound(0);
         return;
       }
     }
@@ -3478,12 +3492,15 @@ void load_state(char *savestate_filename)
 
     reg[CHANGED_PC_STATUS] = 1;
   }
+  pause_sound(0);
 }
 
 void save_state(char *savestate_filename, u16 *screen_capture)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
+
+  pause_sound(1);
 
   if (*DEFAULT_SAVE_DIR != (char)NULL) {
     sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
@@ -3499,19 +3516,26 @@ void save_state(char *savestate_filename, u16 *screen_capture)
   {
     u64 current_time;
     pspTime current_time_fix; // time関数が年月日を返さないので調整用
+    init_progress(9, "Save State."); // TODO:メッセージファイル化
+
     FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
+    update_progress();
 
     sceRtcGetCurrentClock(&current_time_fix, 0);
     sceRtcGetTick(&current_time_fix, &current_time);
     FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
+    update_progress();
 
     savestate_block(write_mem);
     FILE_WRITE(savestate_file, savestate_write_buffer,
      sizeof(savestate_write_buffer));
     FILE_CLOSE(savestate_file);
+    update_progress();
+    show_progress("Save State end."); // TODO:メッセージファイル化
   }
   real_frame_count = 0;
   virtual_frame_count = 0;
+  pause_sound(0);
 }
 
 
