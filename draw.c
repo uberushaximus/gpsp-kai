@@ -54,6 +54,7 @@ static char progress_message[128];
 /******************************************************************************
  * ローカル関数の宣言
  ******************************************************************************/
+void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey);
 
 /******************************************************************************
  * グローバル関数の定義
@@ -61,7 +62,7 @@ static char progress_message[128];
 /*------------------------------------------------------
   文字列を描画 / センタリング処理
 ------------------------------------------------------*/
-void print_string_center(int sy, u32 color, u32 bg_color, const char *str)
+void print_string_center(u32 sy, u32 color, u32 bg_color, char *str)
 {
   int width = fbm_getwidth(str);
   int sx = (screen_width - width) / 2;
@@ -72,7 +73,7 @@ void print_string_center(int sy, u32 color, u32 bg_color, const char *str)
 /*------------------------------------------------------
   文字列を描画 / 影付き / センタリング処理
 ------------------------------------------------------*/
-void print_string_shadow_center(int sy, u32 color, const char *str)
+void print_string_shadow_center(u32 sy, u32 color, char *str)
 {
   int width = fbm_getwidth(str);
   int sx = (screen_width - width) / 2;
@@ -268,7 +269,7 @@ void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
 /*--------------------------------------------------------
   プログレスバー初期化
 --------------------------------------------------------*/
-void init_progress(int total, const char *text)
+void init_progress(u32 total, char *text)
 {
   progress_current = 0;
   progress_total   = total;
@@ -287,7 +288,7 @@ void init_progress(int total, const char *text)
 --------------------------------------------------------*/
 void update_progress(void)
 {
-  int width = (++progress_current / progress_total) * (screen_width / 3 * 2);
+  int width = (int)( ((float)++progress_current / (float)progress_total) * ((float)screen_width / 3.0 * 2.0) );
 
   draw_dialog(progress_sx - 8, progress_sy -29, progress_ex + 8, progress_ey + 13);
 
@@ -302,7 +303,7 @@ void update_progress(void)
 /*--------------------------------------------------------
   プログレスバー結果表示
 --------------------------------------------------------*/
-void show_progress(const char *text)
+void show_progress(char *text)
 {
   draw_dialog(progress_sx - 8, progress_sy -29, progress_ex + 8, progress_ey + 13);
 
@@ -310,7 +311,7 @@ void show_progress(const char *text)
     
   if (progress_current)
   {
-    int width = (progress_current / progress_total) * (screen_width / 3 * 2);
+    int width = (int)( (float)(++progress_current / progress_total) * (float)(screen_width / 3.0 * 2.0) );
     boxfill(progress_sx, progress_sy, progress_sx+width, progress_ey, COLOR_PROGRESS_BAR);
   }
 
@@ -319,6 +320,45 @@ void show_progress(const char *text)
 
   flip_screen();
   sceKernelDelayThread(progress_wait);
+}
+
+/*--------------------------------------------------------
+  スクロールバー表示(メニュー画面のみ対応)
+--------------------------------------------------------*/
+#define SCROLLBAR_SX   3
+#define SCROLLBAR_EX   6
+#define SCROLLBAR_SY  23
+#define SCROLLBAR_EY 256
+#define SCROLLBAR_LEN (SCROLLBAR_EY - SCROLLBAR_SY)
+#define SCROLLBAR_COLOR1 COLOR16( 0, 2, 8)
+#define SCROLLBAR_COLOR2 COLOR16(15,15,15)
+u32 old_scrollbar_sy = 0;
+u32 old_scrollbar_ey = 0;
+
+void scrollbar(u32 all,u32 view,u32 now)
+{
+  u32 scrollbar_sy;
+  u32 scrollbar_ey;
+  
+  if ((all != 0) && (all > now))
+    scrollbar_sy = (u32)((float)SCROLLBAR_LEN * (float)now / (float)all);
+  else
+    scrollbar_sy = 0;
+
+  if ((all > (now + view)) && (all != 0))
+    scrollbar_ey = (u32)((float)SCROLLBAR_LEN * (float)(now + view) / (float)all );
+  else
+    scrollbar_ey = SCROLLBAR_LEN;
+
+  if ((scrollbar_sy != old_scrollbar_sy) || (scrollbar_ey != old_scrollbar_ey))
+  {
+    box(SCROLLBAR_SX - 1, SCROLLBAR_SY - 1, SCROLLBAR_EX + 1, SCROLLBAR_EY + 1, COLOR_BLACK);
+    boxfill(SCROLLBAR_SX, SCROLLBAR_SY, SCROLLBAR_EX, SCROLLBAR_EY, SCROLLBAR_COLOR1);
+    boxfill(SCROLLBAR_SX, SCROLLBAR_SY + scrollbar_sy, SCROLLBAR_EX, SCROLLBAR_SY + scrollbar_ey, SCROLLBAR_COLOR2);
+  }
+
+  old_scrollbar_sy = scrollbar_sy;
+  old_scrollbar_ey = scrollbar_ey;
 }
 
 /******************************************************************************

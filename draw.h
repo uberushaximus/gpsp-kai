@@ -71,8 +71,8 @@
 /******************************************************************************
  * グローバル関数の宣言
  ******************************************************************************/
-extern void print_string_center(int sy, u32 color, u32 bg_color, const char *str);
-extern void print_string_shadow_center(int sy, u32 color, const char *str);
+extern void print_string_center(u32 sy, u32 color, u32 bg_color, char *str);
+extern void print_string_shadow_center(u32 sy, u32 color, char *str);
 extern void hline(u32 sx, u32 ex, u32 y, u32 color);
 extern void hline_alpha(u32 sx, u32 ex, u32 y, u32 color, u32 alpha);
 extern void vline(u32 x, u32 sy, u32 ey, u32 color);
@@ -80,9 +80,10 @@ extern void vline_alpha(u32 x, u32 sy, u32 ey, u32 color, u32 alpha);
 extern void box(u32 sx, u32 sy, u32 ex, u32 ey, u32 color);
 extern void boxfill(u32 sx, u32 sy, u32 ex, u32 ey, u32 color);
 extern void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha);
-extern void init_progress(int total, const char *text);
+extern void init_progress(u32 total, char *text);
 extern void update_progress(void);
-extern void show_progress(const char *text);
+extern void show_progress(char *text);
+extern void scrollbar(u32 all,u32 view, u32 now);
 
 #endif
 

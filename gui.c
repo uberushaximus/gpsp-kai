@@ -35,7 +35,7 @@
 #define STATUS_ROWS 0
 #define CURRENT_DIR_ROWS 1
 #define FILE_LIST_ROWS 25
-#define FILE_LIST_POSITION 5
+#define FILE_LIST_POSITION 10
 #define DIR_LIST_POSITION 360
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
@@ -290,16 +290,15 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
   u32 total_dirnames_allocated;
   char **file_list;
   char **dir_list;
-  u32 num_files;
-  u32 num_dirs;
+  u32 num_files;                      // カレントディレクトリのファイル数
+  u32 num_dirs;                       // カレントディレクトリのフォルダ数
   char *file_name;
   u32 file_name_length;
   u32 ext_pos = -1;
   u32 chosen_file, chosen_dir;
-//  u32 dialog_result = 1;
   s32 return_value = 1;
-  u32 current_file_selection;
-  u32 current_file_scroll_value;
+  u32 current_file_selection;         // 選択しているファイル
+  u32 current_file_scroll_value;      // スクロールの位置
   u32 current_dir_selection;
   u32 current_dir_scroll_value;
   u32 current_file_in_scroll;
@@ -440,7 +439,6 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
 
     clear_screen(COLOR_BG);
   {
-//    char print_buffer[81];
 
     while(repeat)
     {
@@ -449,6 +447,8 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
       print_status();
       PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
       PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
+
+      scrollbar(num_files, FILE_LIST_ROWS, current_file_scroll_value);
 
       for(i = 0, current_file_number = i + current_file_scroll_value;
        i < (FILE_LIST_ROWS - CURRENT_DIR_ROWS); i++, current_file_number++)
@@ -1461,6 +1461,9 @@ u32 menu(u16 *original_screen)
 
         if(current_option->option_type & SUBMENU_TYPE)
           choose_menu(current_option->sub_menu);
+        break;
+
+      case KEY_SELECT:
         break;
 
       default:
