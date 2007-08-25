@@ -3395,23 +3395,23 @@ void set_gba_resolution(video_scale_type scale)
       break;
 
     case scaled_aspect:
-      screen_vertex[0] = 0.0 + 0.5;
-      screen_vertex[1] = 0.0 + 0.5;
+      screen_vertex[0] = 0.0/* + 0.5*/;
+      screen_vertex[1] = 0.0/* + 0.5*/;
       screen_vertex[2] = 36.0;
       screen_vertex[3] = 0.0;
-      screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
-      screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
+      screen_vertex[5] = GBA_SCREEN_WIDTH/* - 0.5*/;
+      screen_vertex[6] = GBA_SCREEN_HEIGHT/* - 0.5*/;
       screen_vertex[7] = 408.0 + 36.0;
       screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
       break;
 
     case fullscreen:
-      screen_vertex[0] = 0.0 + 0.5;
-      screen_vertex[1] = 0.0 + 0.5;
+      screen_vertex[0] = 0.0/* + 0.5*/;
+      screen_vertex[1] = 0.0/* + 0.5*/;
       screen_vertex[2] = 0.0;
       screen_vertex[3] = 0.0;
-      screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
-      screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
+      screen_vertex[5] = GBA_SCREEN_WIDTH/* - 0.5*/;
+      screen_vertex[6] = GBA_SCREEN_HEIGHT/* - 0.5*/;
       screen_vertex[7] = (float)PSP_SCREEN_WIDTH;
       screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
       break;

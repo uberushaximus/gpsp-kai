@@ -1,6 +1,9 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.1 test 17 svn rev.
+	拡大画面時に、上下がわずかに欠けるのを修正
+
 -UnOfficial gpSP kai 3.1 test 16 svn rev.220
 	一部のROMで画面が乱れるのを修正
 	サスペンドの反応速度向上
