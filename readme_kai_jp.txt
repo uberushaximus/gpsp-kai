@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 17 svn rev.
+-UnOfficial gpSP kai 3.1 test 17 svn rev.225
 	拡大画面時に、上下がわずかに欠けるのを修正
 	メニュー画面からのsave state時のバグを修正
 	ROMインフォをメニュー画面に常に表示
