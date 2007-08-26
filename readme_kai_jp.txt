@@ -3,6 +3,13 @@
 -- Release log --
 -UnOfficial gpSP kai 3.1 test 17 svn rev.
 	拡大画面時に、上下がわずかに欠けるのを修正
+	メニュー画面からのsave state時のバグを修正
+	ROMインフォをメニュー画面に常に表示
+	IWRAM読込みのエンバグを修正
+	ARM/THUMBのADC/SBC/RSC命令を再調整
+		bit Generations Boundishでの不具合修正
+	一部のROMで画面が乱れるのを再修正
+	load/save state時のノイズ/画面の乱れを修正
 
 -UnOfficial gpSP kai 3.1 test 16 svn rev.220
 	一部のROMで画面が乱れるのを修正

@@ -253,7 +253,7 @@ static void get_savestate_snapshot(char *savestate_filename);
 static void get_savestate_filename(u32 slot, char *name_buffer);
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr);
 static u32 parse_line(char *current_line, char *current_str);
-static void print_status();
+static void print_status(u32 mode);
 static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u16 day, u16 wday, u16 hour, u16 min, u16 sec, u32 msec);
 static void save_ss_bmp(u16 *image);
 void _flush_cache();
@@ -444,7 +444,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
     {
       flip_screen();
 
-      print_status();
+      print_status(1);
       PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
       PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
 
@@ -989,6 +989,8 @@ u32 menu(u16 *original_screen)
       get_savestate_filename_noshot(SAVESTATE_SLOT,
        current_savestate_filename);
       save_state(current_savestate_filename, original_screen);
+      pause_sound(1);
+      clear_screen(COLOR_BG);
     }
     menu_change_state();
   }
@@ -1087,14 +1089,13 @@ u32 menu(u16 *original_screen)
 
   void submenu_main()
   {
-    strncpy(print_buffer, gamepak_filename, 80);
-    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 10);
-    sprintf(print_buffer, "%s  %s  %s", gamepak_title,
-     gamepak_code, gamepak_maker);
-    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 20);
+//    strncpy(print_buffer, gamepak_filename, 80);
+//    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 10);
+//    sprintf(print_buffer, "%s  %s  %s", gamepak_title,
+//     gamepak_code, gamepak_maker);
+//    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 20);
 
-    get_savestate_filename_noshot(SAVESTATE_SLOT,
-     current_savestate_filename);
+    get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
   }
 
   char *yes_no_options[] = { msg[MSG_NO], msg[MSG_YES] };
@@ -1358,7 +1359,7 @@ u32 menu(u16 *original_screen)
   while(repeat)
   {
 
-    print_status();
+    print_status(0);
 
     display_option = current_menu->options;
 
@@ -1891,7 +1892,7 @@ static u32 parse_line(char *current_line, char *current_str)
   return 0;
 }
 
-static void print_status()
+static void print_status(u32 mode)
 {
   char print_buffer_1[256];
   char print_buffer_2[256];
@@ -1910,6 +1911,14 @@ static void print_status()
 
   sprintf(print_buffer_1, "MAX ROM BUF: %02d MB", (int)(gamepak_ram_buffer_size/1024/1024));
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 10);
+
+  if (mode == 0)
+  {
+    strncpy(print_buffer_1, gamepak_filename, 80);
+    PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 10);
+    sprintf(print_buffer_1, "%s  %s  %s", gamepak_title, gamepak_code, gamepak_maker);
+    PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 20);
+  }
 }
 
 static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u16 day, u16 wday, u16 hour, u16 min, u16 sec, u32 msec)

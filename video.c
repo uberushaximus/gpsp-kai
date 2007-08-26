@@ -2677,12 +2677,8 @@ void render_scanline_bitmap(u16 *scanline, u32 dispcnt)
   render_scanline_layer_functions_bitmap();
   u32 current_layer;
   u32 layer_order_pos;
-  u32 *scanline2 = (u32*)scanline;
 
-  // ラインをパレット0で埋める(32bitアクセスで高速化)
-  u32 color = (u32)palette_ram[0];
-  color = color << 16 || color;
-  fill_line_color32(color, scanline2, 0, 240/2);
+  fill_line_bg(normal, scanline, 0, 240);
 
   for(layer_order_pos = 0; layer_order_pos < layer_count; layer_order_pos++)
   {

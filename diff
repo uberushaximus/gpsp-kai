@@ -1,0 +1,4415 @@
+diff -ru 30_orig/memory.c 30_new/memory.c
+--- 30_orig/memory.c	2007-07-24 15:01:15.446000000 +0900
++++ 30_new/memory.c	2007-08-06 23:47:14.000000000 +0900
+@@ -1,6 +1,7 @@
+-/* gameplaySP
++/* unofficial gameplaySP kai
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
++ * Copyright (C) 2007 takka <takka@tfact.net>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -18,44 +19,88 @@
+  */
+ 
+ #include "common.h"
+-#include <psputility_sysparam.h>
++
++#define SAVESTATE_SIZE 506951
++#define SAVESTATE_SIZE_OLD 506947
++u8 savestate_write_buffer[SAVESTATE_SIZE];
++u8 *write_mem_ptr;
++
++typedef enum
++{
++  FLASH_DEVICE_MACRONIX_64KB   = 0x1C,
++  FLASH_DEVICE_AMTEL_64KB      = 0x3D,
++  FLASH_DEVICE_SST_64K         = 0xD4,
++  FLASH_DEVICE_PANASONIC_64KB  = 0x1B,
++  FLASH_DEVICE_MACRONIX_128KB  = 0x09
++} FLASH_DEVICE_ID_TYPE;
++
++typedef enum
++{
++  FLASH_MANUFACTURER_MACRONIX  = 0xC2,
++  FLASH_MANUFACTURER_AMTEL     = 0x1F,
++  FLASH_MANUFACTURER_PANASONIC = 0x32,
++  FLASH_MANUFACTURER_SST       = 0xBF
++} FLASH_MANUFACTURER_ID_TYPE;
++
++
++// 関数宣言
++
++void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file);
++void memory_read_savestate(FILE_TAG_TYPE savestate_file);
++u8 read_backup(u32 address);
++void write_eeprom(u32 address, u32 value);
++u32 read_eeprom();
++CPU_ALERT_TYPE write_io_register8(u32 address, u32 value);
++CPU_ALERT_TYPE write_io_register16(u32 address, u32 value);
++CPU_ALERT_TYPE write_io_register32(u32 address, u32 value);
++void write_backup(u32 address, u32 value);
++u32 encode_bcd(u8 value);
++void write_rtc(u32 address, u32 value);
++u32 save_backup(char *name);
++s32 parse_config_line(char *current_line, char *current_variable, char *current_value);
++s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_maker);
++char *skip_spaces(char *line_ptr);
++s32 load_gamepak_raw(char *name);
++u32 evict_gamepak_page();
++void init_memory_gamepak();
++
++
+ 
+ // This table is configured for sequential access on system defaults
+ 
+-u32 waitstate_cycles_sequential[16][3] =
++// read data (sequential)
++u8 waitstate_cycles_seq[2][16] =
++{
++ /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
++  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
++  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
++};
++
++// read data (non sequential)
++u8 waitstate_cycles_non_seq[2][16] =
+ {
+-  { 1, 1, 1 }, // BIOS
+-  { 1, 1, 1 }, // Invalid
+-  { 3, 3, 6 }, // EWRAM (default settings)
+-  { 1, 1, 1 }, // IWRAM
+-  { 1, 1, 1 }, // IO Registers
+-  { 1, 1, 2 }, // Palette RAM
+-  { 1, 1, 2 }, // VRAM
+-  { 1, 1, 2 }, // OAM
+-  { 3, 3, 6 }, // Gamepak (wait 0)
+-  { 3, 3, 6 }, // Gamepak (wait 0)
+-  { 5, 5, 9 }, // Gamepak (wait 1)
+-  { 5, 5, 9 }, // Gamepak (wait 1)
+-  { 9, 9, 17 }, // Gamepak (wait 2)
+-  { 9, 9, 17 }, // Gamepak (wait 2)
++ /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
++  { 1, 1, 3, 1, 1, 1, 1, 1, 5, 5, 5, 5, 5, 5, 5, 1 }, /* 8,16bit */
++  { 1, 1, 6, 1, 1, 2, 2, 1, 7, 7, 9, 9,13,13, 1, 1 }  /* 32bit */
+ };
+ 
+ // Different settings for gamepak ws0-2 sequential (2nd) access
+ 
+-u32 gamepak_waitstate_sequential[2][3][3] =
++u8 gamepak_waitstate_seq[2][2][3] =
+ {
+-  {
+-    { 3, 3, 6 },
+-    { 5, 5, 9 },
+-    { 9, 9, 17 }
+-  },
+-  {
+-    { 2, 2, 3 },
+-    { 2, 2, 3 },
+-    { 2, 2, 3 }
+-  }
++  {{ 3, 5, 9 }, { 5, 9,17 }},
++  {{ 2, 2, 2 }, { 3, 3, 3 }}
+ };
+ 
++// read opecode
++u8 cpu_waitstate_cycles_seq[2][16] =
++{
++ /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
++  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
++  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
++};
++
++
+ u16 palette_ram[512];
+ u16 oam_ram[512];
+ u16 palette_ram_converted[512];
+@@ -74,8 +119,8 @@
+ u8 *gamepak_rom;
+ u32 gamepak_size;
+ 
+-dma_transfer_type dma[4];
+-//dma_transfer_type *dma = (dma_transfer_type *)0x010000; /* SPAD RAM use 0x2C * 4 = 0xB0 */
++DMA_TRANSFER_TYPE dma[4];
++//DMA_TRANSFER_TYPE *dma = (DMA_TRANSFER_TYPE *)0x010000; /* SPAD RAM use 0x2C * 4 = 0xB0 */
+ 
+ u8 *memory_regions[16];
+ u32 memory_limits[16];
+@@ -89,21 +134,20 @@
+ u32 gamepak_ram_buffer_size;
+ u32 gamepak_ram_pages;
+ 
++char gamepak_title[13];
++char gamepak_code[5];
++char gamepak_maker[3];
++char gamepak_filename[512];
++char gamepak_filename_raw[512];
++
+ // Enough to map the gamepak RAM space.
+ gamepak_swap_entry_type *gamepak_memory_map;
+ 
+ // This is global so that it can be kept open for large ROMs to swap
+ // pages from, so there's no slowdown with opening and closing the file
+ // a lot.
+-#ifdef PSP_BUILD
+ 
+-file_tag_type gamepak_file_large = -1;
+-
+-#else
+-
+-file_tag_type gamepak_file_large = NULL;
+-
+-#endif
++FILE_TAG_TYPE gamepak_file_large = -1;
+ 
+ u32 direct_map_vram = 0;
+ 
+@@ -165,8 +209,8 @@
+ u32 flash_command_position = 0;
+ u8 *flash_bank_ptr = gamepak_backup;
+ 
+-flash_device_id_type flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
+-flash_manufacturer_id_type flash_manufacturer_id =
++FLASH_DEVICE_ID_TYPE flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
++FLASH_MANUFACTURER_ID_TYPE flash_manufacturer_id =
+  FLASH_MANUFACTURER_MACRONIX;
+ flash_size_type flash_size = FLASH_SIZE_64KB;
+ 
+@@ -175,7 +219,7 @@
+ 
+ u8 read_backup(u32 address)
+ {
+-  u8 value;
++  u8 value = 0;
+ 
+   if(backup_type == BACKUP_NONE)
+     backup_type = BACKUP_SRAM;
+@@ -244,7 +288,7 @@
+ u8 eeprom_buffer[8];
+ 
+ 
+-void function_cc write_eeprom(u32 address, u32 value)
++void write_eeprom(u32 address, u32 value)
+ {
+   if(gamepak_size > 0x1FFFF00) // eeprom_v126 ?
+   {                            // ROM is restricted to 8000000h-9FFFeFFh
+@@ -276,7 +320,7 @@
+             eeprom_mode = EEPROM_ADDRESS_MODE;
+             break;
+         }
+-        address16(eeprom_buffer, 0) = 0;
++        ADDRESS16(eeprom_buffer, 0) = 0;
+       }
+       break;
+ 
+@@ -290,7 +334,7 @@
+         if(eeprom_size == EEPROM_512_BYTE)
+         {
+           eeprom_address =
+-           (address16(eeprom_buffer, 0) >> 2) * 8;
++           (ADDRESS16(eeprom_buffer, 0) >> 2) * 8;
+         }
+         else
+         {
+@@ -298,7 +342,7 @@
+            ((u32)eeprom_buffer[0] << 6)) * 8;
+         }
+ 
+-        address16(eeprom_buffer, 0) = 0;
++        ADDRESS16(eeprom_buffer, 0) = 0;
+         eeprom_counter = 0;
+ 
+         if(eeprom_mode == EEPROM_ADDRESS_MODE)
+@@ -337,6 +381,9 @@
+         eeprom_mode = EEPROM_BASE_MODE;
+       }
+       break;
++    default:
++      ;
++      break;
+   }
+ }
+ 
+@@ -347,7 +394,7 @@
+   if(map == NULL)                                                             \
+     map = load_gamepak_page(gamepak_index & 0x3FF);                           \
+                                                                               \
+-  value = address##type(map, address & 0x7FFF)                                \
++  value = ADDRESS##type(map, address & 0x7FFF)                                \
+ 
+ #define read_open8()                                                          \
+   if(!(reg[REG_CPSR] & 0x20))                                                 \
+@@ -372,7 +419,7 @@
+     value = current_instruction | (current_instruction << 16);                \
+   }                                                                           \
+ 
+-u32 function_cc read_eeprom()
++u32 read_eeprom()
+ {
+   u32 value;
+ 
+@@ -411,58 +458,61 @@
+   return value;
+ }
+ 
+-
+ #define read_memory(type)                                                     \
+   switch(address >> 24)                                                       \
+   {                                                                           \
+     case 0x00:                                                                \
+       /* BIOS */                                                              \
+       if(reg[REG_PC] >= 0x4000)                                               \
+-        value = address##type(&bios_read_protect, address & 0x03);            \
++      {                                                                       \
++        if(address < 0x4000)                                                  \
++          value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
++        else                                                                  \
++          read_open##type();                                                  \
++      }                                                                       \
+       else                                                                    \
+-        value = address##type(bios_rom, address & 0x3FFF);                    \
++      {                                                                       \
++        value = ADDRESS##type(bios_rom, address & 0x3FFF);                    \
++      }                                                                       \
+       break;                                                                  \
+                                                                               \
+     case 0x02:                                                                \
+       /* external work RAM */                                                 \
+-      address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
+-      value = address##type(ewram, address);                                  \
++      value = ADDRESS##type(ewram, address);                                  \
+       break;                                                                  \
+                                                                               \
+     case 0x03:                                                                \
+       /* internal work RAM */                                                 \
+-      value = address##type(iwram, (address & 0x7FFF) + 0x8000);              \
++      value = ADDRESS##type(iwram, (address & 0x7FFF) + 0x8000);              \
+       break;                                                                  \
+                                                                               \
+     case 0x04:                                                                \
+       /* I/O registers */                                                     \
+-      value = address##type(io_registers, address & 0x3FF);                   \
++      if(address < 0x04000400)                                                \
++        value = ADDRESS##type(io_registers, address & 0x3FF);                 \
++      else                                                                    \
++        read_open##type();                                                    \
+       break;                                                                  \
+                                                                               \
+     case 0x05:                                                                \
+       /* palette RAM */                                                       \
+-      value = address##type(palette_ram, address & 0x3FF);                    \
++      value = ADDRESS##type(palette_ram, address & 0x3FF);                    \
+       break;                                                                  \
+                                                                               \
+     case 0x06:                                                                \
+       /* VRAM */                                                              \
+-      address &= 0x1FFFF;                                                     \
+-      if(address >= 0x18000)                                                  \
+-        address -= 0x8000;                                                    \
+-                                                                              \
+-      value = address##type(vram, address);                                   \
++      if(address & 0x10000)                                                   \
++        value = ADDRESS##type(vram, address & 0x17FFF);                       \
++      else                                                                    \
++        value = ADDRESS##type(vram, address & 0x1FFFF);                       \
+       break;                                                                  \
+                                                                               \
+     case 0x07:                                                                \
+       /* OAM RAM */                                                           \
+-      value = address##type(oam_ram, address & 0x3FF);                        \
++      value = ADDRESS##type(oam_ram, address & 0x3FF);                        \
+       break;                                                                  \
+                                                                               \
+-    case 0x08:                                                                \
+-    case 0x09:                                                                \
+-    case 0x0A:                                                                \
+-    case 0x0B:                                                                \
+-    case 0x0C:                                                                \
++    case 0x08 ... 0x0C:                                                       \
+       /* gamepak ROM */                                                       \
+       if((address & 0x1FFFFFF) >= gamepak_size)                               \
+       {                                                                       \
+@@ -502,12 +552,12 @@
+     if(dma[dma_number].start_type == DMA_INACTIVE)                            \
+     {                                                                         \
+       u32 start_type = (value >> 12) & 0x03;                                  \
+-      u32 dest_address = address32(io_registers, (dma_number * 12) + 0xB4) &  \
++      u32 dest_address = ADDRESS32(io_registers, (dma_number * 12) + 0xB4) &  \
+        0xFFFFFFF;                                                             \
+                                                                               \
+       dma[dma_number].dma_channel = dma_number;                               \
+       dma[dma_number].source_address =                                        \
+-       address32(io_registers, (dma_number * 12) + 0xB0) & 0xFFFFFFF;         \
++       ADDRESS32(io_registers, (dma_number * 12) + 0xB0) & 0xFFFFFFF;         \
+       dma[dma_number].dest_address = dest_address;                            \
+       dma[dma_number].source_direction = (value >>  7) & 0x03;                \
+       dma[dma_number].repeat_type = (value >> 9) & 0x01;                      \
+@@ -529,7 +579,7 @@
+       else                                                                    \
+       {                                                                       \
+         u32 length =                                                          \
+-         address16(io_registers, (dma_number * 12) + 0xB8);                   \
++         ADDRESS16(io_registers, (dma_number * 12) + 0xB8);                   \
+                                                                               \
+         if((dma_number == 3) && ((dest_address >> 24) == 0x0D) &&             \
+          ((length & 0x1F) == 17))                                             \
+@@ -553,7 +603,7 @@
+         dma[dma_number].dest_direction = (value >> 5) & 0x03;                 \
+       }                                                                       \
+                                                                               \
+-      address16(io_registers, (dma_number * 12) + 0xBA) = value;              \
++      ADDRESS16(io_registers, (dma_number * 12) + 0xBA) = value;              \
+       if(start_type == DMA_START_IMMEDIATELY)                                 \
+         return dma_transfer(dma + dma_number);                                \
+     }                                                                         \
+@@ -562,23 +612,84 @@
+   {                                                                           \
+     dma[dma_number].start_type = DMA_INACTIVE;                                \
+     dma[dma_number].direct_sound_channel = DMA_NO_DIRECT_SOUND;               \
+-    address16(io_registers, (dma_number * 12) + 0xBA) = value;                \
++    ADDRESS16(io_registers, (dma_number * 12) + 0xBA) = value;                \
+   }                                                                           \
+ 
+ 
++// configure game pak access timings
++#define waitstate_control()                                                   \
++{                                                                             \
++  u8 i;                                                                       \
++  u8 waitstate_table[4] = { 5, 4, 3, 9 };                                     \
++                                                                              \
++  waitstate_cycles_non_seq[0][0x0e] = waitstate_cycles_seq[0][0x0e]           \
++   = waitstate_table[value & 0x03];                                           \
++                                                                              \
++  for(i = 0; i < 2; i++)                                                      \
++  {                                                                           \
++    waitstate_cycles_seq[i][0x08] = waitstate_cycles_seq[i][0x09]             \
++     = gamepak_waitstate_seq[(value >> 4) & 0x01][i][0];                      \
++    waitstate_cycles_seq[i][0x0A] = waitstate_cycles_seq[i][0x0B]             \
++     = gamepak_waitstate_seq[(value >> 7) & 0x01][i][1];                      \
++    waitstate_cycles_seq[i][0x0C] = waitstate_cycles_seq[i][0x0D]             \
++     = gamepak_waitstate_seq[(value >> 10) & 0x01][i][2];                     \
++  }                                                                           \
++                                                                              \
++  waitstate_cycles_non_seq[0][0x08] = waitstate_cycles_non_seq[0][0x09]       \
++   = waitstate_table[(value >> 2) & 0x03];                                    \
++  waitstate_cycles_non_seq[0][0x0A] = waitstate_cycles_non_seq[0][0x0B]       \
++   = waitstate_table[(value >> 5) & 0x03];                                    \
++  waitstate_cycles_non_seq[0][0x0C] = waitstate_cycles_non_seq[0][0x0D]       \
++   = waitstate_table[(value >> 8) & 0x03];                                    \
++                                                                              \
++  /* 32bit access ( split into two 16bit accsess ) */                         \
++  waitstate_cycles_non_seq[1][0x08] = waitstate_cycles_non_seq[1][0x09]       \
++   = (waitstate_cycles_non_seq[0][0x08] + waitstate_cycles_seq[0][0x08] - 1); \
++  waitstate_cycles_non_seq[1][0x0A] = waitstate_cycles_non_seq[1][0x0B]       \
++   = (waitstate_cycles_non_seq[0][0x0A] + waitstate_cycles_seq[0][0x0A] - 1); \
++  waitstate_cycles_non_seq[1][0x0C] = waitstate_cycles_non_seq[1][0x0D]       \
++  =  (waitstate_cycles_non_seq[0][0x0C] + waitstate_cycles_seq[0][0x0C] - 1); \
++                                                                              \
++  /* gamepak prefetch */                                                      \
++  if(value & 0x4000)                                                          \
++  {                                                                           \
++    for(i = 0x08; i <= 0x0D; i++)                                             \
++    {                                                                         \
++      cpu_waitstate_cycles_seq[0][i] = 1;                                     \
++      cpu_waitstate_cycles_seq[1][i] = 2;                                     \
++    }                                                                         \
++  }                                                                           \
++  else                                                                        \
++  {                                                                           \
++    for(i = 0; i < 2; i++)                                                    \
++    {                                                                         \
++      cpu_waitstate_cycles_seq[i][0x08] = cpu_waitstate_cycles_seq[i][0x09]   \
++       = waitstate_cycles_seq[i][0x08];                                       \
++      cpu_waitstate_cycles_seq[i][0x0A] = cpu_waitstate_cycles_seq[i][0x0B]   \
++       = waitstate_cycles_seq[i][0x0A];                                       \
++      cpu_waitstate_cycles_seq[i][0x0C] = cpu_waitstate_cycles_seq[i][0x0D]   \
++       = waitstate_cycles_seq[i][0x0C];                                       \
++    }                                                                         \
++  }                                                                           \
++                                                                              \
++  ADDRESS16(io_registers, 0x204) =                                            \
++   (ADDRESS16(io_registers, 0x204) & 0x8000) | (value & 0x7FFF);              \
++}                                                                             \
++
++
+ #define access_register8_high(address)                                        \
+-  value = (value << 8) | (address8(io_registers, address))                    \
++  value = (value << 8) | (ADDRESS8(io_registers, address))                    \
+ 
+ #define access_register8_low(address)                                         \
+-  value = ((address8(io_registers, address + 1)) << 8) | value                \
++  value = ((ADDRESS8(io_registers, address + 1)) << 8) | value                \
+ 
+ #define access_register16_high(address)                                       \
+-  value = (value << 16) | (address16(io_registers, address))                  \
++  value = (value << 16) | (ADDRESS16(io_registers, address))                  \
+ 
+ #define access_register16_low(address)                                        \
+-  value = ((address16(io_registers, address + 2)) << 16) | value              \
++  value = ((ADDRESS16(io_registers, address + 2)) << 16) | value              \
+ 
+-cpu_alert_type function_cc write_io_register8(u32 address, u32 value)
++CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
+ {
+   switch(address)
+   {
+@@ -589,19 +700,20 @@
+       if((value & 0x07) != (dispcnt & 0x07))
+         oam_update = 1;
+ 
+-      address8(io_registers, 0x00) = value;
++      ADDRESS8(io_registers, 0x00) = value;
+       break;
+     }
+ 
+     // DISPSTAT (lower byte)
+     case 0x04:
+-      address8(io_registers, 0x04) =
+-       (address8(io_registers, 0x04) & 0x07) | (value & ~0x07);
++      ADDRESS8(io_registers, 0x04) =
++       (ADDRESS8(io_registers, 0x04) & 0x07) | (value & ~0x07);
+       break;
+ 
+     // VCOUNT
+     case 0x06:
+     case 0x07:
++      /* Read only */
+       break;
+ 
+     // BG2 reference X
+@@ -609,28 +721,28 @@
+       access_register8_low(0x28);
+       access_register16_low(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     case 0x29:
+       access_register8_high(0x28);
+       access_register16_low(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     case 0x2A:
+       access_register8_low(0x2A);
+       access_register16_high(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     case 0x2B:
+       access_register8_high(0x2A);
+       access_register16_high(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     // BG2 reference Y
+@@ -638,28 +750,28 @@
+       access_register8_low(0x2C);
+       access_register16_low(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     case 0x2D:
+       access_register8_high(0x2C);
+       access_register16_low(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     case 0x2E:
+       access_register8_low(0x2E);
+       access_register16_high(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     case 0x2F:
+       access_register8_high(0x2E);
+       access_register16_high(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     // BG3 reference X
+@@ -667,28 +779,28 @@
+       access_register8_low(0x38);
+       access_register16_low(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     case 0x39:
+       access_register8_high(0x38);
+       access_register16_low(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     case 0x3A:
+       access_register8_low(0x3A);
+       access_register16_high(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     case 0x3B:
+       access_register8_high(0x3A);
+       access_register16_high(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     // BG3 reference Y
+@@ -696,28 +808,28 @@
+       access_register8_low(0x3C);
+       access_register16_low(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     case 0x3D:
+       access_register8_high(0x3C);
+       access_register16_low(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     case 0x3E:
+       access_register8_low(0x3E);
+       access_register16_high(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     case 0x3F:
+       access_register8_high(0x3E);
+       access_register16_high(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     // Sound 1 control sweep
+@@ -727,7 +839,7 @@
+       break;
+ 
+     case 0x61:
+-      access_register8_low(0x60);
++      access_register8_high(0x60);
+       gbc_sound_tone_control_sweep();
+       break;
+ 
+@@ -860,37 +972,39 @@
+     // Sound wave RAM
+     case 0x90 ... 0x9F:
+       gbc_sound_wave_update = 1;
+-      address8(io_registers, address) = value;
++      ADDRESS8(io_registers, address) = value;
+       break;
+ 
+     // Sound FIFO A
+-    case 0xA0:
+-      sound_timer_queue8(0, value);
++    case 0xA0 ... 0xA3:
++      ADDRESS8(io_registers, address) = value;
++      sound_timer_queue32(0);
+       break;
+ 
+     // Sound FIFO B
+-    case 0xA4:
+-      sound_timer_queue8(1, value);
++    case 0xA4 ... 0xA7:
++      ADDRESS8(io_registers, address) = value;
++      sound_timer_queue32(1);
+       break;
+ 
+     // DMA control (trigger byte)
+     case 0xBB:
+-      access_register8_low(0xBA);
++      access_register8_high(0xBA);
+       trigger_dma(0);
+       break;
+ 
+     case 0xC7:
+-      access_register8_low(0xC6);
++      access_register8_high(0xC6);
+       trigger_dma(1);
+       break;
+ 
+     case 0xD3:
+-      access_register8_low(0xD2);
++      access_register8_high(0xD2);
+       trigger_dma(2);
+       break;
+ 
+     case 0xDF:
+-      access_register8_low(0xDE);
++      access_register8_high(0xDE);
+       trigger_dma(3);
+       break;
+ 
+@@ -937,53 +1051,71 @@
+ 
+     // Timer control (trigger byte)
+     case 0x103:
+-      access_register8_low(0x102);
++      access_register8_high(0x102);
+       trigger_timer(0);
+       break;
+ 
+     case 0x107:
+-      access_register8_low(0x106);
++      access_register8_high(0x106);
+       trigger_timer(1);
+       break;
+ 
+     case 0x10B:
+-      access_register8_low(0x10A);
++      access_register8_high(0x10A);
+       trigger_timer(2);
+       break;
+ 
+     case 0x10F:
+-      access_register8_low(0x10E);
++      access_register8_high(0x10E);
+       trigger_timer(3);
+       break;
+ 
++    // P1
++    case 0x130:
++    case 0x131:
++      /* Read only */
++      break;
++
++    // RCNT
++    case 0x134:
++      ADDRESS16(io_registers, 0x134) = value;
++      break;
++
+     // IF
+     case 0x202:
+-      address8(io_registers, 0x202) &= ~value;
++    case 0x203:
++      ADDRESS8(io_registers, address) &= ~value;
+       break;
+ 
+-    case 0x203:
+-      address8(io_registers, 0x203) &= ~value;
++    // WAITCNT
++    case 0x204:
++      access_register8_low(0x204);
++      waitstate_control();
++      break;
++
++    case 0x205:
++      access_register8_high(0x204);
++      waitstate_control();
+       break;
+ 
+     // Halt
+     case 0x301:
+-      if((value & 0x01) == 0)
+-        reg[CPU_HALT_STATE] = CPU_HALT;
+-      else
++      if(value & 0x80)
+         reg[CPU_HALT_STATE] = CPU_STOP;
++      else
++        reg[CPU_HALT_STATE] = CPU_HALT;
+ 
+       return CPU_ALERT_HALT;
+-      break;
+ 
+     default:
+-      address8(io_registers, address) = value;
++      ADDRESS8(io_registers, address) = value;
+       break;
+   }
+ 
+   return CPU_ALERT_NONE;
+ }
+ 
+-cpu_alert_type function_cc write_io_register16(u32 address, u32 value)
++CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
+ {
+   switch(address)
+   {
+@@ -993,44 +1125,45 @@
+       if((value & 0x07) != (dispcnt & 0x07))
+         oam_update = 1;
+ 
+-      address16(io_registers, 0x00) = value;
++      ADDRESS16(io_registers, 0x00) = value;
+       break;
+     }
+ 
+     // DISPSTAT
+     case 0x04:
+-      address16(io_registers, 0x04) =
+-       (address16(io_registers, 0x04) & 0x07) | (value & ~0x07);
++      ADDRESS16(io_registers, 0x04) =
++       (ADDRESS16(io_registers, 0x04) & 0x07) | (value & ~0x07);
+       break;
+ 
+     // VCOUNT
+     case 0x06:
++      /* Read only */
+       break;
+ 
+     // BG2 reference X
+     case 0x28:
+       access_register16_low(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     case 0x2A:
+       access_register16_high(0x28);
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     // BG2 reference Y
+     case 0x2C:
+       access_register16_low(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     case 0x2E:
+       access_register16_high(0x2C);
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     // BG3 reference X
+@@ -1038,26 +1171,26 @@
+     case 0x38:
+       access_register16_low(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     case 0x3A:
+       access_register16_high(0x38);
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     // BG3 reference Y
+     case 0x3C:
+       access_register16_low(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     case 0x3E:
+       access_register16_high(0x3C);
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     // Sound 1 control sweep
+@@ -1128,17 +1261,21 @@
+     // Sound wave RAM
+     case 0x90 ... 0x9E:
+       gbc_sound_wave_update = 1;
+-      address16(io_registers, address) = value;
++      ADDRESS16(io_registers, address) = value;
+       break;
+ 
+     // Sound FIFO A
+     case 0xA0:
+-      sound_timer_queue16(0, value);
++    case 0xA2:
++      ADDRESS16(io_registers, address) = value;
++      sound_timer_queue32(0);
+       break;
+ 
+     // Sound FIFO B
+     case 0xA4:
+-      sound_timer_queue16(1, value);
++    case 0xA6:
++      ADDRESS16(io_registers, address) = value;
++      sound_timer_queue32(1);
+       break;
+ 
+     // DMA control
+@@ -1194,28 +1331,35 @@
+ 
+     // P1
+     case 0x130:
++      /* Read only */
++      break;
++
++    // RCNT
++    case 0x134:
++      ADDRESS16(io_registers, 0x134) = value;
+       break;
+ 
+     // Interrupt flag
+     case 0x202:
+-      address16(io_registers, 0x202) &= ~value;
++      ADDRESS16(io_registers, 0x202) &= ~value;
+       break;
+ 
+     // WAITCNT
+     case 0x204:
++      waitstate_control();
+       break;
+ 
+     // Halt
+     case 0x300:
+-      if(((value >> 8) & 0x01) == 0)
+-        reg[CPU_HALT_STATE] = CPU_HALT;
+-      else
++      if(value & 0x8000)
+         reg[CPU_HALT_STATE] = CPU_STOP;
++      else
++        reg[CPU_HALT_STATE] = CPU_HALT;
+ 
+       return CPU_ALERT_HALT;
+ 
+     default:
+-      address16(io_registers, address) = value;
++      ADDRESS16(io_registers, address) = value;
+       break;
+   }
+ 
+@@ -1223,50 +1367,52 @@
+ }
+ 
+ 
+-cpu_alert_type function_cc write_io_register32(u32 address, u32 value)
++CPU_ALERT_TYPE write_io_register32(u32 address, u32 value)
+ {
+   switch(address)
+   {
+     // BG2 reference X
+     case 0x28:
+       affine_reference_x[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x28) = value;
++      ADDRESS32(io_registers, 0x28) = value;
+       break;
+ 
+     // BG2 reference Y
+     case 0x2C:
+       affine_reference_y[0] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x2C) = value;
++      ADDRESS32(io_registers, 0x2C) = value;
+       break;
+ 
+     // BG3 reference X
+     case 0x38:
+       affine_reference_x[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x38) = value;
++      ADDRESS32(io_registers, 0x38) = value;
+       break;
+ 
+     // BG3 reference Y
+     case 0x3C:
+       affine_reference_y[1] = (s32)(value << 4) >> 4;
+-      address32(io_registers, 0x3C) = value;
++      ADDRESS32(io_registers, 0x3C) = value;
+       break;
+ 
+     // Sound FIFO A
+     case 0xA0:
+-      sound_timer_queue32(0, value);
++      ADDRESS32(io_registers, 0xA0) = value;
++      sound_timer_queue32(0);
+       break;
+ 
+     // Sound FIFO B
+     case 0xA4:
+-      sound_timer_queue32(1, value);
++      ADDRESS32(io_registers, 0xA4) = value;
++      sound_timer_queue32(1);
+       break;
+ 
+     default:
+     {
+-      cpu_alert_type alert_low =
++      CPU_ALERT_TYPE alert_low =
+         write_io_register16(address, value & 0xFFFF);
+ 
+-      cpu_alert_type alert_high =
++      CPU_ALERT_TYPE alert_high =
+         write_io_register16(address + 2, value >> 16);
+ 
+       if(alert_high)
+@@ -1280,13 +1426,20 @@
+ }
+ 
+ #define write_palette8(address, value)                                        \
++{                                                                             \
++  u32 palette_address = address & ~0x01;                                      \
++  u16 double_value = ((value << 8) | value);                                  \
++  ADDRESS16(palette_ram, palette_address) = double_value;                     \
++  CONVERT_PALETTE(double_value);                                              \
++  ADDRESS16(palette_ram_converted, palette_address) = double_value;           \
++}                                                                             \
+ 
+ #define write_palette16(address, value)                                       \
+ {                                                                             \
+   u32 palette_address = address;                                              \
+-  address16(palette_ram, palette_address) = value;                            \
+-  convert_palette(value);                                                     \
+-  address16(palette_ram_converted, palette_address) = value;                  \
++  ADDRESS16(palette_ram, palette_address) = value;                            \
++  CONVERT_PALETTE(value);                                                     \
++  ADDRESS16(palette_ram_converted, palette_address) = value;                  \
+ }                                                                             \
+ 
+ #define write_palette32(address, value)                                       \
+@@ -1294,15 +1447,15 @@
+   u32 palette_address = address;                                              \
+   u32 value_high = value >> 16;                                               \
+   u32 value_low = value & 0xFFFF;                                             \
+-  address32(palette_ram, palette_address) = value;                            \
+-  convert_palette(value_high);                                                \
+-  convert_palette(value_low);                                                 \
++  ADDRESS32(palette_ram, palette_address) = value;                            \
++  CONVERT_PALETTE(value_high);                                                \
++  CONVERT_PALETTE(value_low);                                                 \
+   value = (value_high << 16) | value_low;                                     \
+-  address32(palette_ram_converted, palette_address) = value;                  \
++  ADDRESS32(palette_ram_converted, palette_address) = value;                  \
+ }                                                                             \
+ 
+ 
+-void function_cc write_backup(u32 address, u32 value)
++void write_backup(u32 address, u32 value)
+ {
+   value &= 0xFF;
+ 
+@@ -1437,14 +1590,35 @@
+ #define write_backup32()                                                      \
+ 
+ #define write_vram8()                                                         \
+-  address &= ~0x01;                                                           \
+-  address16(vram, address) = ((value << 8) | value)                           \
++  if(address & 0x10000)                                                       \
++    ADDRESS16(vram, address & 0x17FFe) = ((value << 8) | value);              \
++  else                                                                        \
++    ADDRESS16(vram, address & 0x1FFFe) = ((value << 8) | value)               \
+ 
+ #define write_vram16()                                                        \
+-  address16(vram, address) = value                                            \
++  if(address & 0x10000)                                                       \
++    ADDRESS16(vram, address & 0x17FFF) = value;                               \
++  else                                                                        \
++    ADDRESS16(vram, address & 0x1FFFF) = value                                \
+ 
+ #define write_vram32()                                                        \
+-  address32(vram, address) = value                                            \
++  if(address & 0x10000)                                                       \
++    ADDRESS32(vram, address & 0x17FFF) = value;                               \
++  else                                                                        \
++    ADDRESS32(vram, address & 0x1FFFF) = value                                \
++
++
++#define write_oam_ram8()                                                      \
++/*  Write 8bit data is ignore */                                              \
++
++#define write_oam_ram16()                                                     \
++  oam_update = 1;                                                             \
++  ADDRESS16(oam_ram, address & 0x3FF) = value                                 \
++
++#define write_oam_ram32()                                                     \
++  oam_update = 1;                                                             \
++  ADDRESS32(oam_ram, address & 0x3FF) = value                                 \
++
+ 
+ // RTC code derived from VBA's (due to lack of any real publically available
+ // documentation...)
+@@ -1497,9 +1671,9 @@
+   if(map == NULL)                                                             \
+     map = load_gamepak_page(rtc_page_index & 0x3FF);                          \
+                                                                               \
+-  address16(map, update_address & 0x7FFF) = _value                            \
++  ADDRESS16(map, update_address & 0x7FFF) = _value                            \
+ 
+-void function_cc write_rtc(u32 address, u32 value)
++void write_rtc(u32 address, u32 value)
+ {
+   u32 rtc_page_index;
+   u32 update_address;
+@@ -1572,6 +1746,7 @@
+                     break;
+ 
+                   // Actually outputs the time, all of it
++                  // 0x65
+                   case RTC_COMMAND_OUTPUT_TIME_FULL:
+                   {
+                     pspTime current_time;
+@@ -1596,6 +1771,7 @@
+                   }
+ 
+                   // Only outputs the current time of day.
++                  // 0x67
+                   case RTC_COMMAND_OUTPUT_TIME:
+                   {
+                     pspTime current_time;
+@@ -1637,6 +1813,10 @@
+                       case RTC_WRITE_STATUS:
+                         rtc_status = rtc_data[0];
+                         break;
++
++                      default:
++                        ;
++                        break;
+                     }
+                   }
+                 }
+@@ -1672,6 +1852,10 @@
+                 }
+               }
+               break;
++
++            default:
++              ;
++              break;
+           }
+         }
+       }
+@@ -1700,23 +1884,26 @@
+ 
+ #define write_rtc32()                                                         \
+ 
++// type = 8 / 16 / 32
+ #define write_memory(type)                                                    \
+   switch(address >> 24)                                                       \
+   {                                                                           \
+     case 0x02:                                                                \
+       /* external work RAM */                                                 \
+       address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
+-      address##type(ewram, address) = value;                                  \
++      ADDRESS##type(ewram, address) = value;                                  \
+       break;                                                                  \
+                                                                               \
+     case 0x03:                                                                \
+       /* internal work RAM */                                                 \
+-      address##type(iwram, (address & 0x7FFF) + 0x8000) = value;              \
++      ADDRESS##type(iwram, (address & 0x7FFF) + 0x8000) = value;              \
+       break;                                                                  \
+                                                                               \
+     case 0x04:                                                                \
+       /* I/O registers */                                                     \
+-      return write_io_register##type(address & 0x3FF, value);                 \
++      if(address < 0x04000400)                                                \
++        return write_io_register##type(address & 0x3FF, value);               \
++      break;                                                                  \
+                                                                               \
+     case 0x05:                                                                \
+       /* palette RAM */                                                       \
+@@ -1725,17 +1912,12 @@
+                                                                               \
+     case 0x06:                                                                \
+       /* VRAM */                                                              \
+-      address &= 0x1FFFF;                                                     \
+-      if(address >= 0x18000)                                                  \
+-        address -= 0x8000;                                                    \
+-                                                                              \
+       write_vram##type();                                                     \
+       break;                                                                  \
+                                                                               \
+     case 0x07:                                                                \
+       /* OAM RAM */                                                           \
+-      oam_update = 1;                                                         \
+-      address##type(oam_ram, address & 0x3FF) = value;                        \
++      write_oam_ram##type();                                                  \
+       break;                                                                  \
+                                                                               \
+     case 0x08:                                                                \
+@@ -1743,10 +1925,6 @@
+       write_rtc##type();                                                      \
+       break;                                                                  \
+                                                                               \
+-    case 0x09 ... 0x0C:                                                       \
+-      /* gamepak ROM space */                                                 \
+-      break;                                                                  \
+-                                                                              \
+     case 0x0D:                                                                \
+       write_eeprom(address, value);                                           \
+       break;                                                                  \
+@@ -1754,16 +1932,20 @@
+     case 0x0E:                                                                \
+       write_backup##type();                                                   \
+       break;                                                                  \
++                                                                              \
++    default:                                                                  \
++      /* unwritable */                                                        \
++      break;                                                                  \
+   }                                                                           \
+ 
+-u8 function_cc read_memory8(u32 address)
++u8 read_memory8(u32 address)
+ {
+   u8 value;
+   read_memory(8);
+   return value;
+ }
+ 
+-u16 function_cc read_memory16_signed(u32 address)
++u16 read_memory16_signed(u32 address)
+ {
+   u16 value;
+ 
+@@ -1781,7 +1963,7 @@
+ 
+ // unaligned reads are actually 32bit
+ 
+-u32 function_cc read_memory16(u32 address)
++u32 read_memory16(u32 address)
+ {
+   u32 value;
+ 
+@@ -1789,7 +1971,7 @@
+   {
+     address &= ~0x01;
+     read_memory(16);
+-    ror(value, value, 8);
++    ROR(value, value, 8);
+   }
+   else
+   {
+@@ -1800,7 +1982,7 @@
+ }
+ 
+ 
+-u32 function_cc read_memory32(u32 address)
++u32 read_memory32(u32 address)
+ {
+   u32 value;
+   if(address & 0x03)
+@@ -1808,7 +1990,7 @@
+     u32 rotate = (address & 0x03) * 8;
+     address &= ~0x03;
+     read_memory(32);
+-    ror(value, value, rotate);
++    ROR(value, value, rotate);
+   }
+   else
+   {
+@@ -1818,19 +2000,19 @@
+   return value;
+ }
+ 
+-cpu_alert_type function_cc write_memory8(u32 address, u8 value)
++CPU_ALERT_TYPE write_memory8(u32 address, u8 value)
+ {
+   write_memory(8);
+   return CPU_ALERT_NONE;
+ }
+ 
+-cpu_alert_type function_cc write_memory16(u32 address, u16 value)
++CPU_ALERT_TYPE write_memory16(u32 address, u16 value)
+ {
+   write_memory(16);
+   return CPU_ALERT_NONE;
+ }
+ 
+-cpu_alert_type function_cc write_memory32(u32 address, u32 value)
++CPU_ALERT_TYPE write_memory32(u32 address, u32 value)
+ {
+   write_memory(32);
+   return CPU_ALERT_NONE;
+@@ -1841,23 +2023,24 @@
+ u32 load_backup(char *name)
+ {
+   char backup_path[1024];
++  FILE_ID backup_file;
+ 
+-  if (*default_save_dir != (char)NULL) {
+-    sprintf(backup_path, "%s/%s", default_save_dir, name);
++  if (*DEFAULT_SAVE_DIR != (char)NULL) {
++    sprintf(backup_path, "%s/%s", DEFAULT_SAVE_DIR, name);
+   }
+   else
+   {
+     strcpy(backup_path, name);
+   }
+ 
+-  file_open(backup_file, backup_path, read);
++  FILE_OPEN(backup_file, backup_path, READ);
+ 
+-  if(file_check_valid(backup_file))
++  if(FILE_CHECK_VALID(backup_file))
+   {
+     u32 backup_size = file_length(backup_path, backup_file);
+ 
+-    file_read(backup_file, gamepak_backup, backup_size);
+-    file_close(backup_file);
++    FILE_READ(backup_file, gamepak_backup, backup_size);
++    FILE_CLOSE(backup_file);
+ 
+     // The size might give away what kind of backup it is.
+     switch(backup_size)
+@@ -1902,22 +2085,23 @@
+ u32 save_backup(char *name)
+ {
+   char backup_path[1024];
++  FILE_ID backup_file;
+ 
+   if(backup_type != BACKUP_NONE)
+   {
+-    if (*default_save_dir != (char)NULL) {
+-      sprintf(backup_path, "%s/%s", default_save_dir, name);
++    if (*DEFAULT_SAVE_DIR != (char)NULL) {
++      sprintf(backup_path, "%s/%s", DEFAULT_SAVE_DIR, name);
+     }
+     else
+     {
+       strcpy(backup_path, name);
+     }
+ 
+-    file_open(backup_file, backup_path, write);
++    FILE_OPEN(backup_file, backup_path, WRITE);
+ 
+-    if(file_check_valid(backup_file))
++    if(FILE_CHECK_VALID(backup_file))
+     {
+-      u32 backup_size;
++      u32 backup_size = 0x8000;
+ 
+       switch(backup_type)
+       {
+@@ -1941,10 +2125,14 @@
+           else
+             backup_size = 0x2000;
+           break;
++
++        default:
++          ;
++          break;
+       }
+ 
+-      file_write(backup_file, gamepak_backup, backup_size);
+-      file_close(backup_file);
++      FILE_WRITE(backup_file, gamepak_backup, backup_size);
++      FILE_CLOSE(backup_file);
+       return 1;
+     }
+   }
+@@ -1971,7 +2159,7 @@
+ 
+ #define CONFIG_FILENAME "game_config.txt"
+ 
+-u8 *skip_spaces(u8 *line_ptr)
++char *skip_spaces(char *line_ptr)
+ {
+   while(*line_ptr == ' ')
+     line_ptr++;
+@@ -1979,10 +2167,10 @@
+   return line_ptr;
+ }
+ 
+-s32 parse_config_line(u8 *current_line, u8 *current_variable, u8 *current_value)
++s32 parse_config_line(char *current_line, char *current_variable, char *current_value)
+ {
+-  u8 *line_ptr = current_line;
+-  u8 *line_ptr_new;
++  char *line_ptr = current_line;
++  char *line_ptr_new;
+ 
+   if((current_line[0] == 0) || (current_line[0] == '#'))
+     return -1;
+@@ -2013,14 +2201,14 @@
+   return 0;
+ }
+ 
+-s32 load_game_config(u8 *gamepak_title, u8 *gamepak_code, u8 *gamepak_maker)
++s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_maker)
+ {
+-  u8 current_line[256];
+-  u8 current_variable[256];
+-  u8 current_value[256];
+-  u8 config_path[512];
+-  u8 *line_ptr;
+-  u32 fgets_value;
++  char current_line[256];
++  char current_variable[256];
++  char current_value[256];
++  char config_path[512];
++//  u8 *line_ptr;
++//  u32 fgets_value;
+   FILE *config_file;
+ 
+   idle_loop_targets = 0;
+@@ -2030,12 +2218,9 @@
+   bios_rom[0x2C] = 0x00;
+   translation_gate_targets = 0;
+   flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
++  backup_type = BACKUP_NONE;
+ 
+-#ifdef PSP_BUILD
+   sprintf(config_path, "%s/%s", main_path, CONFIG_FILENAME);
+-#else
+-  sprintf(config_path, "%s\\%s", main_path, CONFIG_FILENAME);
+-#endif
+ 
+   config_file = fopen(config_path, "rb");
+ 
+@@ -2046,22 +2231,22 @@
+       if(parse_config_line(current_line, current_variable, current_value)
+        != -1)
+       {
+-        if(strcmp(current_variable, "game_name") ||
+-         strcmp(current_value, gamepak_title))
++        if(strcasecmp(current_variable, "game_name") ||
++         strcasecmp(current_value, gamepak_title))
+           continue;
+ 
+         if(!fgets(current_line, 256, config_file) ||
+          (parse_config_line(current_line, current_variable,
+            current_value) == -1) ||
+-         strcmp(current_variable, "game_code") ||
+-         strcmp(current_value, gamepak_code))
++         strcasecmp(current_variable, "game_code") ||
++         strcasecmp(current_value, gamepak_code))
+           continue;
+ 
+         if(!fgets(current_line, 256, config_file) ||
+          (parse_config_line(current_line, current_variable,
+            current_value) == -1) ||
+-         strcmp(current_variable, "vender_code") ||
+-          strcmp(current_value, gamepak_maker))
++         strcasecmp(current_variable, "vender_code") ||
++          strcasecmp(current_value, gamepak_maker))
+           continue;
+ 
+         while(fgets(current_line, 256, config_file))
+@@ -2069,13 +2254,13 @@
+           if(parse_config_line(current_line, current_variable, current_value)
+            != -1)
+           {
+-            if(!strcmp(current_variable, "game_name"))
++            if(!strcasecmp(current_variable, "game_name"))
+             {
+               fclose(config_file);
+               return 0;
+             }
+ 
+-            if(!strcmp(current_variable, "idle_loop_eliminate_target"))
++            if(!strcasecmp(current_variable, "idle_loop_eliminate_target"))
+             {
+               if(idle_loop_targets < MAX_IDLE_LOOPS)
+               {
+@@ -2085,7 +2270,7 @@
+               }
+             }
+ 
+-            if(!strcmp(current_variable, "translation_gate_target"))
++            if(!strcasecmp(current_variable, "translation_gate_target"))
+             {
+               if(translation_gate_targets < MAX_TRANSLATION_GATES)
+               {
+@@ -2095,26 +2280,42 @@
+               }
+             }
+ 
+-            if(!strcmp(current_variable, "iwram_stack_optimize") &&
+-              !strcmp(current_value, "no"))
++            if(!strcasecmp(current_variable, "iwram_stack_optimize") &&
++              !strcasecmp(current_value, "no"))
+             {
+                 iwram_stack_optimize = 0;
+             }
+ 
+-            if(!strcmp(current_variable, "flash_rom_type") &&
+-              !strcmp(current_value, "128KB"))
++            if(!strcasecmp(current_variable, "flash_rom_type") &&
++              !strcasecmp(current_value, "128KB"))
+             {
+               flash_device_id = FLASH_DEVICE_MACRONIX_128KB;
+             }
+ 
+-            if(!strcmp(current_variable, "bios_rom_hack_39") &&
+-              !strcmp(current_value, "yes"))
++            /* eepromだけでも良いのですが、なんとなく全部指定できるように。 */
++            /* DBZLGCYGOKU2 のプロテクト回避。 */
++            /* EEPROM_V124で特殊な物(現在判別不可) で指定すれば動作可。*/
++
++            if(!strcasecmp(current_variable, "save_type"))
++            {
++              if(!strcasecmp(current_value, "sram"))
++                backup_type = BACKUP_SRAM;
++              else
++              if(!strcasecmp(current_value, "flash"))
++                backup_type = BACKUP_FLASH;
++              else
++              if(!strcasecmp(current_value, "eeprom"))
++                backup_type = BACKUP_EEPROM;
++            }
++
++            if(!strcasecmp(current_variable, "bios_rom_hack_39") &&
++              !strcasecmp(current_value, "yes"))
+             {
+               bios_rom[0x39] = 0xC0;
+             }
+ 
+-            if(!strcmp(current_variable, "bios_rom_hack_2C") &&
+-              !strcmp(current_value, "yes"))
++            if(!strcasecmp(current_variable, "bios_rom_hack_2C") &&
++              !strcasecmp(current_value, "yes"))
+             {
+                bios_rom[0x2C] = 0x02;
+             }
+@@ -2134,37 +2335,33 @@
+ 
+ s32 load_gamepak_raw(char *name)
+ {
+-  file_open(gamepak_file, name, read);
++  FILE_ID gamepak_file;
++  FILE_OPEN(gamepak_file, name, READ);
+ 
+-  if(file_check_valid(gamepak_file))
++  if(FILE_CHECK_VALID(gamepak_file))
+   {
+     u32 gamepak_size = file_length(name, gamepak_file);
+ 
+-    // First, close the last one if it was open, we won't
+-    // be needing it anymore.
+-    if(file_check_valid(gamepak_file_large))
+-      file_close(gamepak_file_large);
+-
+     // If it's a big file size keep it don't close it, we'll
+     // probably want to load it later
+     if(gamepak_size <= gamepak_ram_buffer_size)
+     {
+-      file_read(gamepak_file, gamepak_rom, gamepak_size);
+-      file_close(gamepak_file);
+-
+-#ifdef PSP_BUILD
+-        gamepak_file_large = -1;
+-#else
+-        gamepak_file_large = NULL;
+-#endif
++      FILE_READ(gamepak_file, gamepak_rom, gamepak_size);
++      FILE_CLOSE(gamepak_file);
+     }
+     else
+     {
+       // Read in just enough for the header
+-      file_read(gamepak_file, gamepak_rom, 0x100);
++      FILE_READ(gamepak_file, gamepak_rom, 0x100);
+       gamepak_file_large = gamepak_file;
+-      strcpy(gamepak_filename_raw, name);
+-      file_close(gamepak_file);
++//      strcpy(gamepak_filename_raw, name);
++//      FILE_CLOSE(gamepak_file);
++      /* ファイルリストでカレントディレクトリを変更された場合 */
++      /* ファイルが読めなくなるので、フルパス指定。*/
++      /* 適当なのが無かったのですが、こんなコードで良いのかは？？ */
++      getcwd(gamepak_filename_raw, 512);
++      strcat(gamepak_filename_raw, "/");
++      strcat(gamepak_filename_raw, name);
+     }
+ 
+     return gamepak_size;
+@@ -2173,22 +2370,32 @@
+   return -1;
+ }
+ 
+-u8 gamepak_title[13];
+-u8 gamepak_code[5];
+-u8 gamepak_maker[3];
+-u8 gamepak_filename[512];
+-u8 gamepak_filename_raw[512];
+-
+-u32 load_gamepak(char *name)
++s32 load_gamepak(char *name)
+ {
+   char *dot_position = strrchr(name, '.');
+   s32 file_size;
+-  u8 cheats_filename[256];
++  char cheats_filename[256];
+ 
+-  if(!strcmp(dot_position, ".zip"))
++/* zip romをロードする場合、オープンのままなのでここへ。*/
++/* 今は、メニューに入るときにクローズしているので不要。*/
++  // First, close the last one if it was open, we won't
++  // be needing it anymore.
++//  if(FILE_CHECK_VALID(gamepak_file_large))
++//    FILE_CLOSE(gamepak_file_large);
++
++  gamepak_file_large = -1;
++
++  if(!strcasecmp(dot_position, ".zip"))
++  {
++    /* メニューで222Mに変更したので333Mへ。変更しないのであれば不要 */
++    /* rom 16Mだと数秒展開の時間が違います。*/
++    set_cpu_clock(333); 
+     file_size = load_file_zip(name);
++  }
+   else
++  {
+     file_size = load_gamepak_raw(name);
++  }
+ 
+   if(file_size != -1)
+   {
+@@ -2219,18 +2426,20 @@
+   return -1;
+ }
+ 
++
++// BIOSのロード
++// 返り値:MD5まで正常 0 / MD5が違う -2 / 読み込めない -1
+ s32 load_bios(char *name)
+ {
+-  char md5[16];
+-  file_open(bios_file, name, read);
+-
+-  if(file_check_valid(bios_file))
+-  {
+-    file_read(bios_file, bios_rom, 0x4000);
+-    // This is a hack to get Zelda working, because emulating
+-    // the proper memory read behavior here is much too expensive.
+-    file_close(bios_file);
+-    // BIOS�t�@�C����MD5�𓾂�
++  u8 md5[16];
++  FILE_ID bios_file;
++  FILE_OPEN(bios_file, name, READ);
++
++  if(FILE_CHECK_VALID(bios_file))
++  {
++    FILE_READ(bios_file, bios_rom, 0x4000);
++    FILE_CLOSE(bios_file);
++    // BIOSファイルのMD5を得る
+     sceKernelUtilsMd5Digest(bios_rom, 0x4000, md5);
+     if (memcmp(md5,gba_md5,16) == 0)
+       return 0;
+@@ -2318,6 +2527,11 @@
+   dma_smc_vars_##type()                                                       \
+ 
+ #define dma_vars_vram(type)                                                   \
++  if(type##_ptr & 0x10000)                                                    \
++    type##_ptr &= ~0x08000                                                    \
++/* vramのread,writeでアドレスを変更するとスプライトが表示されないことがある */
++/* とりあえず、ここで変更。*/
++/* 例）逆転裁判のいとのこさん、腕とか頭が欠ける。 */
+ 
+ #define dma_vars_palette_ram(type)                                            \
+ 
+@@ -2380,28 +2594,28 @@
+   }                                                                           \
+ 
+ #define dma_read_iwram(type, transfer_size)                                   \
+-  read_value = address##transfer_size(iwram + 0x8000, type##_ptr & 0x7FFF)    \
++  read_value = ADDRESS##transfer_size(iwram + 0x8000, type##_ptr & 0x7FFF)    \
+ 
+ #define dma_read_vram(type, transfer_size)                                    \
+-  read_value = address##transfer_size(vram, type##_ptr & 0x1FFFF)             \
++  read_value = ADDRESS##transfer_size(vram, type##_ptr & 0x1FFFF)             \
+ 
+ #define dma_read_io(type, transfer_size)                                      \
+-  read_value = address##transfer_size(io_registers, type##_ptr & 0x7FFF)      \
++  read_value = ADDRESS##transfer_size(io_registers, type##_ptr & 0x7FFF)      \
+ 
+ #define dma_read_oam_ram(type, transfer_size)                                 \
+-  read_value = address##transfer_size(oam_ram, type##_ptr & 0x3FF)            \
++  read_value = ADDRESS##transfer_size(oam_ram, type##_ptr & 0x3FF)            \
+ 
+ #define dma_read_palette_ram(type, transfer_size)                             \
+-  read_value = address##transfer_size(palette_ram, type##_ptr & 0x3FF)        \
++  read_value = ADDRESS##transfer_size(palette_ram, type##_ptr & 0x3FF)        \
+ 
+ #define dma_read_ewram(type, transfer_size)                                   \
+   dma_ewram_check_region(type);                                               \
+-  read_value = address##transfer_size(type##_address_block,                   \
++  read_value = ADDRESS##transfer_size(type##_address_block,                   \
+    type##_ptr & 0x7FFF)                                                       \
+ 
+ #define dma_read_gamepak(type, transfer_size)                                 \
+   dma_gamepak_check_region(type);                                             \
+-  read_value = address##transfer_size(type##_address_block,                   \
++  read_value = ADDRESS##transfer_size(type##_address_block,                   \
+    type##_ptr & 0x7FFF)                                                       \
+ 
+ // DMAing from the BIOS is funny, just returns 0..
+@@ -2413,17 +2627,17 @@
+   read_value = read_memory##transfer_size(type##_ptr)                         \
+ 
+ #define dma_write_iwram(type, transfer_size)                                  \
+-  address##transfer_size(iwram + 0x8000, type##_ptr & 0x7FFF) = read_value;   \
+-  smc_trigger |= address##transfer_size(iwram, type##_ptr & 0x7FFF)           \
++  ADDRESS##transfer_size(iwram + 0x8000, type##_ptr & 0x7FFF) = read_value;   \
++  smc_trigger |= ADDRESS##transfer_size(iwram, type##_ptr & 0x7FFF)           \
+ 
+ #define dma_write_vram(type, transfer_size)                                   \
+-  address##transfer_size(vram, type##_ptr & 0x1FFFF) = read_value             \
++  ADDRESS##transfer_size(vram, type##_ptr & 0x1FFFF) = read_value             \
+ 
+ #define dma_write_io(type, transfer_size)                                     \
+-  write_io_register##transfer_size(type##_ptr & 0x3FF, read_value)            \
++  write_io_register##transfer_size(type##_ptr & 0xFFF, read_value)            \
+ 
+ #define dma_write_oam_ram(type, transfer_size)                                \
+-  address##transfer_size(oam_ram, type##_ptr & 0x3FF) = read_value            \
++  ADDRESS##transfer_size(oam_ram, type##_ptr & 0x3FF) = read_value            \
+ 
+ #define dma_write_palette_ram(type, transfer_size)                            \
+   write_palette##transfer_size(type##_ptr & 0x3FF, read_value)                \
+@@ -2434,9 +2648,9 @@
+ #define dma_write_ewram(type, transfer_size)                                  \
+   dma_ewram_check_region(type);                                               \
+                                                                               \
+-  address##transfer_size(type##_address_block, type##_ptr & 0x7FFF) =         \
++  ADDRESS##transfer_size(type##_address_block, type##_ptr & 0x7FFF) =         \
+     read_value;                                                               \
+-  smc_trigger |= address##transfer_size(type##_address_block,                 \
++  smc_trigger |= ADDRESS##transfer_size(type##_address_block,                 \
+    (type##_ptr & 0x7FFF) - 0x8000)                                            \
+ 
+ #define dma_epilogue_iwram()                                                  \
+@@ -2466,7 +2680,7 @@
+ #define dma_epilogue_ext()                                                    \
+ 
+ #define print_line()                                                          \
+-  dma_print(src_op, dest_op, transfer_size, wb);                              \
++  dma_print(src_op, dest_op, transfer_size, wb)                               \
+ 
+ #define dma_transfer_loop_region(src_region_type, dest_region_type, src_op,   \
+  dest_op, transfer_size, wb)                                                  \
+@@ -2487,7 +2701,7 @@
+   break;                                                                      \
+ }                                                                             \
+ 
+-#define dma_transfer_loop(src_op, dest_op, transfer_size, wb);                \
++#define dma_transfer_loop(src_op, dest_op, transfer_size, wb)                 \
+ {                                                                             \
+   u32 src_region = src_ptr >> 24;                                             \
+   u32 dest_region = dest_ptr >> 24;                                           \
+@@ -2803,14 +3017,14 @@
+       break;                                                                  \
+   }                                                                           \
+ 
+-cpu_alert_type dma_transfer(dma_transfer_type *dma)
++CPU_ALERT_TYPE dma_transfer(DMA_TRANSFER_TYPE *dma)
+ {
+   u32 i;
+   u32 length = dma->length;
+   u32 read_value;
+   u32 src_ptr = dma->source_address;
+   u32 dest_ptr = dma->dest_address;
+-  cpu_alert_type return_value = CPU_ALERT_NONE;
++  CPU_ALERT_TYPE return_value = CPU_ALERT_NONE;
+ 
+   // Technically this should be done for source and destination, but
+   // chances are this is only ever used (probably mistakingly!) for dest.
+@@ -2834,14 +3048,14 @@
+   {
+     src_ptr &= ~0x01;
+     dest_ptr &= ~0x01;
+-    cycle_dma16_words += length;
++//    cycle_dma16_words += length;
+     dma_transfer_expand(16);
+   }
+   else
+   {
+     src_ptr &= ~0x03;
+     dest_ptr &= ~0x03;
+-    cycle_dma32_words += length;
++//    cycle_dma32_words += length;
+     dma_transfer_expand(32);
+   }
+ 
+@@ -2849,7 +3063,7 @@
+    (dma->start_type == DMA_START_IMMEDIATELY))
+   {
+     dma->start_type = DMA_INACTIVE;
+-    address16(io_registers, (dma->dma_channel * 12) + 0xBA) &=
++    ADDRESS16(io_registers, (dma->dma_channel * 12) + 0xBA) &=
+      (~0x8000);
+   }
+ 
+@@ -2950,12 +3164,12 @@
+   gamepak_memory_map[page_index].physical_index = physical_index;
+   page_time++;
+ 
+-  file_open(gamepak_file_large, gamepak_filename_raw, read);
++//  FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+ 
+-  file_seek(gamepak_file_large, physical_index * (32 * 1024), SEEK_SET);
+-  file_read(gamepak_file_large, swap_location, (32 * 1024));
++  FILE_SEEK(gamepak_file_large, physical_index * (32 * 1024), SEEK_SET);
++  FILE_READ(gamepak_file_large, swap_location, (32 * 1024));
+ 
+-  file_close(gamepak_file_large);
++//  FILE_CLOSE(gamepak_file_large);
+ 
+   memory_map_read[(0x8000000 / (32 * 1024)) + physical_index] = swap_location;
+   memory_map_read[(0xA000000 / (32 * 1024)) + physical_index] = swap_location;
+@@ -3003,13 +3217,13 @@
+   // Try to initialize 32MB (this is mainly for non-PSP platforms)
+   gamepak_rom = NULL;
+ 
+-  gamepak_ram_buffer_size = 32 * 1024 * 1024;
++  gamepak_ram_buffer_size = 16 * 1024 * 1024;
+   gamepak_rom = malloc(gamepak_ram_buffer_size);
+ 
+   if(gamepak_rom == NULL)
+   {
+     // Try 16MB, for PSP, then lower in 2MB increments
+-    gamepak_ram_buffer_size = 16 * 1024 * 1024;
++    gamepak_ram_buffer_size = 14 * 1024 * 1024;
+     gamepak_rom = malloc(gamepak_ram_buffer_size);
+ 
+     while(gamepak_rom == NULL)
+@@ -3028,7 +3242,6 @@
+ 
+ void init_memory()
+ {
+-  u32 i;
+   u32 map_offset = 0;
+ 
+   memory_regions[0x00] = (u8 *)bios_rom;
+@@ -3070,7 +3283,7 @@
+   map_ram_region(read, 0x3000000, 0x4000000, 1, iwram);
+   map_region(read, 0x4000000, 0x5000000, 1, io_registers);
+   map_null(read, 0x5000000, 0x6000000);
+-  map_null(read, 0x6000000, 0x7000000);
++//  map_null(read, 0x6000000, 0x7000000);
+   map_vram(read);
+   map_null(read, 0x7000000, 0x8000000);
+   init_memory_gamepak();
+@@ -3123,7 +3336,7 @@
+   io_registers[REG_BG3PD] = 0x100;
+   io_registers[REG_RCNT] = 0x8000;
+ 
+-  backup_type = BACKUP_NONE;
++//  backup_type = BACKUP_NONE;
+ 
+   sram_size = SRAM_SIZE_32KB;
+   flash_size = FLASH_SIZE_64KB;
+@@ -3153,6 +3366,7 @@
+   memory_map_read[0] = NULL;
+ }
+ 
++// type = read / write_mem
+ #define savestate_block(type)                                                 \
+   cpu_##type##_savestate(savestate_file);                                     \
+   input_##type##_savestate(savestate_file);                                   \
+@@ -3163,30 +3377,34 @@
+ 
+ void load_state(char *savestate_filename)
+ {
+-  u8 savestate_path[1024];
++  char savestate_path[1024];
++  FILE_ID savestate_file;
+ 
+-  if (*default_save_dir != (char)NULL) {
+-    sprintf(savestate_path, "%s/%s", default_save_dir, savestate_filename);
++  if (*DEFAULT_SAVE_DIR != (char)NULL) {
++    sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+   }
+   else
+   {
+     strcpy(savestate_path, savestate_filename);
+   }
+ 
+-  file_open(savestate_file, savestate_path, read);
+-  if(file_check_valid(savestate_file))
++  FILE_OPEN(savestate_file, savestate_path, READ);
++  if(FILE_CHECK_VALID(savestate_file))
+   {
+     char current_gamepak_filename[512];
+-    char savestate_gamepak_filename[512];
+     u32 i;
+     u32 current_color;
+ 
+-    file_seek(savestate_file, (240 * 160 * 2) + sizeof(time_t), SEEK_SET);
++    u32 file_size = file_length(savestate_path, savestate_file);
++    if (file_size == SAVESTATE_SIZE)
++      FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u64), SEEK_SET);
++    else
++      FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u32), SEEK_SET);
+ 
+     strcpy(current_gamepak_filename, gamepak_filename);
+ 
+     savestate_block(read);
+-    file_close(savestate_file);
++    FILE_CLOSE(savestate_file);
+ 
+     flush_translation_cache_ram();
+     flush_translation_cache_rom();
+@@ -3194,6 +3412,8 @@
+ 
+     oam_update = 1;
+     gbc_sound_update = 1;
++ 
++    // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
+     if(strcmp(current_gamepak_filename, gamepak_filename))
+     {
+       // We'll let it slide if the filenames of the savestate and
+@@ -3220,7 +3440,7 @@
+     {
+       current_color = palette_ram[i];
+       palette_ram_converted[i] =
+-       convert_palette(current_color);
++       CONVERT_PALETTE(current_color);
+     }
+ 
+     // Oops, these contain raw pointers
+@@ -3228,22 +3448,19 @@
+     {
+       gbc_sound_channel[i].sample_data = square_pattern_duty[2];
+     }
+-    current_debug_state = STEP;
+     instruction_count = 0;
+ 
+     reg[CHANGED_PC_STATUS] = 1;
+   }
+ }
+ 
+-u8 savestate_write_buffer[506947];
+-u8 *write_mem_ptr;
+-
+ void save_state(char *savestate_filename, u16 *screen_capture)
+ {
+-  u8 savestate_path[1024];
++  char savestate_path[1024];
++  FILE_ID savestate_file;
+ 
+-  if (*default_save_dir != (char)NULL) {
+-    sprintf(savestate_path, "%s/%s", default_save_dir, savestate_filename);
++  if (*DEFAULT_SAVE_DIR != (char)NULL) {
++    sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+   }
+   else
+   {
+@@ -3251,62 +3468,63 @@
+   }
+ 
+   write_mem_ptr = savestate_write_buffer;
+-  file_open(savestate_file, savestate_path, write);
+-  if(file_check_valid(savestate_file))
++  FILE_OPEN(savestate_file, savestate_path, WRITE);
++  if(FILE_CHECK_VALID(savestate_file))
+   {
+-    time_t current_time;
+-    file_write_mem(savestate_file, screen_capture, 240 * 160 * 2);
+-
+-    time(&current_time);
+-    file_write_mem_variable(savestate_file, current_time);
++    u64 current_time;
++    pspTime current_time_fix; // time関数が年月日を返さないので調整用
++    FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
++
++    sceRtcGetCurrentClock(&current_time_fix, 0);
++    sceRtcGetTick(&current_time_fix, &current_time);
++    FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
+ 
+     savestate_block(write_mem);
+-    file_write(savestate_file, savestate_write_buffer,
++    FILE_WRITE(savestate_file, savestate_write_buffer,
+      sizeof(savestate_write_buffer));
+-    file_close(savestate_file);
++    FILE_CLOSE(savestate_file);
+   }
+ }
+ 
+ 
+-#define memory_savestate_builder(type)                                        \
+-void memory_##type##_savestate(file_tag_type savestate_file)                  \
++#define memory_savestate_body(type)                                            \
+ {                                                                             \
+   u32 i;                                                                      \
+                                                                               \
+-  file_##type##_variable(savestate_file, backup_type);                        \
+-  file_##type##_variable(savestate_file, sram_size);                          \
+-  file_##type##_variable(savestate_file, flash_mode);                         \
+-  file_##type##_variable(savestate_file, flash_command_position);             \
+-  file_##type##_variable(savestate_file, flash_bank_ptr);                     \
+-  file_##type##_variable(savestate_file, flash_device_id);                    \
+-  file_##type##_variable(savestate_file, flash_manufacturer_id);              \
+-  file_##type##_variable(savestate_file, flash_size);                         \
+-  file_##type##_variable(savestate_file, eeprom_size);                        \
+-  file_##type##_variable(savestate_file, eeprom_mode);                        \
+-  file_##type##_variable(savestate_file, eeprom_address_length);              \
+-  file_##type##_variable(savestate_file, eeprom_address);                     \
+-  file_##type##_variable(savestate_file, eeprom_counter);                     \
+-  file_##type##_variable(savestate_file, rtc_state);                          \
+-  file_##type##_variable(savestate_file, rtc_write_mode);                     \
+-  file_##type##_array(savestate_file, rtc_registers);                         \
+-  file_##type##_variable(savestate_file, rtc_command);                        \
+-  file_##type##_array(savestate_file, rtc_data);                              \
+-  file_##type##_variable(savestate_file, rtc_status);                         \
+-  file_##type##_variable(savestate_file, rtc_data_bytes);                     \
+-  file_##type##_variable(savestate_file, rtc_bit_count);                      \
+-  file_##type##_array(savestate_file, eeprom_buffer);                         \
+-  file_##type##_array(savestate_file, gamepak_filename);                      \
+-  file_##type##_array(savestate_file, dma);                                   \
++  FILE_##type##_VARIABLE(savestate_file, backup_type);                        \
++  FILE_##type##_VARIABLE(savestate_file, sram_size);                          \
++  FILE_##type##_VARIABLE(savestate_file, flash_mode);                         \
++  FILE_##type##_VARIABLE(savestate_file, flash_command_position);             \
++  FILE_##type##_VARIABLE(savestate_file, flash_bank_ptr);                     \
++  FILE_##type##_VARIABLE(savestate_file, flash_device_id);                    \
++  FILE_##type##_VARIABLE(savestate_file, flash_manufacturer_id);              \
++  FILE_##type##_VARIABLE(savestate_file, flash_size);                         \
++  FILE_##type##_VARIABLE(savestate_file, eeprom_size);                        \
++  FILE_##type##_VARIABLE(savestate_file, eeprom_mode);                        \
++  FILE_##type##_VARIABLE(savestate_file, eeprom_address_length);              \
++  FILE_##type##_VARIABLE(savestate_file, eeprom_address);                     \
++  FILE_##type##_VARIABLE(savestate_file, eeprom_counter);                     \
++  FILE_##type##_VARIABLE(savestate_file, rtc_state);                          \
++  FILE_##type##_VARIABLE(savestate_file, rtc_write_mode);                     \
++  FILE_##type##_ARRAY(savestate_file, rtc_registers);                         \
++  FILE_##type##_VARIABLE(savestate_file, rtc_command);                        \
++  FILE_##type##_ARRAY(savestate_file, rtc_data);                              \
++  FILE_##type##_VARIABLE(savestate_file, rtc_status);                         \
++  FILE_##type##_VARIABLE(savestate_file, rtc_data_bytes);                     \
++  FILE_##type##_VARIABLE(savestate_file, rtc_bit_count);                      \
++  FILE_##type##_ARRAY(savestate_file, eeprom_buffer);                         \
++  FILE_##type##_ARRAY(savestate_file, gamepak_filename);                      \
++  FILE_##type##_ARRAY(savestate_file, dma);                                   \
+                                                                               \
+-  file_##type(savestate_file, iwram + 0x8000, 0x8000);                        \
++  FILE_##type(savestate_file, iwram + 0x8000, 0x8000);                        \
+   for(i = 0; i < 8; i++)                                                      \
+   {                                                                           \
+-    file_##type(savestate_file, ewram + (i * 0x10000) + 0x8000, 0x8000);      \
++    FILE_##type(savestate_file, ewram + (i * 0x10000) + 0x8000, 0x8000);      \
+   }                                                                           \
+-  file_##type(savestate_file, vram, 0x18000);                                 \
+-  file_##type(savestate_file, oam_ram, 0x400);                                \
+-  file_##type(savestate_file, palette_ram, 0x400);                            \
+-  file_##type(savestate_file, io_registers, 0x8000);                          \
++  FILE_##type(savestate_file, vram, 0x18000);                                 \
++  FILE_##type(savestate_file, oam_ram, 0x400);                                \
++  FILE_##type(savestate_file, palette_ram, 0x400);                            \
++  FILE_##type(savestate_file, io_registers, 0x8000);                          \
+                                                                               \
+   /* This is a hack, for now. */                                              \
+   if((flash_bank_ptr < gamepak_backup) ||                                     \
+@@ -3316,6 +3534,9 @@
+   }                                                                           \
+ }                                                                             \
+ 
+-memory_savestate_builder(read);
+-memory_savestate_builder(write_mem);
++void memory_read_savestate(FILE_TAG_TYPE savestate_file)
++memory_savestate_body(READ);
++
++void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file)
++memory_savestate_body(WRITE_MEM);
+ 
+diff -ru 30_orig/mips_emit.h 30_new/mips_emit.h
+--- 30_orig/mips_emit.h	2007-07-24 20:39:33.278000000 +0900
++++ 30_new/mips_emit.h	2007-08-06 23:45:02.000000000 +0900
+@@ -1,6 +1,7 @@
+-/* gameplaySP
++/* unofficial gameplaySP kai
+  *
+  * Copyright (C) 2006 Exophase <exophase@gmail.com>
++ * Copyright (C) 2007 takka <takka@tfact.net>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -20,8 +21,6 @@
+ #ifndef MIPS_EMIT_H
+ #define MIPS_EMIT_H
+ 
+-#include <fastmath.h>
+-
+ u32 mips_update_gba(u32 pc);
+ 
+ // Although these are defined as a function, don't call them as
+@@ -49,8 +48,6 @@
+ void execute_aligned_store32(u32 address, u32 value);
+ u32 execute_aligned_load32(u32 address);
+ 
+-void step_debug_mips(u32 pc);
+-
+ void reg_check();
+ 
+ typedef enum
+@@ -218,7 +215,7 @@
+   mips_emit_special(xor, rs, rt, rd, 0)                                       \
+ 
+ #define mips_emit_add(rd, rs, rt)                                             \
+-  mips_emit_special(add, rs, rt, rd, 0)    /**/                                   \
++  mips_emit_special(add, rs, rt, rd, 0)                                       \
+ 
+ #define mips_emit_sub(rd, rs, rt)                                             \
+   mips_emit_special(sub, rs, rt, rd, 0)                                       \
+@@ -564,21 +561,21 @@
+ 
+ #define generate_function_call_swap_delay(function_location)                  \
+ {                                                                             \
+-  u32 delay_instruction = address32(translation_ptr, -4);                     \
++  u32 delay_instruction = ADDRESS32(translation_ptr, -4);                     \
+   translation_ptr -= 4;                                                       \
+   mips_emit_jal(mips_absolute_offset(function_location));                     \
+-  address32(translation_ptr, 0) = delay_instruction;                          \
++  ADDRESS32(translation_ptr, 0) = delay_instruction;                          \
+   translation_ptr += 4;                                                       \
+ }                                                                             \
+ 
+ #define generate_swap_delay()                                                 \
+ {                                                                             \
+-  u32 delay_instruction = address32(translation_ptr, -8);                     \
+-  u32 branch_instruction = address32(translation_ptr, -4);                    \
++  u32 delay_instruction = ADDRESS32(translation_ptr, -8);                     \
++  u32 branch_instruction = ADDRESS32(translation_ptr, -4);                    \
+   branch_instruction = (branch_instruction & 0xFFFF0000) |                    \
+    (((branch_instruction & 0x0000FFFF) + 1) & 0x0000FFFF);                    \
+-  address32(translation_ptr, -8) = branch_instruction;                        \
+-  address32(translation_ptr, -4) = delay_instruction;                         \
++  ADDRESS32(translation_ptr, -8) = branch_instruction;                        \
++  ADDRESS32(translation_ptr, -4) = delay_instruction;                         \
+ }                                                                             \
+ 
+ #define generate_cycle_update()                                               \
+@@ -592,7 +589,7 @@
+   mips_emit_addiu(reg_cycles, reg_cycles, -cycle_count);                      \
+   cycle_count = 0                                                             \
+ 
+-#define generate_branch_patch_conditional(dest, offset)   /**/                    \
++#define generate_branch_patch_conditional(dest, offset)                       \
+   *((u16 *)(dest)) = mips_relative_offset(dest, offset)                       \
+ 
+ #define generate_branch_patch_unconditional(dest, offset)                     \
+@@ -635,8 +632,7 @@
+ 
+ #define generate_indirect_branch_cycle_update(type)                           \
+   mips_emit_j(mips_absolute_offset(mips_indirect_branch_##type));             \
+-  mips_emit_nop();                                                            \
+-  generate_cycle_update()                                                     \
++  generate_cycle_update_force()                                               \
+ 
+ #define generate_indirect_branch_no_cycle_update(type)                        \
+   mips_emit_j(mips_absolute_offset(mips_indirect_branch_##type));             \
+@@ -825,12 +821,12 @@
+ 
+ #define generate_shift_reg_lsr_flags(_rm, _rs)                                \
+   generate_load_reg_pc(reg_a0, _rm, 12);                                      \
+-  generate_load_reg_pc(reg_a1, _rs, 8)                                        \
++  generate_load_reg_pc(reg_a1, _rs, 8);                                       \
+   generate_function_call_swap_delay(execute_lsr_flags_reg)                    \
+ 
+ #define generate_shift_reg_asr_flags(_rm, _rs)                                \
+   generate_load_reg_pc(reg_a0, _rm, 12);                                      \
+-  generate_load_reg_pc(reg_a1, _rs, 8)                                        \
++  generate_load_reg_pc(reg_a1, _rs, 8);                                       \
+   generate_function_call_swap_delay(execute_asr_flags_reg)                    \
+ 
+ #define generate_shift_reg_ror_flags(_rm, _rs)                                \
+@@ -953,61 +949,26 @@
+   u32 _address = (u32)(address);                                              \
+   u32 _address_hi = (_address + 0x8000) >> 16;                                \
+   generate_load_imm(ireg, address);                                           \
+-  mips_emit_lui(ireg, _address_hi >> 16)                                      \
++  mips_emit_lui(ireg, _address_hi >> 16);                                     \
+   generate_load_memory_##type(ireg, _address - (_address_hi << 16));          \
+ }                                                                             \
+ 
+-#define generate_known_address_load_builder(type)                             \
+-  u32 generate_known_address_load_##type(u32 rd, u32 address)                 \
+-  {                                                                           \
+-    switch(address >> 24)                                                     \
+-    {                                                                         \
+-      /* Read from the BIOS ROM, can be converted to an immediate load.       \
+-         Only really possible to do this from the BIOS but should be okay     \
+-         to allow it everywhere */                                            \
+-      case 0x00:                                                              \
+-        u32 imm = read_memory_constant_##type(address);                       \
+-        generate_load_imm(arm_to_mips_reg[rd], imm);                          \
+-        return 1;                                                             \
+-                                                                              \
+-      /* Read from RAM, can be converted to a load */                         \
+-      case 0x02:                                                              \
+-        generate_load_memory(type, arm_to_mips_reg[rd], (u8 *)ewram +         \
+-         (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000);            \
+-        return 1;                                                             \
+-                                                                              \
+-      case 0x03:                                                              \
+-        generate_load_memory(type, arm_to_mips_reg[rd], (u8 *)iwram +         \
+-         (address & 0x7FFF) + 0x8000);                                        \
+-        return 1;                                                             \
+-                                                                              \
+-      /* Read from gamepak ROM, this has to be an immediate load because      \
+-         it might not actually be in memory anymore when we get to it. */     \
+-      case 0x08:                                                              \
+-        u32 imm = read_memory_constant_##type(address);                       \
+-        generate_load_imm(arm_to_mips_reg[rd], imm);                          \
+-        return 1;                                                             \
+-                                                                              \
+-      default:                                                                \
+-        return 0;                                                             \
+-    }                                                                         \
+-  }                                                                           \
+-
+ #define generate_block_extra_vars()                                           \
+   u32 stored_pc = pc;                                                         \
+   u8 *update_trampoline                                                       \
+ 
+ #define generate_block_extra_vars_arm()                                       \
+   generate_block_extra_vars();                                                \
++                                                                              \
++  auto u32 generate_load_rm_sh_flags(u32 rm);                                 \
++  auto u32 generate_load_rm_sh_no_flags(u32 rm);                              \
++  auto u32 generate_load_offset_sh(u32 rm);                                   \
++  auto void generate_indirect_branch_arm();                                   \
++  auto void generate_indirect_branch_dual();                                  \
++                                                                              \
+   generate_load_rm_sh_builder(flags);                                         \
+   generate_load_rm_sh_builder(no_flags);                                      \
+                                                                               \
+-/*  generate_known_address_load_builder(u8);                                  \
+-  generate_known_address_load_builder(u16);                                   \
+-  generate_known_address_load_builder(u32);                                   \
+-  generate_known_address_load_builder(s8);                                    \
+-  generate_known_address_load_builder(s16); */                                \
+-                                                                              \
+   u32 generate_load_offset_sh(u32 rm)                                         \
+   {                                                                           \
+     switch((opcode >> 5) & 0x03)                                              \
+@@ -1275,9 +1236,9 @@
+   mips_emit_subu(_rd, _rd, reg_temp)                                          \
+ 
+ #define generate_op_rsc_reg(_rd, _rn, _rm)                                    \
+-  mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
+-  mips_emit_addiu(reg_temp, reg_temp, -1);                                    \
+-  mips_emit_subu(_rd, reg_temp, _rn)                                          \
++  mips_emit_subu(_rd, _rm, _rn);                                              \
++  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
++  mips_emit_subu(_rd, _rd, reg_temp)                                          \
+ 
+ #define generate_op_add_reg(_rd, _rn, _rm)                                    \
+   mips_emit_addu(_rd, _rn, _rm)                                               \
+@@ -1429,17 +1390,17 @@
+   generate_op_sub_flags_epilogue(_rd)                                         \
+ 
+ #define generate_op_sbcs_reg(_rd, _rn, _rm)                                   \
+-  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
+-  mips_emit_addu(_rm, _rm, reg_temp);                                         \
+-  generate_op_sub_flags_prologue(_rn, _rm);                              \
+-  mips_emit_subu(_rd, _rn, _rm);                                         \
++  mips_emit_addu(reg_temp, _rn, reg_c_cache);                                 \
++  mips_emit_addiu(reg_temp, reg_temp, -1);                                    \
++  generate_op_sub_flags_prologue(reg_temp, _rm);                              \
++  mips_emit_subu(_rd, reg_temp, _rm);                                         \
+   generate_op_sub_flags_epilogue(_rd)                                         \
+ 
+ #define generate_op_rscs_reg(_rd, _rn, _rm)                                   \
+-  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
+-  mips_emit_addu(_rn, _rn, reg_temp);                                         \
+-  generate_op_sub_flags_prologue(_rm, _rn);                              \
+-  mips_emit_subu(_rd, _rm, _rn);                                         \
++  mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
++  mips_emit_addiu(reg_temp, reg_temp, -1);                                    \
++  generate_op_sub_flags_prologue(reg_temp, _rn);                              \
++  mips_emit_subu(_rd, reg_temp, _rn);                                         \
+   generate_op_sub_flags_epilogue(_rd)                                         \
+ 
+ #define generate_op_adds_reg(_rd, _rn, _rm)                                   \
+@@ -1449,7 +1410,8 @@
+ 
+ #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
+   mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
+-  generate_add_flags_prologue(_rn, _rm);                                      \
++/*  generate_add_flags_prologue(_rn, _rm); */                                 \
++  generate_add_flags_prologue(_rn, reg_temp);                                 \
+   mips_emit_addu(_rd, _rn, reg_temp);                                         \
+   generate_add_flags_epilogue(_rd)                                            \
+ 
+@@ -1576,20 +1538,54 @@
+   arm_generate_op_imm(name, load_op)                                          \
+ 
+ 
++/* 1S+x+y */
++/* x=1I cycles if Op2 shifted-by-register. y=1S+1N cycles if Rd=R15. */
++#define cycle_arm_data_proc_reg()                                             \
++  cycle_count++;                                                              \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2                                                          \
++
++#define cycle_arm_data_proc_reg_flags()                                       \
++  cycle_arm_data_proc_reg()                                                   \
++
++#define cycle_arm_data_proc_imm()                                             \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2                                                          \
++
++#define cycle_arm_data_proc_imm_flags()                                       \
++  cycle_arm_data_proc_imm()                                                   \
++
++/* 1S+x */
++#define cycle_arm_data_proc_test_reg()                                        \
++  cycle_count++                                                               \
++
++#define cycle_arm_data_proc_test_reg_flags()                                  \
++  cycle_arm_data_proc_test_reg()                                              \
++
++#define cycle_arm_data_proc_test_imm()                                        \
++
++#define cycle_arm_data_proc_test_imm_flags()                                  \
++
++/* AND, EOR, SUB, RSB, ADD, ADC, SBC, RSC, ORR, BIC  1S+x+y */
+ #define arm_data_proc(name, type, flags_op)                                   \
+ {                                                                             \
+   arm_generate_op_##type(name, yes);                                          \
++  cycle_arm_data_proc_##type();                                               \
+   check_store_reg_pc_##flags_op(rd);                                          \
+ }                                                                             \
+ 
++/* TST, TEQ, CMP, CMN  1S+x */
+ #define arm_data_proc_test(name, type)                                        \
+ {                                                                             \
+   arm_generate_op_##type(name, yes);                                          \
++  cycle_arm_data_proc_test_##type();                                          \
+ }                                                                             \
+ 
++/* MOV, MVN  1S+x+y */
+ #define arm_data_proc_unary(name, type, flags_op)                             \
+ {                                                                             \
+   arm_generate_op_##type(name, no);                                           \
++  cycle_arm_data_proc_##type();                                               \
+   check_store_reg_pc_##flags_op(rd);                                          \
+ }                                                                             \
+ 
+@@ -1605,9 +1601,36 @@
+   mips_emit_mflo(reg_temp);                                                   \
+   mips_emit_addu(arm_to_mips_reg[rd], reg_temp, arm_to_mips_reg[rn])          \
+ 
++u32 cycle_multiply(_rs)
++{
++  u32 mult_rs = arm_to_mips_reg[_rs];
++  if(((s32)mult_rs) < 0)
++    mult_rs = ~mult_rs;
++
++  if((mult_rs & 0xFFFFFF00) == 0)  /* m=1 for Bit 31-8 */
++    return 1;
++  else
++  if((mult_rs & 0xFFFF0000) == 0)  /* m=2 for Bit 31-16 */
++    return 2;
++  else
++  if((mult_rs & 0xFF000000) == 0)  /* m=3 for Bit 31-24 */
++    return 3;
++  else                             /* m=4 otherwise */
++    return 4;
++}
++
++/* 1S+mI */
++#define cycle_arm_multiply_add_no()                                           \
++  cycle_count += cycle_multiply(rs)                                           \
++
++/* 1S+mI+1I */
++#define cycle_arm_multiply_add_yes()                                          \
++  cycle_count += 1 + cycle_multiply(rs)                                       \
++
+ #define arm_multiply(add_op, flags)                                           \
+ {                                                                             \
+   arm_decode_multiply();                                                      \
++  cycle_arm_multiply_add_##add_op();                                          \
+   mips_emit_multu(arm_to_mips_reg[rm], arm_to_mips_reg[rs]);                  \
+   arm_multiply_add_##add_op();                                                \
+   arm_multiply_flags_##flags(arm_to_mips_reg[rd]);                            \
+@@ -1629,9 +1652,18 @@
+ #define arm_multiply_long_add_no(name)                                        \
+   generate_multiply_##name()                                                  \
+ 
++/* 1S+mI+1I */
++#define cycle_arm_multiply_long_add_no()                                      \
++  cycle_count += 1 + cycle_multiply(rs)                                       \
++
++/* 1S+mI+2I */
++#define cycle_arm_multiply_long_add_yes()                                     \
++  cycle_count += 2 + cycle_multiply(rs)                                       \
++
+ #define arm_multiply_long(name, add_op, flags)                                \
+ {                                                                             \
+   arm_decode_multiply_long();                                                 \
++  cycle_arm_multiply_long_add_##add_op();                                     \
+   arm_multiply_long_add_##add_op(name);                                       \
+   mips_emit_mflo(arm_to_mips_reg[rdlo]);                                      \
+   mips_emit_mfhi(arm_to_mips_reg[rdhi]);                                      \
+@@ -1681,15 +1713,50 @@
+   arm_psr_##transfer_type(op_type, psr_reg);                                  \
+ }                                                                             \
+ 
++/* LDR: 1S+1N+1I. LDR PC: 2S+2N+1I. STR: 2N. */
++#define cycle_arm_access_memory_load_u32()                                    \
++  cycle_count += 1 + waitstate_cycles_non_seq[1][reg_a0 >> 24];               \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2                                                          \
++
++#define cycle_arm_access_memory_load_u16()                                    \
++  cycle_count += 1 + waitstate_cycles_non_seq[0][reg_a0 >> 24];               \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2                                                          \
++
++#define cycle_arm_access_memory_load_s16()                                    \
++  cycle_arm_access_memory_load_u16()                                          \
++
++#define cycle_arm_access_memory_load_u8()                                     \
++  cycle_arm_access_memory_load_u16()                                          \
++
++#define cycle_arm_access_memory_load_s8()                                     \
++  cycle_arm_access_memory_load_u16()                                          \
++
++#define cycle_arm_access_memory_store_u32()                                   \
++  cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24]                    \
++
++#define cycle_arm_access_memory_store_u16()                                   \
++  cycle_count += waitstate_cycles_non_seq[0][reg_a0 >> 24]                    \
++
++#define cycle_arm_access_memory_store_s16()                                   \
++  cycle_arm_access_memory_store_u16()                                         \
++
++#define cycle_arm_access_memory_store_u8()                                    \
++  cycle_arm_access_memory_store_u16()                                         \
++
++#define cycle_arm_access_memory_store_s8()                                    \
++  cycle_arm_access_memory_store_u16()                                         \
++
+ #define arm_access_memory_load(mem_type)                                      \
+-  cycle_count += 2;                                                           \
++  cycle_arm_access_memory_load_##mem_type();                                  \
+   mips_emit_jal(mips_absolute_offset(execute_load_##mem_type));               \
+   generate_load_pc(reg_a1, (pc + 8));                                         \
+   generate_store_reg(reg_rv, rd);                                             \
+   check_store_reg_pc_no_flags(rd)                                             \
+ 
+ #define arm_access_memory_store(mem_type)                                     \
+-  cycle_count++;                                                              \
++  cycle_arm_access_memory_store_##mem_type();                                 \
+   generate_load_pc(reg_a2, (pc + 4));                                         \
+   generate_load_reg_pc(reg_a1, rd, 12);                                       \
+   generate_function_call_swap_delay(execute_store_##mem_type)                 \
+@@ -1776,11 +1843,22 @@
+ #define sprint_yes(access_type, pre_op, post_op, wb)                          \
+   printf("sbit on %s %s %s %s\n", #access_type, #pre_op, #post_op, #wb)       \
+ 
++/* LDM, nS+1N+1I. LDM PC, (n+1)S+2N+1I. STM (n-1)S+2N. */
+ #define arm_block_memory_load()                                               \
++  if(offset)                                                                  \
++    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
++  else                                                                        \
++    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
++                                                                              \
+   generate_function_call_swap_delay(execute_aligned_load32);                  \
+   generate_store_reg(reg_rv, i)                                               \
+ 
+ #define arm_block_memory_store()                                              \
++  if(offset)                                                                  \
++    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
++  else                                                                        \
++    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
++                                                                              \
+   generate_load_reg_pc(reg_a1, i, 8);                                         \
+   generate_function_call_swap_delay(execute_aligned_store32)                  \
+ 
+@@ -1793,10 +1871,13 @@
+   generate_load_reg(reg_a1, i)                                                \
+ 
+ #define arm_block_memory_adjust_pc_store()                                    \
++  cycle_count++;                                                              \
+ 
+ #define arm_block_memory_adjust_pc_load()                                     \
++  cycle_count++;                                                              \
+   if(reg_list & 0x8000)                                                       \
+   {                                                                           \
++    cycle_count += 2;                                                         \
+     generate_mov(reg_a0, reg_rv);                                             \
+     generate_indirect_branch_arm();                                           \
+   }                                                                           \
+@@ -1814,8 +1895,10 @@
+ #define arm_block_memory_sp_adjust_pc_store()                                 \
+ 
+ #define arm_block_memory_sp_adjust_pc_load()                                  \
++  cycle_count++;                                                              \
+   if(reg_list & 0x8000)                                                       \
+   {                                                                           \
++    cycle_count += 2;                                                         \
+     generate_indirect_branch_arm();                                           \
+   }                                                                           \
+ 
+@@ -1886,7 +1969,6 @@
+     {                                                                         \
+       if((reg_list >> i) & 0x01)                                              \
+       {                                                                       \
+-        cycle_count++;                                                        \
+         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
+         if(reg_list & ~((2 << i) - 1))                                        \
+         {                                                                     \
+@@ -1905,149 +1987,6 @@
+   }                                                                           \
+ }                                                                             \
+ 
+-#define arm_block_writeback_no()
+-
+-#define arm_block_writeback_yes()                                             \
+-  mips_emit_addu(arm_to_mips_reg[rn], reg_a2, reg_zero)                       \
+-
+-#define arm_block_address_preadjust_up_full(wb)                               \
+-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
+-   ((word_bit_count(reg_list)) * 4));                                         \
+-  arm_block_writeback_##wb()                                                  \
+-
+-#define arm_block_address_preadjust_up(wb)                                    \
+-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn], 4);                            \
+-  arm_block_writeback_##wb()                                                  \
+-
+-#define arm_block_address_preadjust_down_full(wb)                             \
+-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
+-   -((word_bit_count(reg_list)) * 4));                                        \
+-  arm_block_writeback_##wb()                                                  \
+-
+-#define arm_block_address_preadjust_down(wb)                                  \
+-  mips_emit_addiu(reg_a2, arm_to_mips_reg[rn],                                \
+-   -(((word_bit_count(reg_list)) * 4) - 4));                                  \
+-  arm_block_writeback_##wb()
+-
+-#define arm_block_address_preadjust_no(wb)                                    \
+-  mips_emit_addu(reg_a2, arm_to_mips_reg[rn], reg_zero)                       \
+-
+-#define arm_block_address_postadjust_no()                                     \
+-
+-#define arm_block_address_postadjust_up()                                     \
+-  mips_emit_addiu(arm_to_mips_reg[rn], reg_a2,                                \
+-   ((word_bit_count(reg_list)) * 4))                                          \
+-
+-#define arm_block_address_postadjust_down()                                   \
+-  mips_emit_addiu(arm_to_mips_reg[rn], reg_a2,                                \
+-   -((word_bit_count(reg_list)) * 4))                                         \
+-
+-#define sprint_no(access_type, pre_op, post_op, wb)                           \
+-
+-#define sprint_yes(access_type, pre_op, post_op, wb)                          \
+-  printf("sbit on %s %s %s %s\n", #access_type, #pre_op, #post_op, #wb)       \
+-
+-#define arm_block_memory_load()                                               \
+-  generate_function_call_swap_delay(execute_aligned_load32);                  \
+-  generate_store_reg(reg_rv, i)                                               \
+-
+-#define arm_block_memory_store()                                              \
+-  generate_load_reg_pc(reg_a1, i, 8);                                         \
+-  generate_function_call_swap_delay(execute_aligned_store32)                  \
+-
+-#define arm_block_memory_final_load()                                         \
+-  arm_block_memory_load()                                                     \
+-
+-#define arm_block_memory_final_store()                                        \
+-  generate_load_pc(reg_a2, (pc + 4));                                         \
+-  mips_emit_jal(mips_absolute_offset(execute_store_u32));                     \
+-  generate_load_reg(reg_a1, i)                                                \
+-
+-#define arm_block_memory_adjust_pc_store()                                    \
+-
+-#define arm_block_memory_adjust_pc_load()                                     \
+-  if(reg_list & 0x8000)                                                       \
+-  {                                                                           \
+-    generate_mov(reg_a0, reg_rv);                                             \
+-    generate_indirect_branch_arm();                                           \
+-  }                                                                           \
+-
+-#define arm_block_memory_sp_load()                                            \
+-  mips_emit_lw(arm_to_mips_reg[i], reg_a1, offset);                           \
+-
+-#define arm_block_memory_sp_store()                                           \
+-{                                                                             \
+-  u32 store_reg = i;                                                          \
+-  check_load_reg_pc(arm_reg_a0, store_reg, 8);                                \
+-  mips_emit_sw(arm_to_mips_reg[store_reg], reg_a1, offset);                   \
+-}                                                                             \
+-
+-#define arm_block_memory_sp_adjust_pc_store()                                 \
+-
+-#define arm_block_memory_sp_adjust_pc_load()                                  \
+-  if(reg_list & 0x8000)                                                       \
+-  {                                                                           \
+-    generate_indirect_branch_arm();                                           \
+-  }                                                                           \
+-
+-#define old_arm_block_memory(access_type, pre_op, post_op, wb, s_bit)         \
+-{                                                                             \
+-  arm_decode_block_trans();                                                   \
+-  u32 i;                                                                      \
+-  u32 offset = 0;                                                             \
+-  u32 base_reg = arm_to_mips_reg[rn];                                         \
+-                                                                              \
+-  arm_block_address_preadjust_##pre_op(wb);                                   \
+-  arm_block_address_postadjust_##post_op();                                   \
+-                                                                              \
+-  sprint_##s_bit(access_type, pre_op, post_op, wb);                           \
+-                                                                              \
+-  if((rn == REG_SP) && iwram_stack_optimize)                                  \
+-  {                                                                           \
+-    mips_emit_andi(reg_a1, reg_a2, 0x7FFC);                                   \
+-    generate_load_imm(reg_a0, ((u32)(iwram + 0x8000)));                       \
+-    mips_emit_addu(reg_a1, reg_a1, reg_a0);                                   \
+-                                                                              \
+-    for(i = 0; i < 16; i++)                                                   \
+-    {                                                                         \
+-      if((reg_list >> i) & 0x01)                                              \
+-      {                                                                       \
+-        cycle_count++;                                                        \
+-        arm_block_memory_sp_##access_type();                                  \
+-        offset += 4;                                                          \
+-      }                                                                       \
+-    }                                                                         \
+-                                                                              \
+-    arm_block_memory_sp_adjust_pc_##access_type();                            \
+-  }                                                                           \
+-  else                                                                        \
+-  {                                                                           \
+-    mips_emit_ins(reg_a2, reg_zero, 0, 2);                                    \
+-                                                                              \
+-    for(i = 0; i < 16; i++)                                                   \
+-    {                                                                         \
+-      if((reg_list >> i) & 0x01)                                              \
+-      {                                                                       \
+-        cycle_count++;                                                        \
+-        mips_emit_addiu(reg_a0, reg_a2, offset);                              \
+-        if(reg_list & ~((2 << i) - 1))                                        \
+-        {                                                                     \
+-          arm_block_memory_##access_type();                                   \
+-          offset += 4;                                                        \
+-        }                                                                     \
+-        else                                                                  \
+-        {                                                                     \
+-          arm_block_memory_final_##access_type();                             \
+-          break;                                                              \
+-        }                                                                     \
+-      }                                                                       \
+-    }                                                                         \
+-                                                                              \
+-    arm_block_memory_adjust_pc_##access_type();                               \
+-  }                                                                           \
+-}
+-
+-
+ 
+ // This isn't really a correct implementation, may have to fix later.
+ 
+@@ -2086,6 +2025,13 @@
+   thumb_generate_op_##rn_type(name, _rd, _rs, _rn);                           \
+ }                                                                             \
+ 
++#define thumb_data_proc_muls(type, rn_type, _rd, _rs, _rn)                    \
++{                                                                             \
++  thumb_decode_##type();                                                      \
++  cycle_count += cycle_multiply(_rs); /* 1S+mI */                             \
++  thumb_generate_op_##rn_type(muls, _rd, _rs, _rn);                           \
++}                                                                             \
++
+ #define thumb_data_proc_test(type, name, rn_type, _rs, _rn)                   \
+ {                                                                             \
+   thumb_decode_##type();                                                      \
+@@ -2107,6 +2053,8 @@
+ #define thumb_data_proc_hi(name)                                              \
+ {                                                                             \
+   thumb_decode_hireg_op();                                                    \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2;                                                         \
+   u32 dest_rd = rd;                                                           \
+   check_load_reg_pc(arm_reg_a0, rs, 4);                                       \
+   check_load_reg_pc(arm_reg_a1, rd, 4);                                       \
+@@ -2141,6 +2089,8 @@
+ #define thumb_data_proc_mov_hi()                                              \
+ {                                                                             \
+   thumb_decode_hireg_op();                                                    \
++  if(rd == reg_pc)                                                            \
++    cycle_count += 2;                                                         \
+   check_load_reg_pc(arm_reg_a0, rs, 4);                                       \
+   mips_emit_addu(arm_to_mips_reg[rd], arm_to_mips_reg[rs], reg_zero);         \
+   check_store_reg_pc_thumb(rd);                                               \
+@@ -2196,8 +2146,15 @@
+   mips_emit_addu(arm_to_mips_reg[original_rd], reg_a0, reg_zero);             \
+ }                                                                             \
+ 
++#define cycle_thumb_shift_shift()                                             \
++
++/* ALU operations LSL,LSR,ASR,ROR  1S+1I */
++#define cycle_thumb_shift_alu_op()                                            \
++  cycle_count++                                                               \
++
+ #define thumb_shift(decode_type, op_type, value_type)                         \
+ {                                                                             \
++  cycle_thumb_shift_##decode_type();                                          \
+   thumb_decode_##decode_type();                                               \
+   thumb_generate_shift_##value_type(op_type);                                 \
+   generate_op_logic_flags(arm_to_mips_reg[rd]);                               \
+@@ -2205,14 +2162,45 @@
+ 
+ // Operation types: imm, mem_reg, mem_imm
+ 
++/* LDR 1S+1N+1I, STR 2N */
++#define cycle_thumb_access_memory_load_u32()                                  \
++  cycle_count += 1 + waitstate_cycles_non_seq[1][reg_a0 >> 24]                \
++
++#define cycle_thumb_access_memory_load_u16()                                  \
++  cycle_count += 1 + waitstate_cycles_non_seq[0][reg_a0 >> 24]                \
++
++#define cycle_thumb_access_memory_load_s16()                                  \
++  cycle_thumb_access_memory_load_u16()                                        \
++
++#define cycle_thumb_access_memory_load_u8()                                   \
++  cycle_thumb_access_memory_load_u16()                                        \
++
++#define cycle_thumb_access_memory_load_s8()                                   \
++  cycle_thumb_access_memory_load_u16()                                        \
++
++#define cycle_thumb_access_memory_store_u32()                                 \
++  cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24]                    \
++
++#define cycle_thumb_access_memory_store_u16()                                 \
++  cycle_count += waitstate_cycles_non_seq[0][reg_a0 >> 24]                    \
++
++#define cycle_thumb_access_memory_store_s16()                                 \
++  cycle_thumb_access_memory_store_u16()                                       \
++
++#define cycle_thumb_access_memory_store_u8()                                  \
++  cycle_thumb_access_memory_store_u16()                                       \
++
++#define cycle_thumb_access_memory_store_s8()                                  \
++  cycle_thumb_access_memory_store_u16()                                       \
++
+ #define thumb_access_memory_load(mem_type, reg_rd)                            \
+-  cycle_count += 2;                                                           \
++  cycle_thumb_access_memory_load_##mem_type();                                \
+   mips_emit_jal(mips_absolute_offset(execute_load_##mem_type));               \
+   generate_load_pc(reg_a1, (pc + 4));                                         \
+   generate_store_reg(reg_rv, reg_rd)                                          \
+ 
+ #define thumb_access_memory_store(mem_type, reg_rd)                           \
+-  cycle_count++;                                                              \
++  cycle_thumb_access_memory_store_##mem_type();                               \
+   generate_load_pc(reg_a2, (pc + 2));                                         \
+   mips_emit_jal(mips_absolute_offset(execute_store_##mem_type));              \
+   generate_load_reg(reg_a1, reg_rd)                                           \
+@@ -2275,10 +2263,20 @@
+ #define thumb_block_address_postadjust_push_lr(base_reg)                      \
+ 
+ #define thumb_block_memory_load()                                             \
++  if(offset)                                                                  \
++    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
++  else                                                                        \
++    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
++                                                                              \
+   generate_function_call_swap_delay(execute_aligned_load32);                  \
+   generate_store_reg(reg_rv, i)                                               \
+ 
+ #define thumb_block_memory_store()                                            \
++  if(offset)                                                                  \
++    cycle_count += waitstate_cycles_seq[1][reg_a0 >> 24];                     \
++  else                                                                        \
++    cycle_count += waitstate_cycles_non_seq[1][reg_a0 >> 24];                 \
++                                                                              \
+   mips_emit_jal(mips_absolute_offset(execute_aligned_store32));               \
+   generate_load_reg(reg_a1, i)                                                \
+ 
+@@ -2339,8 +2337,17 @@
+   generate_indirect_branch_cycle_update(thumb)                                \
+ 
+ #define thumb_block_memory_sp_extra_push_lr()                                 \
++  cycle_count--;                                                              \
+   mips_emit_sw(reg_r14, reg_a1, (bit_count[reg_list] * 4))                    \
+ 
++#define cycle_thumb_block_memory_load()                                       \
++  cycle_count++;                                                              \
++  if(reg_list & 0x8000)                                                       \
++    cycle_count += 2                                                          \
++
++#define cycle_thumb_block_memory_store()                                      \
++  cycle_count++                                                               \
++
+ #define thumb_block_memory(access_type, pre_op, post_op, base_reg)            \
+ {                                                                             \
+   thumb_decode_rlist();                                                       \
+@@ -2350,6 +2357,8 @@
+   thumb_block_address_preadjust_##pre_op(base_reg);                           \
+   thumb_block_address_postadjust_##post_op(base_reg);                         \
+                                                                               \
++  cycle_thumb_block_memory_##access_type();                                   \
++                                                                              \
+   if((base_reg == REG_SP) && iwram_stack_optimize)                            \
+   {                                                                           \
+     mips_emit_andi(reg_a1, reg_a2, 0x7FFC);                                   \
+@@ -2376,7 +2385,6 @@
+     {                                                                         \
+       if((reg_list >> i) & 0x01)                                              \
+       {                                                                       \
+-        cycle_count++;                                                        \
+         mips_emit_addiu(reg_a0, reg_a2, offset);                              \
+         if(reg_list & ~((2 << i) - 1))                                        \
+         {                                                                     \
+@@ -2393,12 +2401,11 @@
+                                                                               \
+     thumb_block_memory_extra_##post_op();                                     \
+   }                                                                           \
+-}
+-
+-
++}                                                                             \
+ 
+ #define thumb_conditional_branch(condition)                                   \
+ {                                                                             \
++  cycle_count +=2;                                                            \
+   condition_check_type condition_check;                                       \
+   generate_condition_##condition();                                           \
+   generate_branch_no_cycle_update(                                            \
+@@ -2409,34 +2416,42 @@
+ }                                                                             \
+ 
+ #define arm_conditional_block_header()                                        \
+-  generate_condition();                                                       \
++  generate_condition()                                                        \
+ 
+ #define arm_b()                                                               \
++  cycle_count += 2;                                                           \
+   generate_branch()                                                           \
+ 
+ #define arm_bl()                                                              \
++  cycle_count += 2;                                                           \
+   generate_load_pc(reg_r14, (pc + 4));                                        \
+   generate_branch()                                                           \
+ 
+ #define arm_bx()                                                              \
++  cycle_count += 2;                                                           \
+   arm_decode_branchx();                                                       \
+   generate_load_reg(reg_a0, rn);                                              \
+   /*generate_load_pc(reg_a2, pc);*/                                           \
+   generate_indirect_branch_dual()                                             \
+ 
+ #define arm_swi()                                                             \
++  if(((opcode >> 16) & 0xFF) > 0x2A)                                          \
++    break;                                                                    \
++  cycle_count += 2;                                                           \
+   generate_swi_hle_handler((opcode >> 16) & 0xFF);                            \
+   generate_load_pc(reg_a0, (pc + 4));                                         \
+   generate_function_call_swap_delay(execute_swi);                             \
+   generate_branch()                                                           \
+ 
+ #define thumb_b()                                                             \
++  cycle_count += 2;                                                           \
+   generate_branch_cycle_update(                                               \
+    block_exits[block_exit_position].branch_source,                            \
+    block_exits[block_exit_position].branch_target);                           \
+   block_exit_position++                                                       \
+ 
+ #define thumb_bl()                                                            \
++  cycle_count += 2;                                                           \
+   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
+   generate_branch_cycle_update(                                               \
+    block_exits[block_exit_position].branch_source,                            \
+@@ -2448,12 +2463,13 @@
+   thumb_decode_branch();                                                      \
+   generate_alu_imm(addiu, addu, reg_a0, reg_r14, (offset * 2));               \
+   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
+-  generate_indirect_branch_cycle_update(dual);                                \
++  generate_indirect_branch_cycle_update(thumb);                               \
+   break;                                                                      \
+ }                                                                             \
+ 
+ #define thumb_bx()                                                            \
+ {                                                                             \
++  cycle_count += 2;                                                           \
+   thumb_decode_hireg_op();                                                    \
+   generate_load_reg_pc(reg_a0, rs, 4);                                        \
+   /*generate_load_pc(reg_a2, pc);*/                                           \
+@@ -2461,6 +2477,9 @@
+ }                                                                             \
+ 
+ #define thumb_swi()                                                           \
++  if((opcode & 0xFF) > 0x2A)                                                  \
++    break;                                                                    \
++  cycle_count += 2;                                                           \
+   generate_swi_hle_handler(opcode & 0xFF);                                    \
+   generate_load_pc(reg_a0, (pc + 2));                                         \
+   generate_function_call_swap_delay(execute_swi);                             \
+@@ -2471,49 +2490,48 @@
+ 
+ u8 swi_hle_handle[256][2] =
+ { /* use bios , emu bios */
+-           0x0,       0x0,    // SWI 0:  SoftReset
+-           0x0,       0x0,    // SWI 1:  RegisterRAMReset
+-           0x0,       0x1,    // SWI 2:  Halt
+-           0x0,       0x0,    // SWI 3:  Stop/Sleep
+-           0x0,       0x0,    // SWI 4:  IntrWait
+-           0x0,       0x0,    // SWI 5:  VBlankIntrWait
+-           0x1,       0x1,    // SWI 6:  Div
+-           0x1,       0x1,    // SWI 7:  DivArm
+-           0x1,       0x1,    // SWI 8:  Sqrt
+-           0x0,       0x0,    // SWI 9:  ArcTan
+-           0x0,       0x0,    // SWI A:  ArcTan2
+-           0x0,       0x1,    // SWI B:  CpuSet
+-           0x0,       0x1,    // SWI C:  CpuFastSet
+-           0x0,       0x0,    // SWI D:  GetBIOSCheckSum
+-           0x0,       0x1,    // SWI E:  BgAffineSet
+-           0x0,       0x1,    // SWI F:  ObjAffineSet
+-           0x0,       0x0,    // SWI 10: BitUnpack
+-           0x0,       0x0,    // SWI 11: LZ77UnCompWram
+-           0x0,       0x0,    // SWI 12: LZ77UnCompVram
+-           0x0,       0x0,    // SWI 13: HuffUnComp
+-           0x0,       0x0,    // SWI 14: RLUnCompWram
+-           0x0,       0x0,    // SWI 15: RLUnCompVram
+-           0x0,       0x0,    // SWI 16: Diff8bitUnFilterWram
+-           0x0,       0x0,    // SWI 17: Diff8bitUnFilterVram
+-           0x0,       0x0,    // SWI 18: Diff16bitUnFilter
+-           0x0,       0x0,    // SWI 19: SoundBias
+-           0x0,       0x0,    // SWI 1A: SoundDriverInit
+-           0x0,       0x0,    // SWI 1B: SoundDriverMode
+-           0x0,       0x0,    // SWI 1C: SoundDriverMain
+-           0x0,       0x0,    // SWI 1D: SoundDriverVSync
+-           0x0,       0x0,    // SWI 1E: SoundChannelClear
+-           0x0,       0x0,    // SWI 1F: MidiKey2Freq
+-           0x0,       0x0,    // SWI 20: SoundWhatever0
+-           0x0,       0x0,    // SWI 21: SoundWhatever1
+-           0x0,       0x0,    // SWI 22: SoundWhatever2
+-           0x0,       0x0,    // SWI 23: SoundWhatever3
+-           0x0,       0x0,    // SWI 24: SoundWhatever4
+-           0x0,       0x0,    // SWI 25: MultiBoot
+-           0x0,       0x0,    // SWI 26: HardReset
+-           0x0,       0x0,    // SWI 27: CustomHalt
+-           0x0,       0x0,    // SWI 28: SoundDriverVSyncOff
+-           0x0,       0x0,    // SWI 29: SoundDriverVSyncOn
+-           0x0,       0x0      // SWI 2A: SoundGetJumpList
++  { 0x0, 0x0 },    // SWI 0:  SoftReset
++  { 0x0, 0x0 },    // SWI 1:  RegisterRAMReset
++  { 0x0, 0x0 },    // SWI 2:  Halt
++  { 0x0, 0x0 },    // SWI 3:  Stop/Sleep
++  { 0x0, 0x0 },    // SWI 4:  IntrWait
++  { 0x0, 0x0 },    // SWI 5:  VBlankIntrWait
++  { 0x1, 0x1 },    // SWI 6:  Div
++  { 0x1, 0x1 },    // SWI 7:  DivArm
++  { 0x0, 0x1 },    // SWI 8:  Sqrt
++  { 0x0, 0x0 },    // SWI 9:  ArcTan
++  { 0x0, 0x0 },    // SWI A:  ArcTan2
++  { 0x0, 0x1 },    // SWI B:  CpuSet
++  { 0x0, 0x1 },    // SWI C:  CpuFastSet
++  { 0x0, 0x0 },    // SWI D:  GetBIOSCheckSum
++  { 0x0, 0x1 },    // SWI E:  BgAffineSet
++  { 0x0, 0x1 },    // SWI F:  ObjAffineSet
++  { 0x0, 0x0 },    // SWI 10: BitUnpack
++  { 0x0, 0x0 },    // SWI 11: LZ77UnCompWram
++  { 0x0, 0x0 },    // SWI 12: LZ77UnCompVram
++  { 0x0, 0x0 },    // SWI 13: HuffUnComp
++  { 0x0, 0x0 },    // SWI 14: RLUnCompWram
++  { 0x0, 0x0 },    // SWI 15: RLUnCompVram
++  { 0x0, 0x0 },    // SWI 16: Diff8bitUnFilterWram
++  { 0x0, 0x0 },    // SWI 17: Diff8bitUnFilterVram
++  { 0x0, 0x0 },    // SWI 18: Diff16bitUnFilter
++  { 0x0, 0x0 },    // SWI 19: SoundBias
++  { 0x0, 0x0 },    // SWI 1A: SoundDriverInit
++  { 0x0, 0x0 },    // SWI 1B: SoundDriverMode
++  { 0x0, 0x0 },    // SWI 1C: SoundDriverMain
++  { 0x0, 0x0 },    // SWI 1D: SoundDriverVSync
++  { 0x0, 0x0 },    // SWI 1E: SoundChannelClear
++  { 0x0, 0x0 },    // SWI 20: SoundWhatever0
++  { 0x0, 0x0 },    // SWI 21: SoundWhatever1
++  { 0x0, 0x0 },    // SWI 22: SoundWhatever2
++  { 0x0, 0x0 },    // SWI 23: SoundWhatever3
++  { 0x0, 0x0 },    // SWI 24: SoundWhatever4
++  { 0x0, 0x0 },    // SWI 25: MultiBoot
++  { 0x0, 0x0 },    // SWI 26: HardReset
++  { 0x0, 0x0 },    // SWI 27: CustomHalt
++  { 0x0, 0x0 },    // SWI 28: SoundDriverVSyncOff
++  { 0x0, 0x0 },    // SWI 29: SoundDriverVSyncOn
++  { 0x0, 0x0 }     // SWI 2A: SoundGetJumpList
+ };
+ 
+ #define generate_swi_hle_handler(_swi_number)                                 \
+@@ -2521,11 +2539,6 @@
+   u32 swi_number = _swi_number;                                               \
+   if(swi_hle_handle[swi_number][bios_mode])                                   \
+   {                                                                           \
+-    /* Halt */                                                                \
+-    if(swi_number == 0x02)                                                    \
+-    {                                                                         \
+-    }                                                                         \
+-                                                                              \
+     /* Div */                                                                 \
+     if(swi_number == 0x06)                                                    \
+     {                                                                         \
+@@ -2562,36 +2575,36 @@
+     /* CpuSet */                                                              \
+     if(swi_number == 0x0B)                                                    \
+     {                                                                         \
+-      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                               \
++      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                          \
++      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                          \
++      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                          \
+       generate_function_call(bios_cpuset);                                    \
+     }                                                                         \
+                                                                               \
+     /* CpuFastSet */                                                          \
+     if(swi_number == 0x0C)                                                    \
+     {                                                                         \
+-      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                               \
++      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                          \
++      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                          \
++      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                          \
+       generate_function_call(bios_cpufastset);                                \
+     }                                                                         \
+                                                                               \
+     /* BgAffineSet */                                                         \
+     if(swi_number == 0x0E)                                                    \
+     {                                                                         \
+-      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                               \
++      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                          \
++      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                          \
++      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                          \
+       generate_function_call(bios_bgaffineset);                               \
+     }                                                                         \
+                                                                               \
+     /* ObjAffineSet */                                                        \
+     if(swi_number == 0x0F)                                                    \
+     {                                                                         \
+-      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                               \
+-      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                               \
++      mips_emit_addu(mips_reg_a0, reg_r0, reg_zero);                          \
++      mips_emit_addu(mips_reg_a1, reg_r1, reg_zero);                          \
++      mips_emit_addu(mips_reg_a2, reg_r2, reg_zero);                          \
+       mips_emit_addu(mips_reg_a3, reg_r3, reg_zero);                          \
+       generate_function_call(bios_objaffineset);                              \
+     }                                                                         \
+@@ -2604,10 +2617,6 @@
+   generate_load_pc(reg_a0, pc);                                               \
+   generate_indirect_branch_no_cycle_update(type)                              \
+ 
+-#define generate_step_debug()                                                 \
+-  generate_load_imm(reg_a0, pc);                                              \
+-  generate_function_call(step_debug_mips)                                     \
+-
+ #define generate_update_pc_reg()                                              \
+   generate_load_pc(reg_a0, pc);                                               \
+   mips_emit_sw(reg_a0, reg_base, (REG_PC * 4))                                \
+diff -ru 30_orig/mips_stub.S 30_new/mips_stub.S
+--- 30_orig/mips_stub.S	2007-06-11 05:31:56.616000000 +0900
++++ 30_new/mips_stub.S	2007-08-06 23:46:18.000000000 +0900
+@@ -1,6 +1,7 @@
+-# gameplaySP
++# unofficial gameplaySP kai
+ #
+ # Copyright (C) 2006 Exophase <exophase@gmail.com>
++# Copyright (C) 2007 takka <takka@tfact.net>
+ #
+ # This program is free software; you can redistribute it and/or
+ # modify it under the terms of the GNU General Public License as
+@@ -45,14 +46,12 @@
+ .global execute_arm_translate
+ .global invalidate_icache_region
+ .global invalidate_all_cache
+-.global step_debug_mips
+ .global reg_check
+ 
+ .global memory_map_read
+ .global memory_map_write
+ .global reg
+ 
+-.extern reg
+ .extern spsr
+ 
+ # MIPS register layout:
+@@ -133,10 +132,10 @@
+ .endm
+ 
+ .macro collapse_flags
+-  lw $2, REG_CPSR($16)            # $2 = [$16 + REG_CPSR]		# load CPSR
+-  andi $2, $2, 0xFF               # $2 = $2 and 0xFF			# isolate lower 8bits
+-  collapse_flag 20, 31            # # store flags
+-  collapse_flag 21, 30            #
++  lw $2, REG_CPSR($16)            # load CPSR
++  andi $2, $2, 0xFF               # isolate lower 8bits
++  collapse_flag 20, 31            # store flags
++  collapse_flag 21, 30
+   collapse_flag 22, 29
+   collapse_flag 23, 28
+   sw $2, REG_CPSR($16)            # store CPSR
+@@ -269,29 +268,24 @@
+ .macro patch_handler ftable, force_open
+   srl $1, $4, 24                  # $1 = address region
+   sltu $2, $1, 0x0F               # check if the value is open
+-  bne $2, $0, 1f
+-  sll $1, $1, 2                   # make address word indexed (delay)
+-
++  sll $1, $1, 2                   # make address word indexed
++  beql $2, $0, 1f
+   addiu $1, $0, (\force_open * 4)
+ 
+ 1:
+   lui $2, %hi(\ftable)
+   addu $2, $2, $1
+   lw $2, %lo(\ftable)($2)         # new function handler is in $2
+-  srl $2, $2, 2                   # remove lower two bits
+ 
+   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
++  srl $2, $2, 2                   # remove lower two bits
+   ins $1, $2, 0, 26               # insert offset into jal
+ 
+   addiu $ra, $ra, -8              # rewind return address to function call
+   sw $1, ($ra)                    # modify to call new handler
+ 
+-##  cache 0x1a, ($ra)               # writeback dcache line
+-##  cache 0x8, ($ra)                # invalidate icache line
+-##  cache 0x1a, ($ra)               # do it again for good luck :P
+-##  cache 0x8, ($ra)
+-  cache 0x1a, ($ra)               # hit writeback dcache line
+-  cache 0x08, ($ra)               # hit invalidate icache line
++  cache 0x1a, ($ra)               # writeback dcache line
++  cache 0x08, ($ra)               # invalidate icache line
+ 
+   jr $ra                          # return
+   nop                             # wary of putting cache here
+@@ -304,32 +298,25 @@
+ .macro patch_handler_align ftable, alignment
+   srl $1, $4, 24                  # $1 = address region
+   sltu $2, $1, 0x0F               # check if the value is open
+-  bne $2, $0, 1f
+-  sll $1, $1, 2                   # make address word indexed (delay)
+-
+-  addiu $1, $0, 4                 # force address to 0x1 (open)
++  sll $1, $1, 2                   # make address word indexed
++  beql $2, $0, 1f
++  addiu $1, $0, 4                 # force address to 0x1 (open) delay
+ 
+ 1:
+   ins $1, $4, 6, \alignment       # place alignment bits into offset
+   lui $2, %hi(\ftable)
+-
+   addu $2, $2, $1
+   lw $2, %lo(\ftable)($2)         # new function handler is in $2
+ 
+-  srl $2, $2, 2                   # remove lower two bits
+-
+   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
++  srl $2, $2, 2                   # remove lower two bits
+   ins $1, $2, 0, 26               # insert offset into jal
+ 
+   addiu $ra, $ra, -8              # rewind return address to function call
+   sw $1, ($ra)                    # modify to call new handler
+ 
+-##  cache 0x1a, ($ra)               # writeback dcache line
+-##  cache 0x8, ($ra)                # invalidate icache line
+-##  cache 0x1a, ($ra)               # do it again for good luck :P
+-##  cache 0x8, ($ra)
+-  cache 0x1a, ($ra)               # hit writeback dcache line
+-  cache 0x08, ($ra)               # hit invalidate icache line
++  cache 0x1a, ($ra)               # writeback dcache line
++  cache 0x08, ($ra)               # invalidate icache line
+ 
+   jr $ra                          # return
+   nop                             # wary of putting cache here
+@@ -450,53 +437,51 @@
+ 
+ 
+ .macro translate_region_vram_core
+-  addiu $2, $2, -3                # see if it's 3
+   ext $4, $4, 0, 17               # generate 17bit offset
+-  bne $2, $0, 1f                  # if $2 != $0 then j 1:
+-  lui $1, %hi(vram)               # start loading vram address (delay)
+-
+-  addiu $4, $4, -0x8000           # move address into VRAM region
++  bnel $2, $0, 1f                 # if address >= 0x10000
++  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+ 
+ 1:
++  lui $1, %hi(vram)               # start loading vram address
+   addu $2, $1, $4                 # $2 = (hi)vram + address
+ .endm
+ 
+ .macro translate_region_vram patch_handler
+   region_check 6, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   translate_region_vram_core
+ .endm
+ 
+ .macro translate_region_vram_load_align align_bits, alignment, patch_handler
+   region_check_align 6, \align_bits, \alignment, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   translate_region_vram_core
+ .endm
+ 
+ .macro translate_region_vram_load_align16 align_bits, alignment, patch_handler
+   region_check_align 6, \align_bits, \alignment, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   ins $4, $0, 0, 1                # mask out lower bit of address
+   translate_region_vram_core
+ .endm
+ 
+ .macro translate_region_vram_load_align32 align_bits, alignment, patch_handler
+   region_check_align 6, \align_bits, \alignment, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   ins $4, $0, 0, 2                # mask out lower two bits of address
+   translate_region_vram_core
+ .endm
+ 
+ .macro translate_region_vram_store_align16 patch_handler
+   region_check 6, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   ins $4, $0, 0, 1                # mask out lower bit of address
+   translate_region_vram_core
+ .endm
+ 
+ .macro translate_region_vram_store_align32 patch_handler
+   region_check 6, \patch_handler
+-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
++  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+   ins $4, $0, 0, 2                # mask out lower two bits of address
+   translate_region_vram_core
+ .endm
+@@ -507,7 +492,7 @@
+   srl $2, $4, 15                  # $2 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $2 = memory_map_read[address >> 15]
+-  lw $2, -32768($2)               # 
++  lw $2, -32768($2)
+   bne $2, $0, 1f                  # if it's non-NULL continue
+   andi $1, $4, \mask              # $1 = low 15bits of address (delay slot)
+ 
+@@ -518,8 +503,8 @@
+ 
+   jal load_gamepak_page           # get page in $2
+   sw $1, REG_SAVE($16)            # save offset (delay)
+-  lw $1, REG_SAVE($16)            # restore offset (delay)
+ 
++  lw $1, REG_SAVE($16)            # restore offset
+   restore_registers               # restore the other registers
+ 
+   lw $ra, REG_SAVE2($16)          # restore return address
+@@ -566,8 +551,8 @@
+ 
+   jal load_gamepak_page           # get page in $2
+   sw $1, REG_SAVE($16)            # save offset (delay)
+-  lw $1, REG_SAVE($16)            # restore offset (delay)
+ 
++  lw $1, REG_SAVE($16)            # restore offset
+   restore_registers               # restore the other registers
+ 
+   lw $ra, REG_SAVE2($16)          # restore return address
+@@ -580,20 +565,18 @@
+ 
+ .macro eeprom_load_a patch_handler
+   region_check 0xD, \patch_handler
+-
+   sw $ra, REG_SAVE($16)           # save the return address (delay)
+-  sw $6, REG_SAVE2($16)           # save a2
+ 
+   save_registers                  # save the registers
+ 
+   jal read_eeprom                 # get eeprom value in $2
+-  nop
++  sw $6, REG_SAVE2($16)           # save a2 (delay)
+ 
+   restore_registers               # restore the other registers
+ 
+   lw $ra, REG_SAVE($16)           # restore return address
+   jr $ra                          # return
+-  lw $6, REG_SAVE2($16)           # restore a2
++  lw $6, REG_SAVE2($16)           # restore a2 (delay)
+ .endm
+ 
+ 
+@@ -635,7 +618,7 @@
+   save_registers                  # save the registers
+ 
+   jal read_backup                 # get backup value in $2
+-  ext $4, $4, 0, 16               # address &= 0xFFFF
++  ext $4, $4, 0, 16               # address &= 0xFFFF (delay)
+ 
+   restore_registers               # restore the other registers
+ 
+@@ -651,13 +634,13 @@
+   save_registers                  # save the registers
+ 
+   jal read_backup                 # get backup value in $2
+-  ext $4, $4, 0, 16               # address &= 0xFFFF
++  ext $4, $4, 0, 16               # address &= 0xFFFF (delay)
+ 
+   restore_registers               # restore the other registers
+ 
+   lw $ra, REG_SAVE($16)           # restore return address
+   jr $ra                          # return
+-  lw $6, REG_SAVE2($16)           # restore a2
++  lw $6, REG_SAVE2($16)           # restore a2 (delay)
+ .endm
+ 
+ 
+@@ -691,13 +674,13 @@
+ .macro open_load8_core
+   lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
+   andi $2, $2, 0x20               # test T bit
+-  beq $2, $0, 1f                  # branch if ARM mode
+-  andi $4, $4, 0x03               # isolate lower 3bits from address (delay)
++  andi $4, $4, 0x03               # in ARM mode, isolate lower 2bits from address
+ 
+-  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit
++  bnel $2, $0, 1f                 # branch if Thumb mode
++  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit (delay)
+ 
+ 1:
+-  sw $ra, REG_SAVE($16)           # save the return address (delay)
++  sw $ra, REG_SAVE($16)           # save the return address
+   save_registers                  # save the registers
+ 
+   jal read_memory8                # get instruction at PC
+@@ -719,13 +702,13 @@
+ .macro open_load16_core
+   lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
+   andi $2, $2, 0x20               # test T bit
+-  beq $2, $0, 1f                  # branch if ARM mode
+-  andi $4, $4, 0x02               # isolate bit 1 from address (delay)
++  andi $4, $4, 0x02               # in ARM mode, isolate bit 1 from address
+ 
+-  addu $4, $0, $0                 # zero out address bit
++  bnel $2, $0, 1f                 # branch if Thumb mode
++  addu $4, $0, $0                 # in Thumb mode, zero out address bit (delay)
+ 
+ 1:
+-  sw $ra, REG_SAVE($16)           # save the return address (delay)
++  sw $ra, REG_SAVE($16)           # save the return address
+   save_registers                  # save the registers
+ 
+   jal read_memory16               # get instruction at PC
+@@ -758,14 +741,14 @@
+   sw $ra, REG_SAVE($16)           # save the return address (delay)
+ 
+   jal read_memory16               # get instruction at PC
+-  addu $4, $5, $0                 # a0 = PC
++  addu $4, $5, $0                 # a0 = PC (delay)
+ 
+   j 2f
+   ins $2, $2, 16, 16              # result = (result << 16) | result (delay)
+ 
+ 1:
+   jal read_memory32               # get instruction at PC
+-  addu $4, $5, $4                 # a0 = PC
++  addu $4, $5, $0                 # a0 = PC (delay)
+ 
+ 2:                                # join point
+   restore_registers               # restore the other registers
+@@ -776,7 +759,6 @@
+ 
+ .macro open_load32_a patch_handler
+   region_check_open \patch_handler
+-
+   lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
+   andi $2, $2, 0x20               # test T bit
+ 
+@@ -787,14 +769,14 @@
+   sw $ra, REG_SAVE($16)           # save the return address (delay)
+ 
+   jal read_memory16               # get instruction at PC
+-  addu $4, $5, $0                 # a0 = PC
++  addu $4, $5, $0                 # a0 = PC (delay)
+ 
+   j 2f
+   ins $2, $2, 16, 16              # result = (result << 16) | result (delay)
+ 
+ 1:
+   jal read_memory32               # get instruction at PC
+-  addu $4, $5, $4                 # a0 = PC
++  addu $4, $5, $0                 # a0 = PC (delay)
+ 
+ 2:
+   restore_registers               # restore the other registers
+@@ -821,7 +803,7 @@
+   save_registers                  # save the registers
+ 
+   jal \function                   # store value out
+-  andi $4, $4, \mask              # mask address
++  andi $4, $4, \mask              # mask address (delay)
+ 
+   restore_registers               # restore the other registers
+ 
+@@ -838,7 +820,7 @@
+   save_registers                  # save the registers
+ 
+   jal \function                   # store value out
+-  andi $4, $4, \mask              # mask address
++  andi $4, $4, \mask              # mask address (delay)
+ 
+   restore_registers               # restore the other registers
+ 
+@@ -962,9 +944,9 @@
+ 
+ execute_load_bios_u8:
+   region_check 0, patch_load_u8
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -995,9 +977,18 @@
+   load_u8 (iwram + 0x8000)
+ 
+ execute_load_io_u8:
+-  translate_region 4, patch_load_u8, io_registers, 0x3FF
++  region_check 4, patch_load_u8
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u8 io_registers
+ 
++1:
++  open_load8_core
++  nop
++
+ execute_load_palette_u8:
+   translate_region 5, patch_load_u8, palette_ram, 0x3FF
+   load_u8 palette_ram
+@@ -1068,9 +1059,9 @@
+ 
+ execute_load_bios_s8:
+   region_check 0, patch_load_s8
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1098,9 +1089,18 @@
+   load_s8 (iwram + 0x8000)
+ 
+ execute_load_io_s8:
+-  translate_region 4, patch_load_s8, io_registers, 0x3FF
++  region_check 4, patch_load_s8
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_s8 io_registers
+ 
++1:
++  open_load8_core
++  seb $2, $2
++
+ execute_load_palette_s8:
+   translate_region 5, patch_load_s8, palette_ram, 0x3FF
+   load_s8 palette_ram
+@@ -1171,9 +1171,9 @@
+ 
+ execute_load_bios_u16:
+   region_check_align 0, 1, 0, patch_load_u16
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1200,9 +1200,18 @@
+   load_u16 (iwram + 0x8000)
+ 
+ execute_load_io_u16:
+-  translate_region_align 4, 1, 0, patch_load_u16, io_registers, 0x3FF
++  region_check 4, patch_load_u16
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u16 io_registers
+ 
++1:
++  open_load16_core
++  nop
++
+ execute_load_palette_u16:
+   translate_region_align 5, 1, 0, patch_load_u16, palette_ram, 0x3FF
+   load_u16 palette_ram
+@@ -1251,9 +1260,9 @@
+ 
+ execute_load_bios_u16u:
+   region_check_align 0, 1, 1, patch_load_u16
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1281,9 +1290,18 @@
+   load_u16_unaligned (iwram + 0x8000)
+ 
+ execute_load_io_u16u:
+-  translate_region_align 4, 1, 1, patch_load_u16, io_registers, 0x3FE
++  region_check_align 4, 1, 1, patch_load_u16
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FE              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u16_unaligned io_registers
+ 
++1:
++  open_load16_core
++  ror $2, $2, 8
++
+ execute_load_palette_u16u:
+   translate_region_align 5, 1, 1, patch_load_u16, palette_ram, 0x3FE
+   load_u16_unaligned palette_ram
+@@ -1342,6 +1360,7 @@
+   .long execute_load_gamepakA_u16 # 0x0A gamepak
+   .long execute_load_gamepakB_u16 # 0x0B gamepak
+   .long execute_load_gamepakC_u16 # 0x0C gamepak
++
+   .long execute_load_eeprom_u16   # 0x0D gamepak/eeprom
+   .long execute_load_backup_u16   # 0x0E Flash ROM/SRAM
+   .long execute_load_open_u16     # 0x0F open
+@@ -1406,9 +1425,9 @@
+ 
+ execute_load_bios_s16:
+   region_check_align 0, 1, 0, patch_load_s16
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1436,9 +1455,18 @@
+   load_s16 (iwram + 0x8000)
+ 
+ execute_load_io_s16:
+-  translate_region_align 4, 1, 0, patch_load_s16, io_registers, 0x3FF
++  region_check_align 4, 1, 0, patch_load_s16
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_s16 io_registers
+ 
++1:
++  open_load16_core
++  seh $2, $2
++
+ execute_load_palette_s16:
+   translate_region_align 5, 1, 0, patch_load_s16, palette_ram, 0x3FF
+   load_s16 palette_ram
+@@ -1487,9 +1515,9 @@
+ 
+ execute_load_bios_s16u:
+   region_check_align 0, 1, 1, patch_load_s16
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1516,9 +1544,18 @@
+   load_s16_unaligned (iwram + 0x8000)
+ 
+ execute_load_io_s16u:
+-  translate_region_align 4, 1, 1, patch_load_s16, io_registers, 0x3FE
++  region_check_align 4, 1, 1, patch_load_s16
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FE              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_s16_unaligned io_registers
+ 
++1:
++  open_load16_core
++  seb $2, $2
++
+ execute_load_palette_s16u:
+   translate_region_align 5, 1, 1, patch_load_s16, palette_ram, 0x3FE
+   load_s16_unaligned palette_ram
+@@ -1606,9 +1643,9 @@
+ 
+ execute_load_bios_u32:
+   region_check_align 0, 2, 0, patch_load_u32
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1635,9 +1672,18 @@
+   load_u32 (iwram + 0x8000)
+ 
+ execute_load_io_u32:
+-  translate_region_align 4, 2, 0, patch_load_u32, io_registers, 0x3FF
++  region_check_align 4, 2, 0, patch_load_u32
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u32 io_registers
+ 
++1:
++  open_load32_core
++  nop
++
+ execute_load_palette_u32:
+   translate_region_align 5, 2, 0, patch_load_u32, palette_ram, 0x3FF
+   load_u32 palette_ram
+@@ -1686,9 +1732,9 @@
+ 
+ execute_load_bios_u32u1:
+   region_check_align 0, 2, 1, patch_load_u32
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1713,9 +1759,18 @@
+   load_u32_unaligned (iwram + 0x8000), 1
+ 
+ execute_load_io_u32u1:
+-  translate_region_align 4, 2, 1, patch_load_u32, io_registers, 0x3FC
++  region_check_align 4, 2, 1, patch_load_u32
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FC              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u32_unaligned io_registers, 1
+ 
++1:
++  open_load32_core
++  ror $2, $2, 8
++
+ execute_load_palette_u32u1:
+   translate_region_align 5, 2, 1, patch_load_u32, palette_ram, 0x3FC
+   load_u32_unaligned palette_ram, 1
+@@ -1764,9 +1819,9 @@
+ 
+ execute_load_bios_u32u2:
+   region_check_align 0, 2, 2, patch_load_u32
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1791,9 +1846,18 @@
+   load_u32_unaligned (iwram + 0x8000), 2
+ 
+ execute_load_io_u32u2:
+-  translate_region_align 4, 2, 2, patch_load_u32, io_registers, 0x3FC
++  region_check_align 4, 2, 2, patch_load_u32
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FC              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u32_unaligned io_registers, 2
+ 
++1:
++  open_load32_core
++  ror $2, $2, 16
++
+ execute_load_palette_u32u2:
+   translate_region_align 5, 2, 2, patch_load_u32, palette_ram, 0x3FC
+   load_u32_unaligned palette_ram, 2
+@@ -1841,9 +1905,9 @@
+ 
+ execute_load_bios_u32u3:
+   region_check_align 0, 2, 3, patch_load_u32
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -1868,9 +1932,18 @@
+   load_u32_unaligned (iwram + 0x8000), 3
+ 
+ execute_load_io_u32u3:
+-  translate_region_align 4, 2, 3, patch_load_u32, io_registers, 0x3FC
++  region_check_align 4, 2, 3, patch_load_u32
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FC              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u32_unaligned io_registers, 3
+ 
++1:
++  open_load32_core
++  ror $2, $2, 24
++
+ execute_load_palette_u32u3:
+   translate_region_align 5, 2, 3, patch_load_u32, palette_ram, 0x3FC
+   load_u32_unaligned palette_ram, 3
+@@ -1929,6 +2002,7 @@
+   .long execute_load_gamepakA_u32 # 0x0A gamepak
+   .long execute_load_gamepakB_u32 # 0x0B gamepak
+   .long execute_load_gamepakC_u32 # 0x0C gamepak
++
+   .long execute_load_eeprom_u32   # 0x0D gamepak/eeprom
+   .long execute_load_backup_u32   # 0x0E Flash ROM/SRAM
+   .long execute_load_open_u32     # 0x0F open
+@@ -1993,9 +2067,9 @@
+ 
+ execute_load_bios_u32a:
+   region_check 0, patch_load_u32a
+-  srl $2, $4, 14                  # check if address is in BIOS region
++  srl $2, $4, 14                  # check if address is in BIOS region (delay)
+   bne $2, $0, 2f                  # if not, perform open read
+-  srl $1, $5, 14                  # check if PC is in BIOS region
++  srl $1, $5, 14                  # check if PC is in BIOS region (delay)
+   bne $1, $0, 1f                  # if not, perform BIOS protected read
+   lui $2, %hi(bios_rom)           # generate upper address (delay)
+ 
+@@ -2009,7 +2083,6 @@
+ 
+ 2:
+   open_load32_a
+-  nop
+ 
+ execute_load_ewram_u32a:
+   translate_region_ewram patch_load_u32a
+@@ -2021,9 +2094,17 @@
+   load_u32 (iwram + 0x8000)
+ 
+ execute_load_io_u32a:
+-  translate_region 4, patch_load_u32a, io_registers, 0x3FF
++  region_check 4, patch_load_u32a
++  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
++  bne $2, $0, 1f                  # if not, perform open read
++  lui $2, %hi(io_registers)       # generate upper address (delay)
++  andi $4, $4, 0x3FF              # generate offset
++  addu $2, $2, $4                 # add ptr upper and offset
+   load_u32 io_registers
+ 
++1:
++  open_load32_a
++
+ execute_load_palette_u32a:
+   translate_region 5, patch_load_u32a, palette_ram, 0x3FF
+   load_u32 palette_ram
+@@ -2061,7 +2142,6 @@
+ 
+ execute_load_backup_u32a:
+   backup_load_a patch_load_u32a
+-  nop
+ 
+ execute_load_open_u32a:
+   open_load32_a patch_load_u32a
+@@ -2107,14 +2187,16 @@
+ 
+ execute_store_io_u8:
+   region_check 4, patch_store_u8
+-  andi $5, $5, 0xFF               # make value 8bit
++  andi $5, $5, 0xFF               # make value 8bit (delay)
+   andi $4, $4, 0x3FF              # wrap around address
++
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)
+ 
+   save_registers
+   jal write_io_register8          # write the value out
+   sw $6, REG_PC($16)              # save the PC (delay slot)
++
+   j write_io_epilogue             # handle any state changes
+   nop
+ 
+@@ -2125,6 +2207,7 @@
+   andi $4, $4, 0x3FE              # align palette address
+   addu $2, $2, $4
+   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
++
+   sll $1, $5, 1                   # make green 6bits
+   ins $1, $0, 0, 6                # make bottom bit 0
+   ins $1, $5, 0, 5                # insert red channel into $1
+@@ -2138,10 +2221,7 @@
+   store_u8_double vram
+ 
+ execute_store_oam_u8:
+-  translate_region 7, patch_store_u8, oam_ram, 0x3FE
+-  lui $1, %hi(oam_update)         # write non-zero to oam_update
+-  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+-  store_u8_double oam_ram
++  ignore_region 7, patch_store_u8 # Write 8bit data is ignore
+ 
+ execute_store_ignore8_u8:
+   ignore_region 8, patch_store_u8
+@@ -2208,14 +2288,16 @@
+ 
+ execute_store_io_u16:
+   region_check 4, patch_store_u16
+-  andi $5, $5, 0xFFFF             # make value 16bit
++  andi $5, $5, 0xFFFF             # make value 16bit (delay)
+   andi $4, $4, 0x3FE              # wrap around/align address
++
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)
+ 
+   save_registers
+   jal write_io_register16         # write the value out
+   sw $6, REG_PC($16)              # save the PC (delay slot)
++
+   j write_io_epilogue             # handle any state changes
+   nop
+ 
+@@ -2225,6 +2307,7 @@
+   andi $4, $4, 0x3FE              # wrap/align palette address
+   addu $2, $2, $4
+   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
++
+   sll $1, $5, 1                   # make green 6bits
+   ins $1, $0, 0, 6                # make bottom bit 0
+   ins $1, $5, 0, 5                # insert red channel into $1
+@@ -2313,12 +2396,14 @@
+   region_check 4, patch_store_u32
+   nop
+   andi $4, $4, 0x3FC              # wrap around/align address
++
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)
+ 
+   save_registers
+   jal write_io_register32         # write the value out
+   sw $6, REG_PC($16)              # save the PC (delay slot)
++
+   j write_io_epilogue             # handle any state changes
+   nop
+ 
+@@ -2422,21 +2507,18 @@
+ 
+ execute_store_io_u32a:
+   region_check 4, patch_store_u32a
+-  nop
++  sw $ra, REG_SAVE2($16)          # save ra (delay)
+   sw $6, REG_SAVE($16)            # save a2
+-  sw $ra, REG_SAVE2($16)          # save ra
+-
+-  andi $4, $4, 0x3FC              # wrap around/align address
+ 
+   save_registers
+   jal write_io_register32         # write the value out
+-  nop
++  andi $4, $4, 0x3FC              # wrap around/align address (delay)
+ 
+   restore_registers
+ 
+   lw $ra, REG_SAVE2($16)          # restore ra
+   jr $ra
+-  lw $6, REG_SAVE($16)            # restore a2
++  lw $6, REG_SAVE($16)            # restore a2 (delay)
+ 
+ execute_store_palette_u32a:
+   region_check 5, patch_store_u32a
+@@ -2496,22 +2578,22 @@
+   ignore_high patch_store_u32a
+ 
+ store_u32a_ftable:
+-  .long execute_store_ignore0_u32a# 0x00 BIOS
+-  .long execute_store_ignore1_u32a# 0x01 open address
+-  .long execute_store_ewram_u32a  # 0x02 EWRAM
+-  .long execute_store_iwram_u32a  # 0x03 IWRAM
+-  .long execute_store_io_u32a     # 0x04 I/O registers
+-  .long execute_store_palette_u32a# 0x05 Palette RAM
+-  .long execute_store_vram_u32a   # 0x06 VRAM
+-  .long execute_store_oam_u32a    # 0x07 OAM RAM
+-  .long execute_store_ignore8_u32a# 0x08 gamepak
+-  .long execute_store_ignore9_u32a# 0x09 gamepak
+-  .long execute_store_ignoreA_u32a# 0x0A gamepak
+-  .long execute_store_ignoreB_u32a# 0x0B gamepak
+-  .long execute_store_ignoreC_u32a# 0x0C gamepak
+-  .long execute_store_eeprom_u32a # 0x0D gamepak/eeprom
+-  .long execute_store_ignoreE_u32a# 0x0E Flash ROM/SRAM
+-  .long execute_store_ignoreF_u32a# 0x0F open address
++  .long execute_store_ignore0_u32a # 0x00 BIOS
++  .long execute_store_ignore1_u32a # 0x01 open address
++  .long execute_store_ewram_u32a   # 0x02 EWRAM
++  .long execute_store_iwram_u32a   # 0x03 IWRAM
++  .long execute_store_io_u32a      # 0x04 I/O registers
++  .long execute_store_palette_u32a # 0x05 Palette RAM
++  .long execute_store_vram_u32a    # 0x06 VRAM
++  .long execute_store_oam_u32a     # 0x07 OAM RAM
++  .long execute_store_ignore8_u32a # 0x08 gamepak
++  .long execute_store_ignore9_u32a # 0x09 gamepak
++  .long execute_store_ignoreA_u32a # 0x0A gamepak
++  .long execute_store_ignoreB_u32a # 0x0B gamepak
++  .long execute_store_ignoreC_u32a # 0x0C gamepak
++  .long execute_store_eeprom_u32a  # 0x0D gamepak/eeprom
++  .long execute_store_ignoreE_u32a # 0x0E Flash ROM/SRAM
++  .long execute_store_ignoreF_u32a # 0x0F open address
+ 
+ patch_store_u32a:
+   patch_handler store_u32a_ftable, 0x0F
+@@ -2522,7 +2604,7 @@
+ execute_load_full_u8:
+   srl $1, $4, 28                  # check if the address is out of range
+   bne $1, $0, ext_load_u8         # if it is, perform an extended read
+-  srl $2, $4, 15                  # $1 = page number of address
++  srl $2, $4, 15                  # $1 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($2)
+@@ -2535,9 +2617,11 @@
+ ext_load_u8:
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)                   # store return address
++
+   save_registers
+   jal read_memory8                # read the value
+   nop
++
+   restore_registers
+   lw $ra, ($sp)                   # restore return address
+   jr $ra                          # return
+@@ -2547,7 +2631,7 @@
+ execute_load_full_s8:
+   srl $1, $4, 28                  # check if the address is out of range
+   bne $1, $0, ext_load_s8         # if it is, perform an extended read
+-  srl $2, $4, 15                  # $1 = page number of address
++  srl $2, $4, 15                  # $1 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($2)
+@@ -2574,7 +2658,7 @@
+   srl $1, $4, 28                  # check if the address is out of range
+   ins $1, $4, 4, 1                # or unaligned (bottom bit)
+   bne $1, $0, ext_load_u16        # if it is, perform an extended read
+-  srl $2, $4, 15                  # $1 = page number of address
++  srl $2, $4, 15                  # $1 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($2)
+@@ -2582,7 +2666,7 @@
+   andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+   addu $1, $1, $2                 # add the memory map offset
+   jr $ra                          # return
+-  lhu $2, ($1)                    # read the value
++  lhu $2, ($1)                    # read the value (delay)
+ 
+ ext_load_u16:
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+@@ -2600,7 +2684,7 @@
+   srl $1, $4, 28                  # check if the address is out of range
+   ins $1, $4, 4, 1                # or unaligned (bottom bit)
+   bne $1, $0, ext_load_s16        # if it is, perform an extended read
+-  srl $2, $4, 15                  # $1 = page number of address
++  srl $2, $4, 15                  # $1 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($2)
+@@ -2608,7 +2692,7 @@
+   andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+   addu $1, $1, $2                 # add the memory map offset
+   jr $ra                          # return
+-  lh $2, ($1)                     # read the value
++  lh $2, ($1)                     # read the value (delay)
+ 
+ ext_load_s16:
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+@@ -2627,7 +2711,7 @@
+   srl $1, $4, 28                  # check if the address is out of range
+   ins $1, $4, 4, 2                # or unaligned (bottom two bits)
+   bne $1, $0, ext_load_u32        # if it is, perform an extended read
+-  srl $2, $4, 15                  # $1 = page number of address
++  srl $2, $4, 15                  # $1 = page number of address (delay)
+   sll $2, $2, 2                   # adjust to word index
+   addu $2, $2, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($2)
+@@ -2635,7 +2719,7 @@
+   andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+   addu $1, $1, $2                 # add the memory map offset
+   jr $ra                          # return
+-  lw $2, ($1)                     # read the value
++  lw $2, ($1)                     # read the value (delay)
+ 
+ ext_load_u32:
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+@@ -2651,7 +2735,7 @@
+ #execute_aligned_load32:
+   srl $2, $4, 28                  # check if the address is out of range
+   bne $2, $0, ext_aligned_load32  # if it is, perform an extended load
+-  srl $1, $4, 15                  # $1 = page number of address
++  srl $1, $4, 15                  # $1 = page number of address (delay)
+   sll $1, $1, 2                   # adjust to word index
+   addu $1, $1, $16                # $1 = memory_map_read[address >> 15]
+   lw $1, -32768($1)
+@@ -2659,7 +2743,7 @@
+   andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+   addu $1, $1, $2                 # add the memory map offset
+   jr $ra                          # return
+-  lw $2, ($1)                     # read the value
++  lw $2, ($1)                     # read the value (delay)
+ 
+ ext_aligned_load32:
+   addiu $sp, $sp, -8              # make room on the stack for $ra
+@@ -2690,12 +2774,8 @@
+   nop
+   collapse_flags                  # make sure flags are good for update_gba
+ 
+-alert_loop:
+   jal update_gba                  # process the next event
+   nop
+-  lw $1, CPU_HALT_STATE($16)      # check if CPU is sleeping
+-  bne $1, $0, alert_loop          # see if it hasn't changed
+-  nop
+ 
+   addu $17, $2, $0                # $17 = new cycle counter
+   lw $4, REG_PC($16)              # $4 = new PC
+@@ -2706,20 +2786,19 @@
+ irq_alert:
+   restore_registers
+   j lookup_pc                     # PC has changed, get a new one
+-  addiu $sp, $sp, 4               # fix the stack
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ no_alert:
+   restore_registers
+   lw $ra, ($sp)                   # restore return address
+   jr $ra                          # we can return
+-  addiu $sp, $sp, 4               # fix the stack
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ smc_dma:
+-  addiu $sp, $sp, 4               # fix the stack
+   jal flush_translation_cache_ram # flush translation cache
+   nop
+   j lookup_pc
+-  nop
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ 
+ ext_store_eeprom:
+@@ -2731,7 +2810,7 @@
+   restore_registers
+   lw $ra, ($sp)                   # restore return address
+   jr $ra                          # we can return
+-  addiu $sp, $sp, 4               # fix the stack
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ 
+ # 8bit ext memory routines
+@@ -2748,34 +2827,27 @@
+   nop
+ 
+ ext_store_palette8:
++  ins $5, $5, 8, 8                # value = (value << 8) | value
+   j ext_store_palette16b          # perform 16bit palette write
+   andi $4, $4, 0x3FE              # wrap + align (delay)
+ 
+ ext_store_vram8:
+   ins $5, $5, 8, 8                # value = (value << 8) | value
++  ext $1, $4, 16, 1               # $1 = bit 16 of address
+   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
+   ins $4, $0, 0, 1                # align out bottom bit
+-  lui $1, %hi(0x18000)            # $1 = 0x18000
+-  sltu $1, $4, $1                 # if $4 >= $1 then $1 = 0 else $1 = 1
+-  bne $1, $0, ext_store_vram8b    # if $1 != 0 then j ext_store_vram8b
+-  lui $2, %hi(vram)               # start loading vram address (delay)
+-
+-  addiu $4, $4, -0x8000           # move address into VRAM region
++  bnel $1, $0, ext_store_vram8b   # if address >= 0x10000
++  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+ 
+ ext_store_vram8b:
++  lui $2, %hi(vram)               # start loading vram address
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
+ 
+ ext_store_oam8:
+-  lui $1, %hi(oam_update)         # write non-zero to oam_update
+-  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+-  andi $4, $4, 0x3FE              # wrap around address and align to 16bits
+-  ins $5, $5, 8, 8                # value = (value << 8) | value
+-  lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
+-  addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+-  jr $ra                          # return
+-  sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
++  jr $ra                          # Write 8bit data is ignore
++  nop
+ 
+ ext_store_backup:
+   andi $5, $5, 0xFF               # make value 8bit
+@@ -2788,25 +2860,25 @@
+   restore_registers
+   lw $ra, ($sp)                   # restore return address
+   jr $ra                          # we can return
+-  addiu $sp, $sp, 4               # fix the stack
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ ext_store_u8_jtable:
+-  .long ext_store_ignore  # 0x00 BIOS
+-  .long ext_store_ignore  # 0x01 invalid
++  .long ext_store_ignore    # 0x00 BIOS
++  .long ext_store_ignore    # 0x01 invalid
+   .long ext_store_ignore    # 0x02 EWRAM
+   .long ext_store_ignore    # 0x03 IWRAM
+   .long ext_store_io8       # 0x04 I/O registers
+   .long ext_store_palette8  # 0x05 Palette RAM
+   .long ext_store_vram8     # 0x06 VRAM
+   .long ext_store_oam8      # 0x07 OAM RAM
+-  .long ext_store_ignore  # 0x08 gamepak (no RTC accepted in 8bit)
+-  .long ext_store_ignore  # 0x09 gamepak, ignore
+-  .long ext_store_ignore  # 0x0A gamepak, ignore
+-  .long ext_store_ignore  # 0x0B gamepak, ignore
+-  .long ext_store_ignore  # 0x0C gamepak, ignore
+-  .long ext_store_eeprom   # 0x0D EEPROM (possibly)
+-  .long ext_store_backup   # 0x0E Flash ROM/SRAM
+-  .long ext_store_ignore  # 0x0F invalid
++  .long ext_store_ignore    # 0x08 gamepak (no RTC accepted in 8bit)
++  .long ext_store_ignore    # 0x09 gamepak, ignore
++  .long ext_store_ignore    # 0x0A gamepak, ignore
++  .long ext_store_ignore    # 0x0B gamepak, ignore
++  .long ext_store_ignore    # 0x0C gamepak, ignore
++  .long ext_store_eeprom    # 0x0D EEPROM (possibly)
++  .long ext_store_backup    # 0x0E Flash ROM/SRAM
++  .long ext_store_ignore    # 0x0F invalid
+ 
+ 
+ 
+@@ -2862,6 +2934,7 @@
+   lui $2, %hi(palette_ram)
+   addu $2, $2, $4
+   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
++
+   sll $1, $5, 1                   # make green 6bits
+   ins $1, $0, 0, 6                # make bottom bit 0
+   ins $1, $5, 0, 5                # insert red channel into $1
+@@ -2871,15 +2944,13 @@
+   sh $1, %lo(palette_ram_converted)($2)
+ 
+ ext_store_vram16:
++  ext $1, $4, 16, 1               # $1 = bit 16 of address
+   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
+-  lui $1, %hi(0x18000)            # $1 = 0x18000
+-  sltu $1, $4, $1                 # see if address < 0x18000
+-  bne $1, $0, ext_store_vram16b
+-  lui $2, %hi(vram)               # start loading vram address (delay)
+-
+-  addiu $4, $4, -0x8000           # move address into VRAM region
++  bnel $1, $0, ext_store_vram16b  # if address >= 0x10000
++  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+ 
+ ext_store_vram16b:
++  lui $2, %hi(vram)               # start loading vram address
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
+@@ -2887,6 +2958,7 @@
+ ext_store_oam16:
+   lui $1, %hi(oam_update)         # write non-zero to oam_update
+   sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
++
+   andi $4, $4, 0x3FF              # wrap around address
+   lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
+   addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+@@ -2894,7 +2966,7 @@
+   sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
+ 
+ ext_store_rtc:
+-  andi $5, $5, 0xFFFF             # make value 16bit
++  andi $4, $4, 0xFF               # wrap address
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)
+   save_registers
+@@ -2903,7 +2975,7 @@
+   restore_registers
+   lw $ra, ($sp)                   # restore return address
+   jr $ra                          # we can return
+-  addiu $sp, $sp, 4               # fix the stack
++  addiu $sp, $sp, 4               # fix the stack (delay)
+ 
+ ext_store_u16_jtable:
+   .long ext_store_ignore          # 0x00 BIOS, ignore
+@@ -2953,11 +3025,6 @@
+ 
+ 
+ 
+-
+-
+-
+-
+-
+ # 32bit ext memory routines
+ 
+ ext_store_io32:
+@@ -2980,15 +3047,13 @@
+   addu $ra, $6, $0                # restore return address (delay)
+ 
+ ext_store_vram32:
++  ext $1, $4, 16, 1               # $1 = bit 16 of address
+   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
+-  lui $1, %hi(0x18000)            # $1 = 0x18000
+-  sltu $1, $4, $1                 # see if address < 0x18000
+-  bne $1, $0, ext_store_vram32b
+-  lui $2, %hi(vram)               # start loading vram address (delay)
+-
+-  addiu $4, $4, -0x8000           # move address into VRAM region
++  bnel $1, $0, ext_store_vram32b  # if address >= 0x10000
++  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+ 
+ ext_store_vram32b:
++  lui $2, %hi(vram)               # start loading vram address
+   addu $2, $2, $4                 # $2 = (hi)vram + address
+   jr $ra                          # return
+   sw $5, %lo(vram)($2)            # vram[address] = value (delay)
+@@ -2996,6 +3061,7 @@
+ ext_store_oam32:
+   lui $1, %hi(oam_update)         # write non-zero to oam_update
+   sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
++
+   andi $4, $4, 0x3FF              # wrap around address
+   lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
+   addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+@@ -3032,6 +3098,7 @@
+   nop
+ 
+ #execute_store_u32:
++execute_store_full_u32:
+   srl $1, $4, 28                  # check if the address is out of range
+   bne $1, $0, ext_store_u32       # if it is, perform an extended write
+   srl $2, $4, 15                  # $1 = page number of address (delay slot)
+@@ -3054,17 +3121,19 @@
+   andi $4, $4, 0x3FF              # wrap around address
+   addiu $sp, $sp, -4              # make room on the stack for $ra
+   sw $ra, ($sp)
++
+   save_registers
+   jal write_io_register32         # write the value out
+-  sw $6, REG_SAVE($16)            # save a2
+-  lw $6, REG_SAVE($16)            # restore a2
++  sw $6, REG_SAVE($16)            # save a2 (delay)
++
+   j write_io_epilogue             # handle any state changes
+-  nop
++  lw $6, REG_SAVE($16)            # restore a2 (delay)
+ 
+ ext_store_palette32a:
+   sw $ra, REG_SAVE($16)           # save return address
+   jal ext_store_palette16b        # write out palette entry
+   andi $4, 0x3FF                  # wrap address (delay)
++
+   addiu $4, $4, 2                 # go to next location
+   srl $5, $5, 16                  # shift to next 16bit value
+   j ext_store_palette16b          # write out next palette entry
+@@ -3102,7 +3171,7 @@
+ #execute_aligned_store32:
+   srl $2, $4, 28                  # check if the address is out of range
+   bne $2, $0, ext_aligned_store32 # if it is, perform an extended load
+-  srl $1, $4, 15                  # $1 = page number of address
++  srl $1, $4, 15                  # $1 = page number of address (delay)
+   sll $1, $1, 2                   # adjust to word index
+   addu $1, $1, $16                # $1 = memory_map_write[address >> 15]
+   lw $1, 256($1)
+@@ -3150,31 +3219,36 @@
+   lw $1, CPU_MODE($16)            # $1 = cpu_mode
+   lui $2, %hi(spsr)
+   sll $1, $1, 2                   # adjust to word offset size
+-  addu $2, $2, $1
++  addu $1, $2, $1
+   jr $ra                          # return
+-  lw $2, %lo(spsr)($2)            # $2 = spsr[cpu_mode] (delay slot)
++  lw $2, %lo(spsr)($1)            # $2 = spsr[cpu_mode] (delay slot)
+ 
+ # Switch into SWI, has to collapse flags
+ # $4: Current pc
+ 
+ execute_swi:
+-  add $sp, $sp, -4                # push $ra
+-  sw $ra, ($sp)
+   lui $1, %hi(SUPERVISOR_LR)
+   sw $4, %lo(SUPERVISOR_LR)($1)   # store next PC in the supervisor's LR
+   collapse_flags                  # get cpsr in $2
+   lui $5, %hi(SUPERVISOR_SPSR)
+   sw $2, %lo(SUPERVISOR_SPSR)($5) # save cpsr in SUPERVISOR_CPSR
++
++  addiu $sp, $sp, -4              # push $ra
++  sw $ra, ($sp)
++
+   ins $2, $0, 0, 6                # zero out bottom 6 bits of CPSR
+   ori $2, 0x13                    # set mode to supervisor
+   sw $2, REG_CPSR($16)            # write back CPSR
++
+   save_registers
++  jal bios_region_read_allow
++  nop
+   jal set_cpu_mode                # set the CPU mode to supervisor
+   li $4, 3                        # 3 is supervisor mode (delay slot)
+   restore_registers
+   lw $ra, ($sp)                   # pop $ra
+   jr $ra                          # return
+-  add $sp, $sp, 4                 # fix stack (delay slot)
++  addiu $sp, $sp, 4               # fix stack (delay slot)
+ 
+ # $4: pc to restore to
+ # returns in $4
+@@ -3184,14 +3258,15 @@
+ 
+   beq $1, $0, no_spsr_restore     # only restore if the cpu isn't usermode
+   lui $2, %hi(spsr)               # start loading SPSR (delay)
+-
+   sll $1, $1, 2                   # adjust to word offset size
+   addu $2, $2, $1
+   lw $1, %lo(spsr)($2)            # $1 = spsr[cpu_mode]
+-  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
+-  extract_flags_body              # extract flags from $1
++
+   addiu $sp, $sp, -4
+   sw $ra, ($sp)
++
++  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
++  extract_flags_body              # extract flags from $1
+   save_registers
+   jal execute_spsr_restore_body   # do the dirty work in this C function
+   nop
+@@ -3273,15 +3348,15 @@
+   sllv $4, $4, $5                 # return (value << shift) (delay)
+ 
+ lsl_shift_high:
+-  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
+-  bne $1, $0, lsl_shift_done      # jump if shift == 32
+-  andi $22, $4, 1                 # c flag = value & 0x01 (delay)
++  sltiu $1, $5, 33                # $1 = (shift < 33)
++  andi $22, $4, 1                 # c flag = value & 0x01
+ 
+-  add $22, $0, $0                 # c flag = 0 otherwise
++  beql $1, $0, lsl_shift_done     # jump if shift == 32
++  add $22, $0, $0                 # c flag = 0 otherwise (delay)
+ 
+ lsl_shift_done:
+   jr $ra                          # return
+-  add $4, $0, $0                  # value = 0 no matter what
++  add $4, $0, $0                  # value = 0 no matter what (delay)
+ 
+ 
+ execute_lsr_flags_reg:
+@@ -3298,11 +3373,11 @@
+   srlv $4, $4, $5                 # return (value >> shift) (delay)
+ 
+ lsr_shift_high:
+-  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
+-  bne $1, $0, lsr_shift_done      # jump if shift == 32
+-  srl $22, $4, 31                 # c flag = value >> 31 (delay)
++  sltiu $1, $5, 33                # $1 = (shift < 33)
++  srl $22, $4, 31                 # c flag = value >> 31
+ 
+-  add $22, $0, $0                 # c flag = 0 otherwise
++  beql $1, $0, lsr_shift_done     # jump if shift == 32
++  add $22, $0, $0                 # c flag = 0 otherwise (delay)
+ 
+ lsr_shift_done:
+   jr $ra                          # return
+@@ -3342,28 +3417,17 @@
+ # $4: cycle counter argument
+ 
+ execute_arm_translate:
+-  addu $17, $4, $0                # load cycle counter register
+   lui $16, %hi(reg)               # load base register
+   addiu $16, %lo(reg)
+-  extract_flags                   # load flag variables
+-
+-  and $1, $1, 0x20                # see if Thumb bit is set in flags
++  addu $17, $4, $0                # load cycle counter register
+ 
+-  bne $1, $0, 1f
++  jal block_lookup_address_arm    # lookup initial jump address
+   lw $4, REG_PC($16)              # load PC into $4 (delay)
+ 
+-  jal block_lookup_address_arm    # lookup initial jump address
+-  nop
+   restore_registers               # load initial register values
+   jr $2                           # jump to return
+   nop
+ 
+-1:
+-  jal block_lookup_address_thumb  # lookup initial jump address
+-  nop
+-  restore_registers               # load initial register values
+-  jr $2                           # jump to return
+-  nop
+ 
+ # sceKernelInvalidateIcacheRange gives me problems, trying this instead
+ # Invalidates an n byte region starting at the start address
+@@ -3378,9 +3442,7 @@
+   nop
+ 
+ iir_loop:
+-##  cache 8, ($4)                   # invalidate icache line
+-##  cache 8, ($4)                   # do it again for good luck :P
+-  cache 0x08, ($4)                # hit invalidate icache line
++  cache 0x08, ($4)                # invalidate icache line
+   addiu $2, $2, -1                # next loop iteration
+   bne $2, $0, iir_loop            # loop
+   addiu $4, $4, 64                # go to next cache line (delay slot)
+@@ -3404,17 +3466,7 @@
+   jr $ra                          # return
+   nop
+ 
+-step_debug_mips:
+-  addiu $sp, $sp, -4
+-  sw $ra, ($sp)
+-  collapse_flags
+-  save_registers
+-  jal step_debug
+-  addiu $5, $17, 0
+-  restore_registers
+-  lw $ra, ($sp)
+-  jr $ra
+-  addiu $sp, $sp, 4
++.align 4
+ 
+ memory_map_read:
+   .space 0x8000

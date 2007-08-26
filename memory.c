@@ -481,7 +481,7 @@ u32 read_eeprom()
         if(address < 0x4000)                                                  \
           value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
         else                                                                  \
-          break;/*read_open##type();*/                                                  \
+        read_open##type();                                                    \
       }                                                                       \
       else                                                                    \
       {                                                                       \
@@ -491,6 +491,7 @@ u32 read_eeprom()
                                                                               \
     case 0x02:                                                                \
       /* external work RAM */                                                 \
+      address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
       value = ADDRESS##type(ewram, address);                                  \
       break;                                                                  \
                                                                               \
@@ -3492,6 +3493,8 @@ void load_state(char *savestate_filename)
 
     reg[CHANGED_PC_STATUS] = 1;
   }
+  real_frame_count = 0;
+  virtual_frame_count = 0;
   pause_sound(0);
 }
 

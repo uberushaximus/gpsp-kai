@@ -278,9 +278,9 @@ mips_indirect_branch_dual:
   lui $2, %hi(\ftable)
   addu $2, $2, $1
   lw $2, %lo(\ftable)($2)         # new function handler is in $2
+  srl $2, $2, 2                   # remove lower two bits
 
   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
-  srl $2, $2, 2                   # remove lower two bits
   ins $1, $2, 0, 26               # insert offset into jal
 
   addiu $ra, $ra, -8              # rewind return address to function call
@@ -310,9 +310,9 @@ mips_indirect_branch_dual:
   lui $2, %hi(\ftable)
   addu $2, $2, $1
   lw $2, %lo(\ftable)($2)         # new function handler is in $2
+  srl $2, $2, 2                   # remove lower two bits
 
   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
-  srl $2, $2, 2                   # remove lower two bits
   ins $1, $2, 0, 26               # insert offset into jal
 
   addiu $ra, $ra, -8              # rewind return address to function call
@@ -2115,6 +2115,7 @@ execute_load_io_u32a:
 
 1:
   open_load32_a
+  nop
 
 execute_load_palette_u32a:
   translate_region 5, patch_load_u32a, palette_ram, 0x3FF

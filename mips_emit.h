@@ -961,13 +961,13 @@ u32 generate_load_rm_sh_##flags_op(u32 rm)                                    \
 
 #define generate_block_extra_vars_arm()                                       \
   generate_block_extra_vars();                                                \
-                                                                              \
+/*                                                                              \
   auto u32 generate_load_rm_sh_flags(u32 rm);                                 \
   auto u32 generate_load_rm_sh_no_flags(u32 rm);                              \
   auto u32 generate_load_offset_sh(u32 rm);                                   \
   auto void generate_indirect_branch_arm();                                   \
   auto void generate_indirect_branch_dual();                                  \
-                                                                              \
+*/                                                                              \
   generate_load_rm_sh_builder(flags);                                         \
   generate_load_rm_sh_builder(no_flags);                                      \
                                                                               \
@@ -1392,17 +1392,17 @@ typedef enum
   generate_op_sub_flags_epilogue(_rd)                                         \
 
 #define generate_op_sbcs_reg(_rd, _rn, _rm)                                   \
-  mips_emit_addu(reg_temp, _rn, reg_c_cache);                                 \
-  mips_emit_addiu(reg_temp, reg_temp, -1);                                    \
-  generate_op_sub_flags_prologue(reg_temp, _rm);                              \
-  mips_emit_subu(_rd, reg_temp, _rm);                                         \
+  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
+  mips_emit_addu(reg_temp, _rm, reg_temp);                                    \
+  generate_op_sub_flags_prologue(_rn, reg_temp);                              \
+  mips_emit_subu(_rd, _rn, reg_temp);                                         \
   generate_op_sub_flags_epilogue(_rd)                                         \
 
 #define generate_op_rscs_reg(_rd, _rn, _rm)                                   \
-  mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-  mips_emit_addiu(reg_temp, reg_temp, -1);                                    \
-  generate_op_sub_flags_prologue(reg_temp, _rn);                              \
-  mips_emit_subu(_rd, reg_temp, _rn);                                         \
+  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
+  mips_emit_addu(reg_temp, _rn, reg_temp);                                    \
+  generate_op_sub_flags_prologue(_rm, reg_temp);                              \
+  mips_emit_subu(_rd, _rm, reg_temp);                                         \
   generate_op_sub_flags_epilogue(_rd)                                         \
 
 #define generate_op_adds_reg(_rd, _rn, _rm)                                   \
@@ -1412,7 +1412,6 @@ typedef enum
 
 #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
   mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-  /*generate_add_flags_prologue(_rn, _rm);*/                                      \
   generate_add_flags_prologue(_rn, reg_temp);                                 \
   mips_emit_addu(_rd, _rn, reg_temp);                                         \
   generate_add_flags_epilogue(_rd)                                            \

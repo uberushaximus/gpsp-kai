@@ -326,8 +326,7 @@ u32 update_input()
       {
         char current_savestate_filename[512];
         u16 *current_screen = copy_screen();
-        get_savestate_filename_noshot(SAVESTATE_SLOT,
-         current_savestate_filename);
+        get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
         save_state(current_savestate_filename, current_screen);
         free(current_screen);
         return 0;
