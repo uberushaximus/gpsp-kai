@@ -388,7 +388,7 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
 
 void sound_reset_fifo(u32 channel)
   {
-    DIRECT_SOUND_STRUCT *ds = direct_sound_channel;
+    DIRECT_SOUND_STRUCT *ds = direct_sound_channel + channel;
     memset(ds->fifo, 0, 32);
   }
 

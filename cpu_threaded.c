@@ -1934,8 +1934,8 @@ typedef struct
                                                                               \
         case 0x01:                                                            \
           /* MUL rd, rs */                                                    \
-          thumb_data_proc(alu_op, muls, reg, rd, rd, rs);                     \
-          /*thumb_data_proc_muls(alu_op, reg, rd, rd, rs);*/                      \
+          /*thumb_data_proc(alu_op, muls, reg, rd, rd, rs);*/                     \
+          thumb_data_proc_muls(alu_op, reg, rd, rd, rs);                      \
           break;                                                              \
                                                                               \
         case 0x02:                                                            \

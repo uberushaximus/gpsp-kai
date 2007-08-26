@@ -634,7 +634,8 @@ u32 arm_to_mips_reg[] =
 
 #define generate_indirect_branch_cycle_update(type)                           \
   mips_emit_j(mips_absolute_offset(mips_indirect_branch_##type));             \
-  generate_cycle_update_force()                                               \
+  mips_emit_nop();                                                            \
+  generate_cycle_update_force()                                                     \
 
 #define generate_indirect_branch_no_cycle_update(type)                        \
   mips_emit_j(mips_absolute_offset(mips_indirect_branch_##type));             \

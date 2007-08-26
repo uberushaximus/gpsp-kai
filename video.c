@@ -2093,7 +2093,6 @@ void order_obj(u32 video_mode)
 
       obj_attribute_1 = oam_ptr[1];
       obj_size = ((obj_size >> 12) & 0x0C) | (obj_attribute_1 >> 14);
-//      obj_priority = (obj_attribute_2 >> 10) & 0x03;
       obj_height = obj_height_table[obj_size];
       obj_width = obj_width_table[obj_size];
 
