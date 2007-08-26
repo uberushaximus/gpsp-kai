@@ -515,7 +515,8 @@ u32 update_gba()
 
         if((dispstat & 0x01) == 0)
         {
-//          if(!skip_next_frame_flag)
+          // フレームスキップ時は描画しない
+          if(!skip_next_frame_flag)
             update_scanline();
 
           // If in visible area also fire HDMA

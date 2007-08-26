@@ -2060,10 +2060,10 @@ render_scanline_obj_builder(copy, copy_bitmap, 1D, no_partial_alpha);
 render_scanline_obj_builder(copy, copy_bitmap, 2D, no_partial_alpha);
 
 
-
+// TODO 高速化
 void order_obj(u32 video_mode)
 {
-  s32 obj_num, /*priority,*/ row;
+  s32 obj_num, row;
   s32 obj_x, obj_y;
   s32 obj_size, obj_mode;
   s32 obj_width, obj_height;
@@ -2081,7 +2081,6 @@ void order_obj(u32 video_mode)
     obj_attribute_0 = oam_ptr[0];
     obj_attribute_2 = oam_ptr[2];
     obj_size = obj_attribute_0 & 0xC000;
-    obj_priority = (obj_attribute_2 >> 10) & 0x03;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
     if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
@@ -2092,6 +2091,7 @@ void order_obj(u32 video_mode)
         obj_y -= 256;
 
       obj_attribute_1 = oam_ptr[1];
+      obj_priority = (obj_attribute_2 >> 10) & 0x03;
       obj_size = ((obj_size >> 12) & 0x0C) | (obj_attribute_1 >> 14);
       obj_height = obj_height_table[obj_size];
       obj_width = obj_width_table[obj_size];
@@ -3170,10 +3170,6 @@ void update_scanline()
 
   // レイヤーの並べ替え
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
-
-  // フレームスキップ時は描画しない
-  if(skip_next_frame_flag)
-    return;
 
   if(dispcnt & 0x80)
   {
