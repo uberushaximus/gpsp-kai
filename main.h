@@ -104,6 +104,7 @@ void quit();
 void delay_us(u32 us_count);
 void get_ticks_us(u64 *tick_return);
 void game_name_ext(u8 *src, u8 *buffer, u8 *extension);
+void main_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void main_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void main_read_savestate(FILE_TAG_TYPE savestate_file);
 void error_msg(char *text);

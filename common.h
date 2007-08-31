@@ -92,6 +92,12 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_SEEK(filename_tag, offset, type)                               \
   sceIoLseek(filename_tag, offset, PSP_##type)                              \
 
+#define FILE_READ_MEM(filename_tag, buffer, size)                           \
+{                                                                           \
+  memcpy(buffer, write_mem_ptr, size);                                      \
+  write_mem_ptr += size;                                                    \
+}                                                                           \
+
 #define FILE_WRITE_MEM(filename_tag, buffer, size)                          \
 {                                                                           \
   memcpy(write_mem_ptr, buffer, size);                                      \
@@ -100,11 +106,14 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 
 // These must be variables, not constants.
 
-#define FILE_READ_VARIABLE(filename_tag, variable)                            \
-  FILE_READ(filename_tag, &variable, sizeof(variable))                        \
+#define FILE_READ_VARIABLE(filename_tag, variable)                          \
+  FILE_READ(filename_tag, &variable, sizeof(variable))                      \
 
-#define FILE_WRITE_VARIABLE(filename_tag, variable)                           \
-  FILE_WRITE(filename_tag, &variable, sizeof(variable))                       \
+#define FILE_WRITE_VARIABLE(filename_tag, variable)                         \
+  FILE_WRITE(filename_tag, &variable, sizeof(variable))                     \
+
+#define FILE_READ_MEM_VARIABLE(filename_tag, variable)                      \
+  FILE_READ_MEM(filename_tag, &variable, sizeof(variable))                  \
 
 #define FILE_WRITE_MEM_VARIABLE(filename_tag, variable)                     \
   FILE_WRITE_MEM(filename_tag, &variable, sizeof(variable))                 \
@@ -112,11 +121,14 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 // These must be statically declared arrays (ie, global or on the stack,
 // not dynamically allocated on the heap)
 
-#define FILE_READ_ARRAY(filename_tag, array)                                  \
-  FILE_READ(filename_tag, array, sizeof(array))                               \
+#define FILE_READ_ARRAY(filename_tag, array)                                \
+  FILE_READ(filename_tag, array, sizeof(array))                             \
 
-#define FILE_WRITE_ARRAY(filename_tag, array)                                 \
-  FILE_WRITE(filename_tag, array, sizeof(array))                              \
+#define FILE_WRITE_ARRAY(filename_tag, array)                               \
+  FILE_WRITE(filename_tag, array, sizeof(array))                            \
+
+#define FILE_READ_MEM_ARRAY(filename_tag, array)                           \
+  FILE_READ_MEM(filename_tag, array, sizeof(array))                        \
 
 #define FILE_WRITE_MEM_ARRAY(filename_tag, array)                           \
   FILE_WRITE_MEM(filename_tag, array, sizeof(array))                        \

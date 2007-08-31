@@ -249,7 +249,7 @@ static u32 clock_speed_number;
  ******************************************************************************/
 static s32 save_game_config_file();
 static s32 save_config_file();
-static void get_savestate_snapshot(char *savestate_filename);
+static void get_savestate_snapshot(char *savestate_filename, u32 slot_num);
 static void get_savestate_filename(u32 slot, char *name_buffer);
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr);
 static u32 parse_line(char *current_line, char *current_str);
@@ -986,8 +986,7 @@ u32 menu(u16 *original_screen)
   {
     if(!first_load)
     {
-      get_savestate_filename_noshot(SAVESTATE_SLOT,
-       current_savestate_filename);
+      get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
       save_state(current_savestate_filename, original_screen, SAVESTATE_SLOT);
       pause_sound(1);
       clear_screen(COLOR_BG);
@@ -999,7 +998,7 @@ u32 menu(u16 *original_screen)
   {
     if(!first_load)
     {
-      load_state(current_savestate_filename);
+      load_state(current_savestate_filename, SAVESTATE_SLOT);
       return_value = 1;
       repeat = 0;
     }
@@ -1011,7 +1010,7 @@ u32 menu(u16 *original_screen)
     char load_filename[512];
     if(load_file(file_ext, load_filename, DEFAULT_SAVE_DIR) != -1)
     {
-      load_state(load_filename);
+      load_state(load_filename, SAVESTATE_SLOT);
       return_value = 1;
       repeat = 0;
     }
@@ -1210,13 +1209,13 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE savestate_options[] =
   {
-    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state, menu_change_state, msg[MSG_STATE_MENU_0], &SAVESTATE_SLOT, 10, msg[MSG_STATE_MENU_HELP_0], 6),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state, menu_change_state, msg[MSG_STATE_MENU_0], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_0], 6),
 
-    NUMERIC_SELECTION_HIDE_OPTION(menu_save_state, menu_change_state, msg[MSG_STATE_MENU_1], &SAVESTATE_SLOT, 10, msg[MSG_STATE_MENU_HELP_1], 7),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_save_state, menu_change_state, msg[MSG_STATE_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_1], 7),
 
-    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state_file, menu_change_state, msg[MSG_STATE_MENU_2], &SAVESTATE_SLOT, 10, msg[MSG_STATE_MENU_HELP_2], 9),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state_file, menu_change_state, msg[MSG_STATE_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_2], 9),
 
-    NUMERIC_SELECTION_OPTION(menu_change_state, msg[MSG_STATE_MENU_3], &SAVESTATE_SLOT, 10, msg[MSG_STATE_MENU_HELP_3], 11),
+    NUMERIC_SELECTION_OPTION(menu_change_state, msg[MSG_STATE_MENU_3], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_3], 11),
 
     SUBMENU_OPTION(NULL, msg[MSG_STATE_MENU_4], msg[MSG_STATE_MENU_HELP_4], 13)
   };
@@ -1266,9 +1265,9 @@ u32 menu(u16 *original_screen)
   {
     SUBMENU_OPTION(&graphics_sound_menu, msg[MSG_MAIN_MENU_0], msg[MSG_MAIN_MENU_HELP_0], 0), 
 
-    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &SAVESTATE_SLOT, 10, msg[MSG_MAIN_MENU_HELP_1], 2),
+    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_1], 2),
 
-    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &SAVESTATE_SLOT, 10, msg[MSG_MAIN_MENU_HELP_2], 3),
+    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_2], 3),
 
     SUBMENU_OPTION(&savestate_menu, msg[MSG_MAIN_MENU_3], msg[MSG_MAIN_MENU_HELP_3], 4),
 
@@ -1792,12 +1791,18 @@ static s32 save_config_file()
   return -1;
 }
 
-static void get_savestate_snapshot(char *savestate_filename)
+static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
 {
   u16 snapshot_buffer[240 * 160];
   char savestate_timestamp_string[80];
   char savestate_path[1024];
   FILE_ID savestate_file;
+  u64 savestate_time_flat;
+  u64 local_time;
+  int wday;
+  int time_diff;
+  pspTime current_time;
+  u32 valid_flag = 0;
 
   if (DEFAULT_SAVE_DIR != NULL) {
     sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
@@ -1807,22 +1812,30 @@ static void get_savestate_snapshot(char *savestate_filename)
     strcpy(savestate_path, savestate_filename);
   }
 
-  FILE_OPEN(savestate_file, savestate_path, READ);
-
-  if(FILE_CHECK_VALID(savestate_file))
+  if (slot_num != MEM_STATE_NUM)
   {
-    u64 savestate_time_flat;
-    u64 local_time;
-//    u64 utc;
-//    u64 local;
-    int wday;
-    int time_diff;
-    pspTime current_time;
-    FILE_READ_ARRAY(savestate_file, snapshot_buffer);
-    FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
+    FILE_OPEN(savestate_file, savestate_path, READ);
+    if(FILE_CHECK_VALID(savestate_file))
+    {
+      FILE_READ_ARRAY(savestate_file, snapshot_buffer);
+      FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
+      FILE_CLOSE(savestate_file);
+      valid_flag = 1;
+    }
+  }
+  else
+  {
+    if (mem_save_flag == 1)
+    {
+      write_mem_ptr = savestate_write_buffer;
+      FILE_READ_MEM_ARRAY(savestate_file, snapshot_buffer);
+      FILE_READ_MEM_VARIABLE(savestate_file, savestate_time_flat);
+      valid_flag = 1;
+    }
+  }
 
-    FILE_CLOSE(savestate_file);
-
+  if (valid_flag == 1)
+  {
     sceRtcConvertUtcToLocalTime(&savestate_time_flat, &local_time);
 
     sceRtcSetTick(&current_time, &local_time);
@@ -1851,7 +1864,7 @@ static void get_savestate_filename(u32 slot, char *name_buffer)
   sprintf(savestate_ext, "_%d.svs", (int)slot);
   change_ext(gamepak_filename, name_buffer, savestate_ext);
 
-  get_savestate_snapshot(name_buffer);
+  get_savestate_snapshot(name_buffer, SAVESTATE_SLOT);
 }
 
 static u32 parse_line(char *current_line, char *current_str)
@@ -1916,7 +1929,7 @@ static void print_status(u32 mode)
   {
     strncpy(print_buffer_1, gamepak_filename, 80);
     PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 10);
-    sprintf(print_buffer_1, "%s  %s  %s", gamepak_title, gamepak_code, gamepak_maker);
+    sprintf(print_buffer_1, "%s  %s  %s  %0X", gamepak_title, gamepak_code, gamepak_maker, (unsigned int)gamepak_crc32);
     PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 20);
   }
 }

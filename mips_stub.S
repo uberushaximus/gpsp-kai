@@ -3466,6 +3466,7 @@ iac_loop:
 memory_map_read:
   .space 0x8000
 
+# TODO スクラッチパッドに置くと速くなる？
 reg:
   .space 0x100
 

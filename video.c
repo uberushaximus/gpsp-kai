@@ -3481,5 +3481,8 @@ void blit_to_screen(u16 *src, u32 w, u32 h, u32 dest_x, u32 dest_y)
 void video_read_savestate(FILE_TAG_TYPE savestate_file)
 video_savestate_body(READ);
 
+void video_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+video_savestate_body(READ_MEM);
+
 void video_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 video_savestate_body(WRITE_MEM);

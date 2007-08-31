@@ -81,6 +81,7 @@ void init_input();
 u32 update_input();
 gui_action_type get_gui_input();
 gui_action_type get_gui_input_fs_hold(u32 button_id);
+void input_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void input_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void input_read_savestate(FILE_TAG_TYPE savestate_file);
 

@@ -46,6 +46,7 @@ typedef enum
 
 // 関数宣言
 
+void memory_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void memory_read_savestate(FILE_TAG_TYPE savestate_file);
 u8 read_backup(u32 address);
@@ -98,15 +99,7 @@ u8 cpu_waitstate_cycles_seq[2][16] =
     { 1, 1, 6, 1, 1, 2, 2, 1, 6, 6,10,10,18,18, 5, 1 }  /* 32bit */
 };
 
-// GBAのROM/RAMをVRAMに割当ててみるテスト
-// 0x04000000 ~ 0x04069800 フレームバッファ
-
-
-
-
-
-
-
+#ifndef USE_VRAM
 // GBAのROM/RAM 合計962kb
 // パレットRAM 1kb
 u16 palette_ram[512];
@@ -122,10 +115,42 @@ u8 iwram[1024 * 32 * 2];
 u8 vram[1024 * 96 * 2];
 // BIOS ROM 32kb
 u8 bios_rom[1024 * 32];
-u32 bios_read_protect;
-
 // SRAM/flash/EEPROM 128kb
 u8 gamepak_backup[1024 * 128];
+u8 *flash_bank_ptr = gamepak_backup;
+#else
+// GBAのROM/RAMをVRAMに割当ててみるテスト 約1MBをキャッシュに回せる
+// 0x04000000 ~ 0x04069800 422kb フレームバッファ
+// 0x44070000 ~ 0x440703FF   1kb palette_ram
+// 0x44070400 ~ 0x440707FF   1kb oam_ram
+// 0x44070800 ~ 0x440787FF  32kb io_registers
+// 0x44078800 ~ 0x440F87FF 512kb ewram
+// 0x440F8800 ~ 0x441087FF  64kb iwram
+// 0x44108800 ~ 0x441387FF 192kb vram
+// 0x44138800 ~ 0x441407FF  32kb BIOS ROM
+// 0x44140800 ~ 0x441607FF 128kb SRAM/flash/EEPROM
+// 0x441FC000 ~                  GE command work
+// GBAのROM/RAM 合計962kb
+// パレットRAM 1kb
+u16 *palette_ram = (u16 *)0x44070000;
+// オブジェクトアトリビュートRAM 1kb
+u16 *oam_ram = (u16 *)0x44070400;
+// IOレジスタ 32kb
+u16 *io_registers = (u16 *)0x44070800;
+// ExtワークRAM 512kb
+u8 *ewram = (u8 *)0x44078800;
+// IntワークRAM 64kb
+u8 *iwram = (u8 *)0x440F8800;
+// VRAM 192kb
+u8 *vram = (u8 *)0x44108800;
+// BIOS ROM 32kb
+u8 *bios_rom = (u8 *)0x44138800;
+// SRAM/flash/EEPROM 128kb
+u8 *gamepak_backup = (u8 *)0x44140800;
+u8 *flash_bank_ptr = (u8 *)0x44140800;
+#endif
+
+u32 bios_read_protect;
 
 // Keeps us knowing how much we have left.
 u8 *gamepak_rom;
@@ -151,6 +176,8 @@ char gamepak_maker[3];
 char gamepak_filename[MAX_FILE];
 char gamepak_filename_raw[MAX_PATH];
 u32 gamepak_crc32;
+
+u32 mem_save_flag;
 
 // Enough to map the gamepak RAM space.
 gamepak_swap_entry_type *gamepak_memory_map;
@@ -218,7 +245,6 @@ typedef enum
 
 flash_mode_type flash_mode = FLASH_BASE_MODE;
 u32 flash_command_position = 0;
-u8 *flash_bank_ptr = gamepak_backup;
 
 FLASH_DEVICE_ID_TYPE flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
 FLASH_MANUFACTURER_ID_TYPE flash_manufacturer_id =
@@ -2453,6 +2479,8 @@ s32 load_gamepak(char *name)
     else
       gamepak_crc32 = 0;
 
+    mem_save_flag = 0;
+
     load_game_config(gamepak_title, gamepak_code, gamepak_maker);
     update_progress();
     load_game_config_file();
@@ -3390,6 +3418,7 @@ void init_memory()
   memset(rtc_registers, 0, sizeof(rtc_registers));
   bios_read_protect = 0xe129f000;
 
+  mem_save_flag = 0;
 }
 
 void bios_region_read_allow()
@@ -3417,7 +3446,7 @@ void bios_region_read_protect()
   video_##type##_savestate(savestate_file);                                   \
   update_progress();                                                          \
 
-void load_state(char *savestate_filename)
+void load_state(char *savestate_filename, u32 slot_num)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
@@ -3431,61 +3460,74 @@ void load_state(char *savestate_filename)
     strcpy(savestate_path, savestate_filename);
   }
 
-  FILE_OPEN(savestate_file, savestate_path, READ);
-  if(FILE_CHECK_VALID(savestate_file))
+  char current_gamepak_filename[MAX_FILE];
+  u32 i;
+  u32 file_size = 0;
+
+  init_progress(9, "Load State."); // TODO:メッセージファイル化
+
+  if (slot_num != MEM_STATE_NUM)
   {
-    char current_gamepak_filename[MAX_FILE];
-    u32 i;
-    u32 current_color;
-
-    init_progress(9, "Load State."); // TODO:メッセージファイル化
-
-    u32 file_size = file_length(savestate_path, (s32)NULL);
-    if (file_size == SAVESTATE_SIZE)
-      FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u64), SEEK_SET);
-    else
-      FILE_SEEK(savestate_file, (240 * 160 * 2) + sizeof(u32), SEEK_SET);
-
-    strcpy(current_gamepak_filename, gamepak_filename);
-    update_progress();
-
-    savestate_block(read);
-    FILE_CLOSE(savestate_file);
-    update_progress();
-
-    flush_translation_cache_ram();
-    flush_translation_cache_rom();
-    flush_translation_cache_bios();
-    update_progress();
-
-    oam_update = 1;
-    gbc_sound_update = 1;
-    show_progress("Load State end."); // TODO:メッセージファイル化
-
-    // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
-    if(strcmp(current_gamepak_filename, gamepak_filename))
+    FILE_OPEN(savestate_file, savestate_path, READ);
+    if(FILE_CHECK_VALID(savestate_file))
     {
-      // We'll let it slide if the filenames of the savestate and
-      // the gamepak are similar enough.
-      u32 dot_position = strcspn(current_gamepak_filename, ".");
-      if(strncmp(savestate_filename, current_gamepak_filename, dot_position))
-      {
-        if(load_gamepak(gamepak_filename) != -1)
-        {
-          reset_gba();
-          // Okay, so this takes a while, but for now it works.
-          load_state(savestate_filename);
-        }
-        else
-        {
-          quit();
-        }
+      file_size = file_length(savestate_path, (s32)NULL);
+      if (file_size == SAVESTATE_SIZE)
+        FILE_READ(savestate_file, savestate_write_buffer, SAVESTATE_SIZE);
+      else
+        FILE_READ(savestate_file, savestate_write_buffer, SAVESTATE_SIZE_OLD);
+      FILE_CLOSE(savestate_file);
+    }
+    else
+      return;
+  }
+  else
+    file_size = SAVESTATE_SIZE;
 
-        real_frame_count = 0;
-        virtual_frame_count = 0;
-        pause_sound(0);
-        return;
+  if (file_size == SAVESTATE_SIZE)
+    write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u64);
+  else
+    write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u32);
+
+  strcpy(current_gamepak_filename, gamepak_filename);
+  update_progress();
+
+  savestate_block(read_mem);
+
+  update_progress();
+
+  flush_translation_cache_ram();
+  flush_translation_cache_rom();
+  flush_translation_cache_bios();
+  update_progress();
+
+  oam_update = 1;
+  gbc_sound_update = 1;
+  show_progress("Load State end."); // TODO:メッセージファイル化
+
+  // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
+  if(strcmp(current_gamepak_filename, gamepak_filename))
+  {
+    // We'll let it slide if the filenames of the savestate and
+    // the gamepak are similar enough.
+    u32 dot_position = strcspn(current_gamepak_filename, ".");
+    if(strncmp(savestate_filename, current_gamepak_filename, dot_position))
+    {
+      if(load_gamepak(gamepak_filename) != -1)
+      {
+        reset_gba();
+        // Okay, so this takes a while, but for now it works.
+        load_state(savestate_filename, SAVESTATE_SLOT);
       }
+      else
+      {
+        quit();
+      }
+
+      real_frame_count = 0;
+      virtual_frame_count = 0;
+      pause_sound(0);
+      return;
     }
 
     // Oops, these contain raw pointers
@@ -3502,8 +3544,7 @@ void load_state(char *savestate_filename)
   pause_sound(0);
 }
 
-
-void save_state(char *savestate_filename, u16 *screen_capture,u32 memory_flag)
+void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
@@ -3519,28 +3560,36 @@ void save_state(char *savestate_filename, u16 *screen_capture,u32 memory_flag)
   }
 
   write_mem_ptr = savestate_write_buffer;
-  FILE_OPEN(savestate_file, savestate_path, WRITE);
-  if(FILE_CHECK_VALID(savestate_file))
+
+  u64 current_time;
+  pspTime current_time_fix; // time関数が年月日を返さないので調整用
+  init_progress(9, "Save State."); // TODO:メッセージファイル化
+
+  FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
+  update_progress();
+
+  sceRtcGetCurrentClock(&current_time_fix, 0);
+  sceRtcGetTick(&current_time_fix, &current_time);
+  FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
+  update_progress();
+
+  savestate_block(write_mem);
+
+  // 実際のファイル書込
+  if (slot_num != MEM_STATE_NUM)
   {
-    u64 current_time;
-    pspTime current_time_fix; // time関数が年月日を返さないので調整用
-    init_progress(9, "Save State."); // TODO:メッセージファイル化
-
-    FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
-    update_progress();
-
-    sceRtcGetCurrentClock(&current_time_fix, 0);
-    sceRtcGetTick(&current_time_fix, &current_time);
-    FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
-    update_progress();
-
-    savestate_block(write_mem);
-    FILE_WRITE(savestate_file, savestate_write_buffer,
-     sizeof(savestate_write_buffer));
-    FILE_CLOSE(savestate_file);
-    update_progress();
-    show_progress("Save State end."); // TODO:メッセージファイル化
+    FILE_OPEN(savestate_file, savestate_path, WRITE);
+    if(FILE_CHECK_VALID(savestate_file))
+    {
+      FILE_WRITE(savestate_file, savestate_write_buffer, sizeof(savestate_write_buffer));
+      FILE_CLOSE(savestate_file);
+    }
   }
+
+  mem_save_flag = 1;
+
+  update_progress();
+  show_progress("Save State end."); // TODO:メッセージファイル化
   real_frame_count = 0;
   virtual_frame_count = 0;
   pause_sound(0);
@@ -3597,6 +3646,8 @@ void save_state(char *savestate_filename, u16 *screen_capture,u32 memory_flag)
 void memory_read_savestate(FILE_TAG_TYPE savestate_file)
 memory_savestate_body(READ);
 
+void memory_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+memory_savestate_body(READ_MEM);
+
 void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 memory_savestate_body(WRITE_MEM);
-

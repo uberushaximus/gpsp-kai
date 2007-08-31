@@ -123,6 +123,7 @@ void execute_store_u32(u32 address, u32 source);
 void execute_arm_translate(u32 cycles);
 
 void init_translater();
+void cpu_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void cpu_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void cpu_read_savestate(FILE_TAG_TYPE savestate_file);
 

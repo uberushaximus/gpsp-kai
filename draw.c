@@ -95,36 +95,6 @@ void hline(u32 sx, u32 ex, u32 y, u32 color)
 }
 
 /*------------------------------------------------------
-  水平線描画 (アルファブレンド) alpha = 0 - 15
-------------------------------------------------------*/
-/*
-void hline_alpha(u32 sx, u32 ex, u32 y, u32 color, u32 alpha)
-{
-  u32 x;
-  u32 dst_r, dst_g, dst_b;
-  int width  = (ex - sx) + 1;
-  u16 *dst = VRAM_POS(sx, y);
-
-  u32 r = GET_R16(color);
-  u32 g = GET_G16(color);
-  u32 b = GET_B16(color);
-
-  for (x = 0; x < width; x++)
-  {
-    color = dst[x];
-    dst_r = GET_R16(color);
-    dst_g = GET_G16(color);
-    dst_b = GET_B16(color);
-
-    dst_r = alpha_blend[alpha][r][dst_r];
-    dst_g = alpha_blend[alpha][g][dst_g];
-    dst_b = alpha_blend[alpha][b][dst_b];
-
-    dst[x] = (u16)COLOR16(dst_r, dst_g, dst_b);
-  }
-}
-*/
-/*------------------------------------------------------
   垂直線描画
 ------------------------------------------------------*/
 void vline(u32 x, u32 sy, u32 ey, u32 color)
@@ -140,37 +110,6 @@ void vline(u32 x, u32 sy, u32 ey, u32 color)
   }
 }
 
-/*------------------------------------------------------
-  垂直線描画 (アルファブレンド) alpha = 0 - 15
-------------------------------------------------------*/
-/*
-void vline_alpha(u32 x, u32 sy, u32 ey, u32 color, u32 alpha)
-{
-  u32 y;
-  u32 dst_r, dst_g, dst_b;
-  u32 height = (ey - sy) + 1;
-  u16 *dst = VRAM_POS(x, sy);
-
-  u32 r = GET_R16(color);
-  u32 g = GET_G16(color);
-  u32 b = GET_B16(color);
-
-  for (y = 0; y < height; y++)
-  {
-    dst_r = GET_R16(*dst);
-    dst_g = GET_G16(*dst);
-    dst_b = GET_B16(*dst);
-
-    dst_r = alpha_blend[alpha][r][dst_r];
-    dst_g = alpha_blend[alpha][g][dst_g];
-    dst_b = alpha_blend[alpha][b][dst_b];
-
-    *dst = (u16)COLOR16(dst_r, dst_g, dst_b);
-
-    dst += screen_pitch;
-  }
-}
-*/
 /*------------------------------------------------------
   矩形描画 (16bit)
 ------------------------------------------------------*/
@@ -202,40 +141,6 @@ void boxfill(u32 sx, u32 sy, u32 ex, u32 ey, u32 color)
 }
 
 /*------------------------------------------------------
-  矩形塗りつぶし (アルファブレンド) alpha = 0 - 15
-------------------------------------------------------*/
-/*
-void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha)
-{
-  u32 x, y;
-  u32 dst_r, dst_g, dst_b;
-  u32 r = GET_R16(color);
-  u32 g = GET_G16(color);
-  u32 b = GET_B16(color);
-  u32 width  = (ex - sx) + 1;
-  u32 height = (ey - sy) + 1;
-  u16 *dst = (u16 *)(screen_address + (sx + sy * screen_pitch));
-
-  for (y = 0; y < height; y++)
-  {
-    for (x = 0; x < width; x++)
-    {
-      color = dst[x];
-
-      dst_r = GET_R16(color);
-      dst_g = GET_G16(color);
-      dst_b = GET_B16(color);
-
-      dst_r = alpha_blend[alpha][r][dst_r];
-      dst_g = alpha_blend[alpha][g][dst_g];
-      dst_b = alpha_blend[alpha][b][dst_b];
-
-      dst[x + y * screen_pitch] = (u16)COLOR16(dst_r, dst_g, dst_b);
-    }
-  }
-}
-*/
-/*------------------------------------------------------
   ダイアログボックス表示
 ------------------------------------------------------*/
 void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
@@ -265,6 +170,10 @@ void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
 
   boxfill(sx, sy, ex, ey, COLOR_DIALOG);
 }
+
+/*--------------------------------------------------------
+  yes/no ダイヤログボックス
+--------------------------------------------------------*/
 
 /*--------------------------------------------------------
   プログレスバー

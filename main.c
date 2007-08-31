@@ -827,6 +827,9 @@ void change_ext(char *src, char *buffer, char *extension)
 void main_read_savestate(FILE_TAG_TYPE savestate_file)
 MAIN_SAVESTATE_BODY(READ);
 
+void main_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+MAIN_SAVESTATE_BODY(READ_MEM);
+
 void main_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 MAIN_SAVESTATE_BODY(WRITE_MEM);
 

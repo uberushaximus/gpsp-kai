@@ -318,7 +318,7 @@ u32 update_input()
       {
         char current_savestate_filename[512];
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        load_state(current_savestate_filename);
+        load_state(current_savestate_filename, SAVESTATE_SLOT);
         return 1;
       }
 
@@ -402,6 +402,9 @@ void init_input()
 
 void input_read_savestate(FILE_TAG_TYPE savestate_file)                   \
 input_savestate_body(READ);
+
+void input_read_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
+input_savestate_body(READ_MEM);
 
 void input_write_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
 input_savestate_body(WRITE_MEM);

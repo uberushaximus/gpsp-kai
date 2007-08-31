@@ -3925,6 +3925,9 @@ void init_cpu()
 void cpu_read_savestate(FILE_TAG_TYPE savestate_file)
 cpu_savestate_body(READ);
 
+void cpu_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+cpu_savestate_body(READ_MEM);
+
 void cpu_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 cpu_savestate_body(WRITE_MEM);
 

@@ -312,6 +312,7 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel);
 void sound_reset_fifo(u32 channel);
 void update_gbc_sound(u32 cpu_ticks);
 void init_sound();
+void sound_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void sound_read_savestate(FILE_TAG_TYPE savestate_file);
 void pause_sound(u32 flag);

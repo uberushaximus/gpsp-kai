@@ -635,6 +635,9 @@ void sound_exit()
     audio_thread_exit_flag = 1;
   }
 
+void sound_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+  sound_savestate_body(READ_MEM);
+
 void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
   sound_savestate_body(WRITE_MEM);
 

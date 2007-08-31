@@ -36,6 +36,7 @@ void clear_screen(u16 color);
 void blit_to_screen(u16 *src, u32 w, u32 h, u32 x, u32 y);
 u16 *copy_screen();
 void flip_screen();
+void video_read_mem_savestate(FILE_TAG_TYPE savestate_file);
 void video_write_mem_savestate(FILE_TAG_TYPE savestate_file);
 void video_read_savestate(FILE_TAG_TYPE savestate_file);
 

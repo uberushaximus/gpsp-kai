@@ -22,6 +22,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#define MEM_STATE_NUM 10
+
 #define MAX_TRANSLATION_GATES 8
 #define MAX_IDLE_LOOPS 8
 
@@ -143,6 +145,7 @@ typedef enum
 
 // グローバル変数宣言
 
+extern u32 mem_save_flag;
 extern char gamepak_title[13];
 extern char gamepak_code[5];
 extern char gamepak_maker[3];
@@ -156,16 +159,29 @@ extern u32 oam_update;
 extern u32 gbc_sound_update;
 extern DMA_TRANSFER_TYPE dma[4];
 
+extern u8 savestate_write_buffer[];
 extern u8 *write_mem_ptr;
 
+//#define USE_VRAM
+
+#ifndef USE_VRAM
 extern u16 palette_ram[512];
 extern u16 oam_ram[512];
 extern u16 io_registers[1024 * 16];
 extern u8 ewram[1024 * 256 * 2];
 extern u8 iwram[1024 * 32 * 2];
 extern u8 vram[1024 * 96 * 2];
-
 extern u8 bios_rom[1024 * 32];
+#else
+extern u16 *palette_ram;
+extern u16 *oam_ram;
+extern u16 *io_registers;
+extern u8 *ewram;
+extern u8 *iwram;
+extern u8 *vram;
+extern u8 *bios_rom;
+#endif
+
 extern u32 bios_read_protect;
 
 extern u8 *memory_map_read[8 * 1024];
@@ -198,7 +214,7 @@ extern void update_backup();
 extern void update_backup_force();
 extern void bios_region_read_allow();
 extern void bios_region_read_protect();
-extern void load_state(char *savestate_filename);
-extern void save_state(char *savestate_filename, u16 *screen_capture,u32 memory_flag);
+extern void load_state(char *savestate_filename, u32 slot_num);
+extern void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num);
 
 #endif
