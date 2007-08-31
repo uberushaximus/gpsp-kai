@@ -685,7 +685,10 @@ static int sound_update_thread(SceSize args, void *argp)
       }
       else
       {
+        if (pause_sound_flag == 1)
           buffer_num = 0;  // 全て0のデーターを再生
+        else
+          buffer_num = 1;  // 前回のデーターをそのまま再生
       }
       sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
       sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.5);

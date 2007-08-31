@@ -98,17 +98,33 @@ u8 cpu_waitstate_cycles_seq[2][16] =
     { 1, 1, 6, 1, 1, 2, 2, 1, 6, 6,10,10,18,18, 5, 1 }  /* 32bit */
 };
 
-u16 palette_ram[512];
-u16 oam_ram[512];
-u16 io_registers[1024 * 16];
-u8 ewram[1024 * 256 * 2];
-u8 iwram[1024 * 32 * 2];
-u8 vram[1024 * 96 * 2];
+// GBAのROM/RAMをVRAMに割当ててみるテスト
+// 0x04000000 ~ 0x04069800 フレームバッファ
 
+
+
+
+
+
+
+// GBAのROM/RAM 合計962kb
+// パレットRAM 1kb
+u16 palette_ram[512];
+// オブジェクトアトリビュートRAM 1kb
+u16 oam_ram[512];
+// IOレジスタ 32kb
+u16 io_registers[1024 * 16];
+// ExtワークRAM 512kb
+u8 ewram[1024 * 256 * 2];
+// IntワークRAM 64kb
+u8 iwram[1024 * 32 * 2];
+// VRAM 192kb
+u8 vram[1024 * 96 * 2];
+// BIOS ROM 32kb
 u8 bios_rom[1024 * 32];
 u32 bios_read_protect;
 
-// Up to 128kb, store SRAM, flash ROM, or EEPROM here.
+// SRAM/flash/EEPROM 128kb
 u8 gamepak_backup[1024 * 128];
 
 // Keeps us knowing how much we have left.
@@ -134,6 +150,7 @@ char gamepak_code[5];
 char gamepak_maker[3];
 char gamepak_filename[MAX_FILE];
 char gamepak_filename_raw[MAX_PATH];
+u32 gamepak_crc32;
 
 // Enough to map the gamepak RAM space.
 gamepak_swap_entry_type *gamepak_memory_map;
@@ -2430,6 +2447,12 @@ s32 load_gamepak(char *name)
     gamepak_code[4] = 0;
     gamepak_maker[2] = 0;
 
+    // crc32を取得
+    if (gamepak_file_large == LOAD_ON_MEMORY)
+      gamepak_crc32 = crc32(gamepak_crc32, gamepak_rom, file_size);
+    else
+      gamepak_crc32 = 0;
+
     load_game_config(gamepak_title, gamepak_code, gamepak_maker);
     update_progress();
     load_game_config_file();
@@ -3479,7 +3502,8 @@ void load_state(char *savestate_filename)
   pause_sound(0);
 }
 
-void save_state(char *savestate_filename, u16 *screen_capture)
+
+void save_state(char *savestate_filename, u16 *screen_capture,u32 memory_flag)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;

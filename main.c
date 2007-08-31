@@ -412,7 +412,7 @@ int user_main(SceSize argc, char *argv)
   // WLANのスイッチがONならばadhoc接続のテスト
   if (sceWlanDevIsPowerOn() == 1)
   {
-    adhocInit("test");
+    adhocInit("adhoc test");
     adhocTerm();
   }
 

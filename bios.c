@@ -20,8 +20,6 @@
 
 #include "common.h"
 
-static u32 reg_work[100];
-
 #define save_reg()            \
   asm( "\n                    \
   sw $3, 0(%0)\n              \
@@ -40,7 +38,7 @@ static u32 reg_work[100];
   sw $28, 52(%0)\n            \
   sw $30, 64(%0)\n            \
   lw $28, 128(%0)\n           \
-  "::"r"(reg_work));          \
+  "::"r"(reg));          \
 
 #define load_reg()            \
   asm( "\n                    \
@@ -59,7 +57,7 @@ static u32 reg_work[100];
   lw $18, 40(%0)\n            \
   lw $28, 52(%0)\n            \
   lw $30, 64(%0)\n            \
-  "::"r"(reg_work));          \
+  "::"r"(reg));          \
 
 s16 b_sinetable[256] = {
   (s16)0x0000, (s16)0x0192, (s16)0x0323, (s16)0x04B5, (s16)0x0645, (s16)0x07D5, (s16)0x0964, (s16)0x0AF1,

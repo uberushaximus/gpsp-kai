@@ -988,7 +988,7 @@ u32 menu(u16 *original_screen)
     {
       get_savestate_filename_noshot(SAVESTATE_SLOT,
        current_savestate_filename);
-      save_state(current_savestate_filename, original_screen);
+      save_state(current_savestate_filename, original_screen, SAVESTATE_SLOT);
       pause_sound(1);
       clear_screen(COLOR_BG);
     }

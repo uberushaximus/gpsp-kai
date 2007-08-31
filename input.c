@@ -327,7 +327,7 @@ u32 update_input()
         char current_savestate_filename[512];
         u16 *current_screen = copy_screen();
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        save_state(current_savestate_filename, current_screen);
+        save_state(current_savestate_filename, current_screen, SAVESTATE_SLOT);
         free(current_screen);
         return 0;
       }
@@ -405,3 +405,164 @@ input_savestate_body(READ);
 
 void input_write_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
 input_savestate_body(WRITE_MEM);
+
+// 以降OSK用のコード
+#ifdef OSK
+
+static unsigned int __attribute__((aligned(16))) list[262144];
+
+#define BUF_WIDTH (512)
+#define SCR_WIDTH (480)
+#define SCR_HEIGHT (272)
+#define PIXEL_SIZE (4) /* change this if you change to another screenmode */
+#define FRAME_SIZE (BUF_WIDTH * SCR_HEIGHT * PIXEL_SIZE)
+#define ZBUF_SIZE (BUF_WIDTH SCR_HEIGHT * 2) /* zbuffer seems to be 16-bit? */
+
+int SetupCallbacks();
+void SetupGu();
+
+int main(int argc, char* argv[])
+{
+     int done = 0;
+     SetupCallbacks();
+
+     // INIT GU!!!! it will not work without!!!
+     SetupGu();
+
+     // INIT OSK
+     unsigned short intext[128]  = { 0 }; // text already in the edit box on start
+     unsigned short outtext[128] = { 0 }; // text after input
+     unsigned short desc[128]    = { 'E', 'n', 't', 'e', 'r', ' ', 'T', 'e', 'x', 't', 0 }; // description
+
+     SceUtilityOskData data;
+     memset(&data, 0, sizeof(data));
+     data.language = 2; // english
+     data.lines = 1; // just online
+     data.unk_24 = 1; // set to 1
+     data.desc = desc;
+     data.intext = intext;
+     data.outtextlength = 128; // sizeof(outtext) / sizeof(unsigned short)
+     data.outtextlimit = 32; // just allow 32 chars
+     data.outtext = outtext;
+
+     SceUtilityOskParams osk;
+     memset(&osk, 0, sizeof(osk));
+     osk.size = sizeof(osk);
+     osk.language = 2;
+     osk.buttonswap = 0;
+     osk.unk_12 = 17; // What
+     osk.unk_16 = 19; // the
+     osk.unk_20 = 18; // fuck
+     osk.unk_24 = 16; // ???
+     osk.unk_48 = 1;
+     osk.data = &data;
+
+     // Only ascii code is handled so only the input of the small letters is printed
+
+     if(sceUtilityOskInitStart(&osk))
+     {
+          return 0;
+     }
+
+     while(!done)
+     {
+          sceGuStart(GU_DIRECT,list);
+          sceGuClearColor(0x666666);
+          sceGuClearDepth(0);
+          sceGuClear(GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
+
+          sceGuFinish();
+          sceGuSync(0,0);
+
+          switch(sceUtilityOskGetStatus())
+          {
+          case PSP_OSK_NONE:
+               break;
+          case PSP_OSK_INIT:
+               break;
+          case PSP_OSK_VISIBLE:
+               sceUtilityOskUpdate(2); // 2 is taken from ps2dev.org recommendation
+               break;
+          case PSP_OSK_QUIT:
+               sceUtilityOskShutdownStart();
+               break;
+          case PSP_OSK_FINISHED:
+               done = 1;
+               break;
+          default:
+               break;
+          }
+
+          sceDisplayWaitVblankStart();
+          sceGuSwapBuffers();
+     }
+
+     pspDebugScreenInit();
+     pspDebugScreenSetXY(0, 0);
+     pspDebugScreenPrintf("S:");
+     int i;
+     for(i = 0; data.outtext[i]; i++)
+     {
+          unsigned c = data.outtext[i];
+          if(32 <= c && c <= 127)
+          {
+               pspDebugScreenPrintf("%c", data.outtext[i]); // print ascii only
+          }
+     }
+     pspDebugScreenPrintf("\n");
+
+     sceKernelSleepThread();
+     return 0;
+}
+
+void SetupGu()
+{
+     sceGuInit();
+
+     sceGuStart(GU_DIRECT,list);
+     sceGuDrawBuffer(GU_PSM_8888,(void*)0,BUF_WIDTH);
+     sceGuDispBuffer(SCR_WIDTH,SCR_HEIGHT,(void*)0x88000,BUF_WIDTH);
+     sceGuDepthBuffer((void*)0x110000,BUF_WIDTH);
+     sceGuOffset(2048 - (SCR_WIDTH/2),2048 - (SCR_HEIGHT/2));
+     sceGuViewport(2048,2048,SCR_WIDTH,SCR_HEIGHT);
+     sceGuDepthRange(0xc350,0x2710);
+     sceGuScissor(0,0,SCR_WIDTH,SCR_HEIGHT);
+     sceGuEnable(GU_SCISSOR_TEST);
+     sceGuDepthFunc(GU_GEQUAL);
+     sceGuEnable(GU_DEPTH_TEST);
+     sceGuFrontFace(GU_CW);
+     sceGuShadeModel(GU_FLAT);
+     sceGuEnable(GU_CULL_FACE);
+     sceGuEnable(GU_TEXTURE_2D);
+     sceGuEnable(GU_CLIP_PLANES);
+     sceGuFinish();
+     sceGuSync(0,0);
+
+     sceDisplayWaitVblankStart();
+     sceGuDisplay(GU_TRUE);
+}
+
+int exit_callback(int arg1, int arg2, void *common)
+{
+     sceGuTerm();
+     sceKernelExitGame();
+     return 0;
+}
+
+int CallbackThread(SceSize args, void *argp)
+{
+     int cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+     sceKernelRegisterExitCallback(cbid);
+     sceKernelSleepThreadCB();
+     return 0;
+}
+
+int SetupCallbacks(void)
+{
+     int thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+     if(thid >= 0) {
+          sceKernelStartThread(thid, 0, 0);
+     }
+     return thid;
+}
+#endif

@@ -2447,27 +2447,17 @@ typedef struct
       break;                                                                  \
     }                                                                         \
                                                                               \
-    case 0xF0 ... 0xF7:                                                       \
+    case 0xF0 ... 0xF7:              /* TODO */                                         \
     {                                                                         \
       /* (low word) BL label */                                               \
-      /* This should possibly generate code if not in conjunction with a BLH  \
-         next, but I don't think anyone will do that. */                      \
+      thumb_bl();                                                             \
       break;                                                                  \
     }                                                                         \
                                                                               \
     case 0xF8 ... 0xFF:                                                       \
     {                                                                         \
       /* (high word) BL label */                                              \
-      /* This might not be preceeding a BL low word (Golden Sun 2), if so     \
-         it must be handled like an indirect branch. */                       \
-      if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                   \
-      {                                                                       \
-        thumb_bl();                                                           \
-      }                                                                       \
-      else                                                                    \
-      {                                                                       \
-        thumb_blh();                                                          \
-      }                                                                       \
+      thumb_blh();                                                            \
       break;                                                                  \
     }                                                                         \
   }                                                                           \
@@ -2996,7 +2986,7 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xF800)                                                         \
+  if(opcode < 0xE800)                                                         \
   {                                                                           \
     branch_target = block_end_pc + 2 + ((s32)((opcode & 0x7FF) << 21) >> 20); \
   }                                                                           \
@@ -3010,7 +3000,7 @@ block_lookup_address_body(dual);
     }                                                                         \
     else                                                                      \
     {                                                                         \
-      goto no_direct_branch;                                                  \
+      branch_target = (block_end_pc + 2 + ((opcode & 0x07FF) * 2));           \
     }                                                                         \
   }                                                                           \
 

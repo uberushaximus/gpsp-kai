@@ -36,8 +36,10 @@ static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
 static u32 video_direct = 0;
-static u16 *screen_texture = (u16 *)(0x4000000 + (512 * 272 * 2));
-u16 *screen_address = (u16 *)(0x4000000 + (512 * 272 * 2));
+
+// フレームバッファ 512*272*16bit + 240*160*16bit*2 0x04000000~0x04069800 422kb
+static u16 *screen_texture = (u16 *)(0x04000000 + (512 * 272 * 2));
+u16 *screen_address = (u16 *)(0x04000000 + (512 * 272 * 2));
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
@@ -3261,16 +3263,16 @@ void init_video()
   gecb.finish_arg = NULL;
   gecbid = sceGeSetCallback(&gecb);
 
-  screen_vertex[0] = 0.0 + 0.5;
-  screen_vertex[1] = 0.0 + 0.5;
-  screen_vertex[2] = 0.0 + 0.5;
-  screen_vertex[3] = 0.0 + 0.5;
-  screen_vertex[4] = 0.0;
-  screen_vertex[5] = GBA_SCREEN_WIDTH - 0.5;
-  screen_vertex[6] = GBA_SCREEN_HEIGHT - 0.5;
-  screen_vertex[7] = PSP_SCREEN_WIDTH - 0.5;
-  screen_vertex[8] = PSP_SCREEN_HEIGHT - 0.5;
-  screen_vertex[9] = 0.0;
+  screen_vertex[0] = (float)(0.0 + 0.5);
+  screen_vertex[1] = (float)(0.0 + 0.5);
+  screen_vertex[2] = (float)(0.0 + 0.5);
+  screen_vertex[3] = (float)(0.0 + 0.5);
+  screen_vertex[4] = (float)0.0;
+  screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.5);
+  screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.5);
+  screen_vertex[7] = (float)(PSP_SCREEN_WIDTH - 0.5);
+  screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.5);
+  screen_vertex[9] = (float)0.0;
 
   // Set framebuffer to PSP VRAM
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
@@ -3375,36 +3377,36 @@ void set_gba_resolution(video_scale_type scale)
   switch(scale)
   {
     case unscaled:
-      screen_vertex[0] = 0.0;
-      screen_vertex[1] = 0.0;
-      screen_vertex[2] = 120.0;
-      screen_vertex[3] = 56.0;
-      screen_vertex[5] = (float)GBA_SCREEN_WIDTH;
-      screen_vertex[6] = (float)GBA_SCREEN_HEIGHT;
-      screen_vertex[7] = GBA_SCREEN_WIDTH + 120.0;
-      screen_vertex[8] = GBA_SCREEN_HEIGHT + 56.0;
+      screen_vertex[0] = (float)(0.0 + 0.0);
+      screen_vertex[1] = (float)(0.0 + 0.0);
+      screen_vertex[2] = (float)(120.0 + 0.0);
+      screen_vertex[3] = (float)(56.0 + 0.0);
+      screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.0);
+      screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.0);
+      screen_vertex[7] = (float)(GBA_SCREEN_WIDTH + 120.0 - 0.0);
+      screen_vertex[8] = (float)(GBA_SCREEN_HEIGHT + 56.0 - 0.0);
       break;
 
     case scaled_aspect:
-      screen_vertex[0] = 0.0/* + 0.5*/;
-      screen_vertex[1] = 0.0/* + 0.5*/;
-      screen_vertex[2] = 36.0;
-      screen_vertex[3] = 0.0;
-      screen_vertex[5] = GBA_SCREEN_WIDTH/* - 0.5*/;
-      screen_vertex[6] = GBA_SCREEN_HEIGHT/* - 0.5*/;
-      screen_vertex[7] = 408.0 + 36.0;
-      screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
+      screen_vertex[0] = (float)(0.0 + 0.25);
+      screen_vertex[1] = (float)(0.0 + 0.0);
+      screen_vertex[2] = (float)(36.0 + 0.0);
+      screen_vertex[3] = (float)(0.0 + 0.0);
+      screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.0);
+      screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.0);
+      screen_vertex[7] = (float)(408.0 + 36.0 - 0.0);
+      screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.0);
       break;
 
     case fullscreen:
-      screen_vertex[0] = 0.0/* + 0.5*/;
-      screen_vertex[1] = 0.0/* + 0.5*/;
-      screen_vertex[2] = 0.0;
-      screen_vertex[3] = 0.0;
-      screen_vertex[5] = GBA_SCREEN_WIDTH/* - 0.5*/;
-      screen_vertex[6] = GBA_SCREEN_HEIGHT/* - 0.5*/;
-      screen_vertex[7] = (float)PSP_SCREEN_WIDTH;
-      screen_vertex[8] = (float)PSP_SCREEN_HEIGHT;
+      screen_vertex[0] = (float)(0.0 + 0.25);
+      screen_vertex[1] = (float)(0.0 + 0.0);
+      screen_vertex[2] = (float)(0.0 + 0.0);
+      screen_vertex[3] = (float)(0.0 + 0.0);
+      screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.0);
+      screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.0);
+      screen_vertex[7] = (float)(PSP_SCREEN_WIDTH - 0.0);
+      screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.0);
       break;
   }
 

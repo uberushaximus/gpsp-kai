@@ -2,6 +2,8 @@
 
 -- Release log --
 -UnOfficial gpSP kai 3.1 test 18 svn rev.
+	拡大画面時の調整
+	GUIのアルファブレンド関数/テーブルデータを削除
 
 -UnOfficial gpSP kai 3.1 test 17 svn rev.225
 	拡大画面時に、上下がわずかに欠けるのを修正

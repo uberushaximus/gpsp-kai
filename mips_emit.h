@@ -1311,6 +1311,9 @@ typedef enum
 #define generate_op_mvn_imm(_rd, _rn)                                         \
   generate_load_imm(_rd, (~imm))                                              \
 
+// フラグの変更 TODO
+// 論理演算
+// Vフラグは変化しない
 #define generate_op_logic_flags(_rd)                                          \
   if(check_generate_n_flag)                                                   \
   {                                                                           \
@@ -2442,20 +2445,18 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
 
 #define thumb_bl()                                                            \
   cycle_count += 2;                                                           \
+  thumb_decode_branch();                                                      \
+  generate_load_imm(reg_r14, (pc + 2 + ((s32)(offset << 21) >> 9)));          \
+
+#define thumb_blh()                                                           \
+  cycle_count += 2;                                                           \
+  thumb_decode_branch();                                                      \
+  generate_alu_imm(addiu, addu, reg_a0, reg_r14, (offset * 2));               \
   generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
   generate_branch_cycle_update(                                               \
    block_exits[block_exit_position].branch_source,                            \
    block_exits[block_exit_position].branch_target);                           \
-  block_exit_position++                                                       \
-
-#define thumb_blh()                                                           \
-{                                                                             \
-  thumb_decode_branch();                                                      \
-  generate_alu_imm(addiu, addu, reg_a0, reg_r14, (offset * 2));               \
-  generate_load_pc(reg_r14, ((pc + 2) | 0x01));                               \
-  generate_indirect_branch_cycle_update(dual);                                \
-  break;                                                                      \
-}                                                                             \
+  block_exit_position++;                                                      \
 
 #define thumb_bx()                                                            \
 {                                                                             \
