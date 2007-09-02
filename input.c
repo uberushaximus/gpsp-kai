@@ -318,8 +318,7 @@ u32 update_input()
       {
         char current_savestate_filename[512];
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        load_state(current_savestate_filename, SAVESTATE_SLOT);
-        return 1;
+        return load_state(current_savestate_filename, SAVESTATE_SLOT);
       }
 
       case BUTTON_ID_SAVESTATE:

@@ -410,11 +410,11 @@ int user_main(SceSize argc, char *argv)
   show_progress("Initialization end"); // TODO:メッセージファイル化
 
   // WLANのスイッチがONならばadhoc接続のテスト
-  if (sceWlanDevIsPowerOn() == 1)
-  {
-    adhocInit("adhoc test");
-    adhocTerm();
-  }
+//  if (sceWlanDevIsPowerOn() == 1)
+//  {
+//    adhocInit("adhoc test");
+//    adhocTerm();
+//  }
 
   if(argc > 1)
   {

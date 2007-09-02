@@ -64,6 +64,7 @@
 #define COLOR_DIALOG        COLOR16(31, 31, 31)
 #define COLOR_DIALOG_SHADOW COLOR16( 0,  2,  8)
 #define COLOR_FRAME         COLOR16( 0,  0,  0)
+#define COLOR_YESNO_TEXT    COLOR16( 0,  0,  0)
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/
@@ -84,6 +85,7 @@ extern void init_progress(u32 total, char *text);
 extern void update_progress(void);
 extern void show_progress(char *text);
 extern void scrollbar(u32 all,u32 view, u32 now);
+extern u32 yesno_diag(char *text);
 
 #endif
 

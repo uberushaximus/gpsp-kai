@@ -998,9 +998,11 @@ u32 menu(u16 *original_screen)
   {
     if(!first_load)
     {
-      load_state(current_savestate_filename, SAVESTATE_SLOT);
-      return_value = 1;
-      repeat = 0;
+      if (load_state(current_savestate_filename, SAVESTATE_SLOT) == 0)
+      {
+        return_value = 1;
+        repeat = 0;
+      }
     }
   }
 
@@ -1010,9 +1012,11 @@ u32 menu(u16 *original_screen)
     char load_filename[512];
     if(load_file(file_ext, load_filename, DEFAULT_SAVE_DIR) != -1)
     {
-      load_state(load_filename, SAVESTATE_SLOT);
-      return_value = 1;
-      repeat = 0;
+      if (load_state(load_filename, SAVESTATE_SLOT) == 0)
+      {
+        return_value = 1;
+        repeat = 0;
+      }
     }
     else
     {

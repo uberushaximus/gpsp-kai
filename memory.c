@@ -3446,43 +3446,54 @@ void bios_region_read_protect()
   video_##type##_savestate(savestate_file);                                   \
   update_progress();                                                          \
 
-void load_state(char *savestate_filename, u32 slot_num)
+u32 load_state(char *savestate_filename, u32 slot_num)
 {
-  char savestate_path[1024];
+  char savestate_path[MAX_PATH];
   FILE_ID savestate_file;
-
-  pause_sound(1);
-  if (*DEFAULT_SAVE_DIR != (char)NULL) {
-    sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
-  }
-  else
-  {
-    strcpy(savestate_path, savestate_filename);
-  }
-
   char current_gamepak_filename[MAX_FILE];
   u32 i;
   u32 file_size = 0;
+  char buf[256];
+
+  pause_sound(1);
+
+  sprintf(buf,"Load State No.%d.", slot_num);
+  if(yesno_dialog(buf) == 1)
+  {
+    pause_sound(0);
+    return 1;
+  }
 
   init_progress(9, "Load State."); // TODO:メッセージファイル化
 
   if (slot_num != MEM_STATE_NUM)
   {
+    if (*DEFAULT_SAVE_DIR != (char)NULL) {
+      sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+    }
+    else
+    {
+      strcpy(savestate_path, savestate_filename);
+    }
+
     FILE_OPEN(savestate_file, savestate_path, READ);
     if(FILE_CHECK_VALID(savestate_file))
     {
       file_size = file_length(savestate_path, (s32)NULL);
       if (file_size == SAVESTATE_SIZE)
-        FILE_READ(savestate_file, savestate_write_buffer, SAVESTATE_SIZE);
+        FILE_READ(savestate_file, savestate_write_buffer, sizeof(savestate_write_buffer));
       else
-        FILE_READ(savestate_file, savestate_write_buffer, SAVESTATE_SIZE_OLD);
+        FILE_READ(savestate_file, savestate_write_buffer, sizeof(savestate_write_buffer) - 4);
       FILE_CLOSE(savestate_file);
     }
     else
-      return;
+      return 1;
   }
   else
-    file_size = SAVESTATE_SIZE;
+    if (mem_save_flag == 1)
+      file_size = SAVESTATE_SIZE;
+    else
+      return 1;
 
   if (file_size == SAVESTATE_SIZE)
     write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u64);
@@ -3527,29 +3538,39 @@ void load_state(char *savestate_filename, u32 slot_num)
       real_frame_count = 0;
       virtual_frame_count = 0;
       pause_sound(0);
-      return;
+      return 0;
     }
-
-    // Oops, these contain raw pointers
-    for(i = 0; i < 4; i++)
-    {
-      gbc_sound_channel[i].sample_data = square_pattern_duty[2];
-    }
-    instruction_count = 0;
-
-    reg[CHANGED_PC_STATUS] = 1;
   }
+
+  // Oops, these contain raw pointers
+  for(i = 0; i < 4; i++)
+  {
+    gbc_sound_channel[i].sample_data = square_pattern_duty[2];
+  }
+  instruction_count = 0;
+
+  reg[CHANGED_PC_STATUS] = 1;
+
   real_frame_count = 0;
   virtual_frame_count = 0;
   pause_sound(0);
+  return 0;
 }
 
 void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
+  char buf[256];
 
   pause_sound(1);
+
+  sprintf(buf,"Load State No.%d.", slot_num);
+  if(yesno_dialog(buf) == 1)
+  {
+    pause_sound(0);
+    return;
+  }
 
   if (*DEFAULT_SAVE_DIR != (char)NULL) {
     sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);

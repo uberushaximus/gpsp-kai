@@ -35,10 +35,19 @@
 #define progress_ex (screen_width2 + screen_width / 3)  // 中心から +160/+80
 #define progress_sy (screen_height2 + 3)                // 中心から+3
 #define progress_ey (screen_height2 + 13)               // 中心から+13
+#define yesno_sx    (screen_width2 - screen_width / 3)  // 中心から -160/-80
+#define yesno_ex    (screen_width2 + screen_width / 3)  // 中心から +160/+80
+#define yesno_sy    (screen_height2 + 3)                // 中心から+3
+#define yesno_ey    (screen_height2 + 13)               // 中心から+13
 #define progress_color COLOR16(15,15,15)
 #define progress_wait (1 * 1000 * 1000)
 
 #define VRAM_POS(x, y)  (screen_address + (x + y * screen_pitch));
+
+/******************************************************************************
+ * グローバル変数の宣言
+ ******************************************************************************/
+u32 yesno_dialog(char *text);
 
 /******************************************************************************
  * グローバル変数の定義
@@ -172,8 +181,28 @@ void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
 }
 
 /*--------------------------------------------------------
-  yes/no ダイヤログボックス
+  yes/no ダイヤログボックス return YES=0 NO=1
 --------------------------------------------------------*/
+u32 yesno_dialog(char *text)
+{
+  gui_action_type gui_action = CURSOR_NONE;
+
+  draw_dialog(yesno_sx - 8, yesno_sy -29, yesno_ex + 8, yesno_ey + 13);
+  print_string_center(yesno_sy - 16, COLOR_YESNO_TEXT, COLOR_DIALOG, text);
+  print_string_center(yesno_sy + 5 , COLOR_YESNO_TEXT, COLOR_DIALOG, "Yes - O / No - X");
+
+  flip_screen();
+
+  while((gui_action != CURSOR_SELECT)  && (gui_action != CURSOR_EXIT))
+  {
+    gui_action = get_gui_input();
+    delay_us(15000); /* 0.0015s */
+  }
+  if (gui_action == CURSOR_SELECT)
+    return 0;
+  else
+    return 1;
+}
 
 /*--------------------------------------------------------
   プログレスバー
@@ -193,6 +222,8 @@ void init_progress(u32 total, char *text)
 
   if (text[0] != '\0')
     print_string_center(progress_sy - 21, COLOR_PROGRESS_TEXT, COLOR_DIALOG, text);
+
+  flip_screen();
 }
 
 /*--------------------------------------------------------
