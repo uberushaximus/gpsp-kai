@@ -73,30 +73,30 @@ void init_memory_gamepak();
 u8 waitstate_cycles_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-  { 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 }, /* 8,16bit */
-  { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9,17,17, 4, 0 }  /* 32bit */
+  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
+  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
 };
 
 u8 waitstate_cycles_non_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-  { 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 }, /* 8,16bit */
-  { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9,17,17, 4, 0 }  /* 32bit */
+  { 1, 1, 3, 1, 1, 1, 1, 1, 5, 5, 5, 5, 5, 5, 5, 1 }, /* 8,16bit */
+  { 1, 1, 6, 1, 1, 2, 2, 1, 7, 7, 9, 9,13,13, 1, 1 }  /* 32bit */
 };
 
 // Different settings for gamepak ws0-2 sequential (2nd) access
 
 u8 gamepak_waitstate_seq[2][2][3] =
 {
-  {{ 2, 4, 8 }, { 4, 9,17 }},
-  {{ 1, 1, 1 }, { 2, 2, 2 }}
+  {{ 3, 5, 9 }, { 5, 9,17 }},
+  {{ 2, 2, 2 }, { 3, 3, 3 }}
 };
 
 u8 cpu_waitstate_cycles_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
-    { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
-    { 1, 1, 6, 1, 1, 2, 2, 1, 6, 6,10,10,18,18, 5, 1 }  /* 32bit */
+  { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
+  { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
 };
 
 #ifndef USE_VRAM
@@ -521,11 +521,11 @@ u32 read_eeprom()
       /* BIOS */                                                              \
       if(reg[REG_PC] >= 0x4000)                                               \
       {                                                                       \
-        if(address < 0x4000)                                                  \
-          value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
-        else                                                                  \
-        read_open##type();                                                    \
-      }                                                                       \
+/*        if(address < 0x4000)                                                  \
+*/          value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
+/*        else                                                                  \
+          read_open##type();                                                  \
+*/      }                                                                       \
       else                                                                    \
       {                                                                       \
         value = ADDRESS##type(bios_rom, address & 0x3FFF);                    \
@@ -544,12 +544,12 @@ u32 read_eeprom()
       break;                                                                  \
                                                                               \
     case 0x04:                                                                \
-      /* I/O registers TODO*/                                                     \
-      if(address < 0x04000400)                                                  /* IOは0x803まで存在 */ \
-        value = ADDRESS##type(io_registers, address & 0x3FF);                   /* 0x800は0x800ごとにループしている:TODO */ \
-      else                                                                    \
+      /* I/O registers TODO*/                                                 \
+/*      if(address < 0x04000400)                                              \
+*/        value = ADDRESS##type(io_registers, address & 0x3FF);               \
+/*      else                                                                  \
         read_open##type();                                                    \
-      break;                                                                  \
+*/      break;                                                                \
                                                                               \
     case 0x05:                                                                \
       /* palette RAM */                                                       \
@@ -561,7 +561,7 @@ u32 read_eeprom()
       address &= 0x1FFFF;                                                     \
       if(address >= 0x18000)                                                  \
         address -= 0x8000;                                                    \
-      value = ADDRESS##type(vram, address);                                    \
+      value = ADDRESS##type(vram, address);                                   \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
@@ -1108,9 +1108,19 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       break;
 
     // Timer control (trigger byte)
+    case 0x102:
+      access_register8_low(0x102);
+      TRIGGER_TIMER(0);
+      break;
+
     case 0x103:
       access_register8_high(0x102);
       TRIGGER_TIMER(0);
+      break;
+
+    case 0x106:
+      access_register8_low(0x106);
+      TRIGGER_TIMER(1);
       break;
 
     case 0x107:
@@ -1118,9 +1128,19 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       TRIGGER_TIMER(1);
       break;
 
+    case 0x10A:
+      access_register8_low(0x10A);
+      TRIGGER_TIMER(2);
+      break;
+
     case 0x10B:
       access_register8_high(0x10A);
       TRIGGER_TIMER(2);
+      break;
+
+    case 0x10E:
+      access_register8_low(0x10E);
+      TRIGGER_TIMER(3);
       break;
 
     case 0x10F:
@@ -1662,7 +1682,7 @@ void write_backup(u32 address, u32 value)
 
 #define write_oam_ram8()                                                      \
   oam_update = 1;                                                             \
-  ADDRESS16(oam_ram, address & 0x3FF) = ((value << 8) | value)                \
+  ADDRESS8(oam_ram, address & 0x3FF) = value                                  \
 
 #define write_oam_ram16()                                                     \
   oam_update = 1;                                                             \
@@ -2704,7 +2724,7 @@ dma_region_type dma_region_map[16] =
   ADDRESS##transfer_size(vram, type##_ptr & 0x1FFFF) = read_value             \
 
 #define dma_write_io(type, transfer_size)                                     \
-  write_io_register##transfer_size(type##_ptr & 0xFFF, read_value)            \
+  write_io_register##transfer_size(type##_ptr & 0x3FF, read_value)            \
 
 #define dma_write_oam_ram(type, transfer_size)                                \
   ADDRESS##transfer_size(oam_ram, type##_ptr & 0x3FF) = read_value            \
@@ -3460,7 +3480,6 @@ u32 load_state(char *savestate_filename, u32 slot_num)
   sprintf(buf,"Load State No.%d.", slot_num);
   if(yesno_dialog(buf) == 1)
   {
-    pause_sound(0);
     return 1;
   }
 
@@ -3568,7 +3587,6 @@ void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   sprintf(buf,"Load State No.%d.", slot_num);
   if(yesno_dialog(buf) == 1)
   {
-    pause_sound(0);
     return;
   }
 

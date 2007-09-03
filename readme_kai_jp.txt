@@ -10,6 +10,7 @@
 		終了時やロムのロード時にも破棄される
 	ROM INFOにCRC32を追加
 		16MBを超えるROMの場合は"0"を表示 
+	yes/no ダイアログを追加
 
 -UnOfficial gpSP kai 3.1 test 17 svn rev.225
 	拡大画面時に、上下がわずかに欠けるのを修正

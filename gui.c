@@ -854,9 +854,7 @@ s32 load_config_file()
 u32 menu(u16 *original_screen)
 {
   char print_buffer[81];
-//  u32 _current_option = 0;
   gui_action_type gui_action;
-//  MENU_ENUM _current_menu = MAIN_MENU;
   u32 i;
   u32 repeat = 1;
   u32 return_value = 0;
@@ -872,7 +870,6 @@ u32 menu(u16 *original_screen)
   u32 current_option_num;
 
   SceCtrlData ctrl_data;
-//  u32 buttons;
 
   auto void choose_menu();
   auto void clear_help();
@@ -1003,6 +1000,11 @@ u32 menu(u16 *original_screen)
         return_value = 1;
         repeat = 0;
       }
+      else
+      {
+        clear_screen(COLOR_BG);
+        blit_to_screen(original_screen, 240, 160, 230, 40);
+      }
     }
   }
 
@@ -1016,6 +1018,11 @@ u32 menu(u16 *original_screen)
       {
         return_value = 1;
         repeat = 0;
+      }
+      else
+      {
+        clear_screen(COLOR_BG);
+        choose_menu(current_menu);
       }
     }
     else

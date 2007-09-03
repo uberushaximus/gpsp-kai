@@ -50,9 +50,6 @@ u32 iwram_stack_optimize = 1;
 u32 allow_smc_ram_u8 = 1;
 u32 allow_smc_ram_u16 = 1;
 u32 allow_smc_ram_u32 = 1;
-u8 waitstate_cycles_seq[2][16];
-u8 waitstate_cycles_non_seq[2][16];
-u8 cpu_waitstate_cycles_seq[2][16];
 
 u32 bios_mode;
 
