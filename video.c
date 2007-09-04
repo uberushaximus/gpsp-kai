@@ -2062,6 +2062,7 @@ render_scanline_obj_builder(copy, copy_bitmap, 1D, no_partial_alpha);
 render_scanline_obj_builder(copy, copy_bitmap, 2D, no_partial_alpha);
 
 // TODO 高速化
+// 前回のレジスタの内容と比較して、変更無し時は処理をスキップすれば高速化できるかも
 void order_obj(u32 video_mode)
 {
   s32 obj_num, row;
@@ -2124,9 +2125,6 @@ void order_obj(u32 video_mode)
           {
             for(row = obj_y; row < obj_y + obj_height; row++)
             {
-//              current_count = obj_priority_count[obj_priority][row];
-//              obj_priority_list[obj_priority][row][current_count] = obj_num;
-//              obj_priority_count[obj_priority][row] = current_count + 1;
               obj_priority_list[obj_priority][row][obj_priority_count[obj_priority][row]++] = obj_num;
               obj_alpha_count[row]++;
             }
@@ -2140,9 +2138,6 @@ void order_obj(u32 video_mode)
 
             for(row = obj_y; row < obj_y + obj_height; row++)
             {
-//              current_count = obj_priority_count[obj_priority][row];
-//              obj_priority_list[obj_priority][row][current_count] = obj_num;
-//              obj_priority_count[obj_priority][row] = current_count + 1;
               obj_priority_list[obj_priority][row][obj_priority_count[obj_priority][row]++] = obj_num;
             }
           }

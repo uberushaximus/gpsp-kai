@@ -110,7 +110,7 @@ gui_action_type get_gui_input()
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
 
-  if(!(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
     if(ctrl_data.Lx < analog_sensitivity)
       ctrl_data.Buttons = PSP_CTRL_LEFT;
