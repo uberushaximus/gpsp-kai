@@ -23,6 +23,8 @@
 
 // Special thanks to psp298 for the analog->dpad code!
 
+void trigger_key(u32 key);
+
 void trigger_key(u32 key)
 {
   u32 p1_cnt = io_registers[REG_P1CNT];

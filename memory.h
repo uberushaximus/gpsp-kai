@@ -191,9 +191,14 @@ extern u8 *memory_map_write[8 * 1024];
 extern FILE_TAG_TYPE gamepak_file_large;
 
 extern u32 gbc_sound_wave_update;
+
+#ifdef OLD_COUNT
+extern u32 waitstate_cycles_sequential[16][3];
+#else
 extern u8 waitstate_cycles_seq[2][16];
 extern u8 waitstate_cycles_non_seq[2][16];
 extern u8 cpu_waitstate_cycles_seq[2][16];
+#endif
 
 // 関数宣言
 

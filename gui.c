@@ -853,7 +853,6 @@ s32 load_config_file()
 
 u32 menu(u16 *original_screen)
 {
-  char print_buffer[81];
   gui_action_type gui_action;
   u32 i;
   u32 repeat = 1;
@@ -1811,7 +1810,6 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
   u64 savestate_time_flat;
   u64 local_time;
   int wday;
-  int time_diff;
   pspTime current_time;
   u32 valid_flag = 0;
 

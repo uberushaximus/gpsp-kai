@@ -305,6 +305,7 @@ static int sound_update_thread(SceSize args, void *argp);
 /******************************************************************************
  * グローバル関数の定義
  ******************************************************************************/
+// Queue 1, 2, or 4 samples to the top of the DS FIFO, wrap around circularly
 // マジカルバケーションの不具合修正
 void sound_timer_queue32(u8 channel)
   {

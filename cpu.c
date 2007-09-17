@@ -1395,7 +1395,7 @@ u32 cpu_modes[32] =
   MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
   MODE_INVALID, MODE_USER   , MODE_FIQ      , MODE_IRQ      , MODE_SUPERVISOR,
   MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_ABORT    , MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,MODE_INVALID , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,MODE_INVALID   , MODE_INVALID,
   MODE_INVALID, MODE_USER
 };
 
@@ -2954,7 +2954,7 @@ char *reg_names[16] =
           spsr[MODE_SUPERVISOR] = reg[REG_CPSR];                              \
           reg[REG_PC] = 0x00000008;                                           \
           arm_update_pc();                                                    \
-          reg[REG_CPSR] = (reg[REG_CPSR] & ~0x1F) | 0x13;                     \
+          reg[REG_CPSR] = (reg[REG_CPSR] & ~0x3F) | 0x13;                     \
           set_cpu_mode(MODE_SUPERVISOR);                                      \
           break;                                                              \
       }                                                                       \
@@ -3581,7 +3581,7 @@ char *reg_names[16] =
       thumb_add_noflags(imm, 7, reg[REG_SP], (imm * 4));                      \
       break;                                                                  \
                                                                               \
-    case 0xB0:                                                                \
+    case 0xB0 ... 0xB3:                                                       \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \

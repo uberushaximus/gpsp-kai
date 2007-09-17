@@ -252,7 +252,7 @@ typedef struct
 #define TRIGGER_SOUND()                                                       \
 {                                                                             \
   timer[0].direct_sound_channels =                                            \
-   ((~value >> 13) & 0x02) | ((~value >> 10) & 0x01);                         \
+   ~((value >> 13) & 0x02) | ~((value >> 10) & 0x01);                         \
   timer[1].direct_sound_channels =                                            \
    ((value >> 13) & 0x02) | ((value >> 10) & 0x01);                           \
                                                                               \

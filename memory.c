@@ -69,7 +69,39 @@ void init_memory_gamepak();
 
 
 // This table is configured for sequential access on system defaults
+#ifdef OLD_COUNT
+u32 waitstate_cycles_sequential[16][3] =
+{
+  { 1, 1, 1 }, // BIOS
+  { 1, 1, 1 }, // Invalid
+  { 3, 3, 6 }, // EWRAM (default settings)
+  { 1, 1, 1 }, // IWRAM
+  { 1, 1, 1 }, // IO Registers
+  { 1, 1, 2 }, // Palette RAM
+  { 1, 1, 2 }, // VRAM
+  { 1, 1, 2 }, // OAM
+  { 3, 3, 6 }, // Gamepak (wait 0)
+  { 3, 3, 6 }, // Gamepak (wait 0)
+  { 5, 5, 9 }, // Gamepak (wait 1)
+  { 5, 5, 9 }, // Gamepak (wait 1)
+  { 9, 9, 17 }, // Gamepak (wait 2)
+  { 9, 9, 17 }  // Gamepak (wait 2)
+};
 
+u32 gamepak_waitstate_sequential[2][3][3] =
+{
+  {
+    { 3, 3, 6 },
+    { 5, 5, 9 },
+    { 9, 9, 17 }
+  },
+  {
+    { 2, 2, 3 },
+    { 2, 2, 3 },
+    { 2, 2, 3 }
+  }
+};
+#else
 u8 waitstate_cycles_seq[2][16] =
 {
  /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
@@ -98,6 +130,7 @@ u8 cpu_waitstate_cycles_seq[2][16] =
   { 1, 1, 3, 1, 1, 1, 1, 1, 3, 3, 5, 5, 9, 9, 5, 1 }, /* 8,16bit */
   { 1, 1, 6, 1, 1, 2, 2, 1, 5, 5, 9, 9,17,17, 1, 1 }  /* 32bit */
 };
+#endif
 
 #ifndef USE_VRAM
 // GBAのROM/RAM 合計962kb
@@ -444,13 +477,13 @@ void write_eeprom(u32 address, u32 value)
 }
 
 #define read_memory_gamepak(type)                                             \
-    u32 gamepak_index = address >> 15;                                        \
-    u8 *map = memory_map_read[gamepak_index];                                 \
+  u32 gamepak_index = address >> 15;                                          \
+  u8 *map = memory_map_read[gamepak_index];                                   \
                                                                               \
-    if(map == NULL)                                                           \
-      map = load_gamepak_page(gamepak_index & 0x3FF);                         \
+  if(map == NULL)                                                             \
+    map = load_gamepak_page(gamepak_index & 0x3FF);                           \
                                                                               \
-    value = ADDRESS##type(map, address & 0x7FFF);                             \
+  value = ADDRESS##type(map, address & 0x7FFF)                                \
 
 #define read_open8()                                                          \
   if(!(reg[REG_CPSR] & 0x20))                                                 \
@@ -520,21 +553,13 @@ u32 read_eeprom()
     case 0x00:                                                                \
       /* BIOS */                                                              \
       if(reg[REG_PC] >= 0x4000)                                               \
-      {                                                                       \
-/*        if(address < 0x4000)                                                  \
-*/          value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
-/*        else                                                                  \
-          read_open##type();                                                  \
-*/      }                                                                       \
+        value = ADDRESS##type(&bios_read_protect, address & 0x03);            \
       else                                                                    \
-      {                                                                       \
         value = ADDRESS##type(bios_rom, address & 0x3FFF);                    \
-      }                                                                       \
       break;                                                                  \
                                                                               \
     case 0x02:                                                                \
       /* external work RAM */                                                 \
-      address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
       value = ADDRESS##type(ewram, address);                                  \
       break;                                                                  \
                                                                               \
@@ -544,12 +569,9 @@ u32 read_eeprom()
       break;                                                                  \
                                                                               \
     case 0x04:                                                                \
-      /* I/O registers TODO*/                                                 \
-/*      if(address < 0x04000400)                                              \
-*/        value = ADDRESS##type(io_registers, address & 0x3FF);               \
-/*      else                                                                  \
-        read_open##type();                                                    \
-*/      break;                                                                \
+      /* I/O registers */                                                     \
+      value = ADDRESS##type(io_registers, address & 0xFFF);                   \
+      break;                                                                  \
                                                                               \
     case 0x05:                                                                \
       /* palette RAM */                                                       \
@@ -561,6 +583,7 @@ u32 read_eeprom()
       address &= 0x1FFFF;                                                     \
       if(address >= 0x18000)                                                  \
         address -= 0x8000;                                                    \
+                                                                              \
       value = ADDRESS##type(vram, address);                                   \
       break;                                                                  \
                                                                               \
@@ -569,11 +592,7 @@ u32 read_eeprom()
       value = ADDRESS##type(oam_ram, address & 0x3FF);                        \
       break;                                                                  \
                                                                               \
-    case 0x08:                                                                \
-    case 0x09:                                                                \
-    case 0x0A:                                                                \
-    case 0x0B:                                                                \
-    case 0x0C:                                                                \
+    case 0x08 ... 0x0C:                                                       \
       /* gamepak ROM */                                                       \
       if((address & 0x1FFFFFF) >= gamepak_size)                               \
       {                                                                       \
@@ -680,7 +699,7 @@ u32 read_eeprom()
 #define waitstate_control()                                                   \
 {                                                                             \
   u8 i;                                                                       \
-  u8 waitstate_table[4] = { 4, 3, 2, 8 };                                     \
+  u8 waitstate_table[4] = { 5, 4, 3, 9 };                                     \
                                                                               \
   waitstate_cycles_non_seq[0][0x0e] = waitstate_cycles_seq[0][0x0e]           \
    = waitstate_table[value & 0x03];                                           \
@@ -704,11 +723,11 @@ u32 read_eeprom()
                                                                               \
   /* 32bit access ( split into two 16bit accsess ) */                         \
   waitstate_cycles_non_seq[1][0x08] = waitstate_cycles_non_seq[1][0x09]       \
-   = (waitstate_cycles_non_seq[0][0x08] + waitstate_cycles_seq[0][0x08] + 1); \
+   = (waitstate_cycles_non_seq[0][0x08] + waitstate_cycles_seq[0][0x08] - 1); \
   waitstate_cycles_non_seq[1][0x0A] = waitstate_cycles_non_seq[1][0x0B]       \
-   = (waitstate_cycles_non_seq[0][0x0A] + waitstate_cycles_seq[0][0x0A] + 1); \
+   = (waitstate_cycles_non_seq[0][0x0A] + waitstate_cycles_seq[0][0x0A] - 1); \
   waitstate_cycles_non_seq[1][0x0C] = waitstate_cycles_non_seq[1][0x0D]       \
-  =  (waitstate_cycles_non_seq[0][0x0C] + waitstate_cycles_seq[0][0x0C] + 1); \
+  =  (waitstate_cycles_non_seq[0][0x0C] + waitstate_cycles_seq[0][0x0C] - 1); \
                                                                               \
   /* gamepak prefetch */                                                      \
   if(value & 0x4000)                                                          \
@@ -897,7 +916,7 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       break;
 
     case 0x61:
-      access_register8_high(0x60);
+      access_register8_low(0x60);
       GBC_SOUND_TONE_CONTROL_SWEEP();
       break;
 
@@ -1108,19 +1127,9 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       break;
 
     // Timer control (trigger byte)
-    case 0x102:
-      access_register8_low(0x102);
-      TRIGGER_TIMER(0);
-      break;
-
     case 0x103:
       access_register8_high(0x102);
       TRIGGER_TIMER(0);
-      break;
-
-    case 0x106:
-      access_register8_low(0x106);
-      TRIGGER_TIMER(1);
       break;
 
     case 0x107:
@@ -1128,19 +1137,9 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       TRIGGER_TIMER(1);
       break;
 
-    case 0x10A:
-      access_register8_low(0x10A);
-      TRIGGER_TIMER(2);
-      break;
-
     case 0x10B:
       access_register8_high(0x10A);
       TRIGGER_TIMER(2);
-      break;
-
-    case 0x10E:
-      access_register8_low(0x10E);
-      TRIGGER_TIMER(3);
       break;
 
     case 0x10F:
@@ -1170,13 +1169,17 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
 
     // WAITCNT
     case 0x204:
+#ifndef OLD_COUNT
       access_register8_low(0x204);
       waitstate_control();
+#endif
       break;
 
     case 0x205:
+#ifndef OLD_COUNT
       access_register8_high(0x204);
       waitstate_control();
+#endif
       break;
 
     // Halt
@@ -1186,7 +1189,6 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       else
         reg[CPU_HALT_STATE] = CPU_HALT;
       return CPU_ALERT_HALT;
-      break;
 
     default:
       ADDRESS8(io_registers, address) = value;
@@ -1377,22 +1379,22 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // Timer counts
     case 0x100:
-//      ADDRESS16(io_registers, address) = value;
+      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(0);
       break;
 
     case 0x104:
-//      ADDRESS16(io_registers, address) = value;
+      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(1);
       break;
 
     case 0x108:
-//      ADDRESS16(io_registers, address) = value;
+      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(2);
       break;
 
     case 0x10C:
-//      ADDRESS16(io_registers, address) = value;
+      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(3);
       break;
 
@@ -1429,7 +1431,9 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // WAITCNT
     case 0x204:
+#ifndef OLD_COUNT
       waitstate_control();
+#endif
       break;
 
     // Halt
@@ -1509,11 +1513,6 @@ CPU_ALERT_TYPE write_io_register32(u32 address, u32 value)
 }
 
 #define write_palette8(address, value)                                        \
-{                                                                             \
-  u32 palette_address = address & ~0x01;                                      \
-  u16 double_value = ((value << 8) | value);                                  \
-  ADDRESS16(palette_ram, palette_address) = double_value;                     \
-}                                                                             \
 
 #define write_palette16(address, value)                                       \
 {                                                                             \
@@ -1973,7 +1972,7 @@ void write_rtc(u32 address, u32 value)
                                                                               \
     case 0x04:                                                                \
       /* I/O registers */                                                     \
-      if(address < 0x04000400)                                                \
+     /*if(address < 0x04000400)*/                                                \
         return write_io_register##type(address & 0x3FF, value);                 /* IOは0x803まで存在 */ \
       break;                                                                    /* 0x800は0x800ごとにループしている:TODO */ \
                                                                               \
@@ -1984,12 +1983,18 @@ void write_rtc(u32 address, u32 value)
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
+      address &= 0x1FFFF;                                                     \
+      if(address >= 0x18000)                                                  \
+        address -= 0x8000;                                                    \
+                                                                              \
       write_vram##type();                                                     \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
       /* OAM RAM */                                                           \
-      write_oam_ram##type();                                                  \
+      oam_update = 1;                                                         \
+      ADDRESS##type(oam_ram, address & 0x3FF) = value;                        \
+      /*write_oam_ram##type();*/                                                  \
       break;                                                                  \
                                                                               \
     case 0x08:                                                                \
@@ -2619,9 +2624,9 @@ dma_region_type dma_region_map[16] =
   dma_smc_vars_##type()                                                       \
 
 #define dma_vars_vram(type)                                                   \
-  type##_ptr &= 0x1FFFF;                                                      \
+/*  type##_ptr &= 0x1FFFF;                                                      \
   if(type##_ptr >= 0x18000)                                                   \
-    type##_ptr -= 0x8000                                                      \
+    type##_ptr -= 0x8000*/                                                      \
 
 #define dma_vars_palette_ram(type)                                            \
 
@@ -3370,6 +3375,7 @@ void init_memory()
   map_ram_region(read, 0x3000000, 0x4000000, 1, iwram);
   map_region(read, 0x4000000, 0x5000000, 1, io_registers);
   map_null(read, 0x5000000, 0x6000000);
+  map_null(read, 0x6000000, 0x7000000);
   map_vram(read);
   map_null(read, 0x7000000, 0x8000000);
   init_memory_gamepak();

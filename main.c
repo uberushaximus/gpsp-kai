@@ -25,8 +25,15 @@
  ******************************************************************************/
 #include "common.h"
 
+#ifdef USER_MODE
+PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
+PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MAIN_THREAD_PRIORITY(0x11);
+//PSP_MAIN_THREAD_STACK_SIZE_KB(256);
+#else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(0);
+#endif
 
 /******************************************************************************
  * 変数の定義
@@ -265,7 +272,11 @@ void quit()
   fclose(dbg_file);
 
   set_cpu_clock(222);
+#ifdef USER_MODE
+  sceKernelExitGame();
+#else
   sceKernelExitThread(0);
+#endif
 }
 
 void psp_exception_handler(PspDebugRegBlock *regs)
@@ -286,6 +297,8 @@ void psp_exception_handler(PspDebugRegBlock *regs)
 
 //  XBMから呼び出されるmain
 //    HOMEボタン用のスレッドと本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
+
+#ifndef USER_MODE
 int main(int argc, char *argv[])
 {
   SceUID main_thread;
@@ -311,8 +324,13 @@ int main(int argc, char *argv[])
   sceKernelExitGame();
   return 0;
 }
+#endif
 
+#ifdef USER_MODE
+int main(int argc, char *argv[])
+#else
 int user_main(SceSize argc, char *argv)
+#endif
 {
   char load_filename[MAX_FILE];
   char filename[MAX_FILE];
@@ -326,6 +344,10 @@ int user_main(SceSize argc, char *argv)
 
   // デバッグ出力ファイルのオープン
   dbg_file = fopen(DBG_FILE_NAME, "awb");
+
+#ifdef USER_MODE
+  getcwd(main_path, 512);
+#endif
 
   // Copy the directory path of the executable into main_path
   chdir(main_path);
@@ -465,6 +487,7 @@ int user_main(SceSize argc, char *argv)
   real_frame_count = 0;
   virtual_frame_count = 0;
 
+  // エミュレートの開始
   execute_arm_translate(execute_cycles);
 //  execute_arm(execute_cycles);
   return 0;
@@ -520,11 +543,14 @@ u32 update_gba()
             update_scanline();
 
           // If in visible area also fire HDMA
-          for(i = 0; i < 4; i++)
-          {
-            if(dma[i].start_type == DMA_START_HBLANK)
-              dma_transfer(dma + i);
-          }
+          if(dma[0].start_type == DMA_START_HBLANK)
+            dma_transfer(dma);
+          if(dma[1].start_type == DMA_START_HBLANK)
+            dma_transfer(dma + 1);
+          if(dma[2].start_type == DMA_START_HBLANK)
+            dma_transfer(dma + 2);
+          if(dma[3].start_type == DMA_START_HBLANK)
+            dma_transfer(dma + 3);
         }
 
         if(dispstat & 0x10)
@@ -553,11 +579,14 @@ u32 update_gba()
           affine_reference_x[1] = (s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4;
           affine_reference_y[1] = (s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4;
 
-          for(i = 0; i < 4; i++)
-          {
-            if(dma[i].start_type == DMA_START_VBLANK)
-              dma_transfer(dma + i);
-          }
+          if(dma[0].start_type == DMA_START_VBLANK)
+            dma_transfer(dma);
+          if(dma[1].start_type == DMA_START_VBLANK)
+            dma_transfer(dma + 1);
+          if(dma[2].start_type == DMA_START_VBLANK)
+            dma_transfer(dma + 2);
+          if(dma[3].start_type == DMA_START_VBLANK)
+            dma_transfer(dma + 3);
         }
         else
 

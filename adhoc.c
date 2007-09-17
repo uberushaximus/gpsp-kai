@@ -101,7 +101,7 @@ static u32 ahdoc_pos;
  プログレスバー初期化
  --------------------------------------------------------*/
 
-static void adhoc_init_progress(u32 total, const char *text)
+static void adhoc_init_progress(u32 total, char *text)
   {
     char buf[MAX_FILE];
 
@@ -636,7 +636,7 @@ u32 adhocSelect(void)
     char name[64];
     char temp[64];
     char ssid[10];
-    char title[32];
+//    char title[32];
 
 //    sprintf(title, "AdHoc - %s", game_name);
 //    msg_screen_init(WP_LOGO, ICON_SYSTEM, title);

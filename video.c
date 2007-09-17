@@ -1406,9 +1406,9 @@ render_scanline_affine_builder(transparent, alpha);
 #define render_scanline_vram_setup_mode5()                                    \
   u16 *src_ptr;                                                               \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
-    src_ptr = (u16*)(vram + 0xA000);                                          \
+    src_ptr = (u16 *)(vram + 0xA000);                                         \
   else                                                                        \
-    src_ptr = (u16*)vram                                                      \
+    src_ptr = (u16 *)vram                                                     \
 
 #define render_scanline_vram_setup_mode4()                                    \
   u16 *palette = palette_ram;                                                 \
@@ -3168,6 +3168,9 @@ void update_scanline()
 
   // レイヤーの並べ替え
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
+
+//  if(skip_next_frame_flag)
+//    return;
 
   if(dispcnt & 0x80)
   {

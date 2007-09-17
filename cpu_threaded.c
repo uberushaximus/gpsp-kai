@@ -67,7 +67,11 @@ typedef struct
   u8 *branch_source;
 } block_exit_type;
 
+#ifdef OLD_COUNT
 #include "mips_emit.h"
+#else
+#include "mips_emit_new_count.h"
+#endif
 
 #define arm_decode_data_proc_reg()                                            \
   u32 rn = (opcode >> 16) & 0x0F;                                             \
@@ -136,7 +140,7 @@ typedef struct
   u32 reg_list = opcode & 0xFFFF                                              \
 
 #define arm_decode_branch()                                                   \
-  s32 offset = (s32)((opcode & 0xFFFFFF) << 8) >> 6                           \
+  s32 offset = ((s32)(opcode & 0xFFFFFF) << 8) >> 6                           \
 
 #define thumb_decode_shift()                                                  \
   u32 imm = (opcode >> 6) & 0x1F;                                             \
@@ -1931,8 +1935,8 @@ typedef struct
                                                                               \
         case 0x01:                                                            \
           /* MUL rd, rs */                                                    \
-          /*thumb_data_proc(alu_op, muls, reg, rd, rd, rs);*/                     \
-          thumb_data_proc_muls(alu_op, reg, rd, rd, rs);                      \
+          thumb_data_proc(alu_op, muls, reg, rd, rd, rs);                     \
+          /*thumb_data_proc_muls(alu_op, reg, rd, rd, rs);*/                      \
           break;                                                              \
                                                                               \
         case 0x02:                                                            \
@@ -2247,7 +2251,7 @@ typedef struct
       thumb_load_sp(7);                                                       \
       break;                                                                  \
                                                                               \
-    case 0xB0:                                                                \
+    case 0xB0 ... 0xB3:                                                       \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \
@@ -2444,17 +2448,27 @@ typedef struct
       break;                                                                  \
     }                                                                         \
                                                                               \
-    case 0xF0 ... 0xF7:              /* TODO */                                         \
+    case 0xF0 ... 0xF7:                                                       \
     {                                                                         \
       /* (low word) BL label */                                               \
-      thumb_bl();                                                             \
+      /* This should possibly generate code if not in conjunction with a BLH  \
+         next, but I don't think anyone will do that. */                      \
       break;                                                                  \
     }                                                                         \
                                                                               \
     case 0xF8 ... 0xFF:                                                       \
     {                                                                         \
       /* (high word) BL label */                                              \
-      thumb_blh();                                                            \
+      /* This might not be preceeding a BL low word (Golden Sun 2), if so     \
+         it must be handled like an indirect branch. */                       \
+      if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                   \
+      {                                                                       \
+        thumb_bl();                                                           \
+      }                                                                       \
+      else                                                                    \
+      {                                                                       \
+        thumb_blh();                                                          \
+      }                                                                       \
       break;                                                                  \
     }                                                                         \
   }                                                                           \
@@ -2568,7 +2582,7 @@ typedef struct
       }                                                                       \
       break;                                                                  \
                                                                               \
-    /* TODO:TST, NEG, CMP, CMN */                                                  \
+    /* TST, NEG, CMP, CMN */                                                  \
     case 0x42:                                                                \
       if((opcode >> 6) & 0x03)                                                \
       {                                                                       \
@@ -2723,6 +2737,7 @@ u32 bios_block_tag_top = 0x0101;
 u32 translation_recursion_level = 0;
 u32 translation_flush_count = 0;
 
+// エミュレート開始後ここがコールされる
 #define block_lookup_address_body(type)                                       \
 {                                                                             \
   u16 *location;                                                              \
@@ -2730,8 +2745,10 @@ u32 translation_flush_count = 0;
   u8 *block_address;                                                          \
                                                                               \
   /* Starting at the beginning, we allow for one translation cache flush. */  \
+  /* 一番最初に呼ばれたときにtranslation_flush_countを0にする */              \
   if(translation_recursion_level == 0)                                        \
     translation_flush_count = 0;                                              \
+  /* modeにあわせてPCの位置を調整 */                                          \
   block_lookup_address_pc_##type();                                           \
                                                                               \
   switch(pc >> 24)                                                            \
@@ -2877,7 +2894,7 @@ block_lookup_address_body(dual);
   block_end_pc += 4                                                           \
 
 #define arm_branch_target()                                                   \
-  branch_target = (block_end_pc + 4 + ((s32)((opcode & 0xFFFFFF) << 8) >> 6)) \
+  branch_target = (block_end_pc + 4 + (((s32)(opcode & 0xFFFFFF) << 8) >> 6)) \
 
 // Contiguous conditional block flags modification - it will set 0x20 in the
 // condition's bits if this instruction modifies flags. Taken from the CPU
@@ -2936,9 +2953,15 @@ block_lookup_address_body(dual);
 
 #define arm_instruction_width 4
 
+#ifdef OLD_COUNT
+#define arm_base_cycles()                                                     \
+  cycle_count += waitstate_cycles_sequential[pc >> 24][2]                     \
+
+#else
 #define arm_base_cycles()                                                     \
   cycle_count += cpu_waitstate_cycles_seq[1][pc >> 24]                        \
 
+#endif
 // For now this just sets a variable that says flags should always be
 // computed.
 
@@ -2983,7 +3006,7 @@ block_lookup_address_body(dual);
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xE800)                                                         \
+  if(opcode < 0xF800)                                                         \
   {                                                                           \
     branch_target = block_end_pc + 2 + ((s32)((opcode & 0x7FF) << 21) >> 20); \
   }                                                                           \
@@ -2997,7 +3020,7 @@ block_lookup_address_body(dual);
     }                                                                         \
     else                                                                      \
     {                                                                         \
-      branch_target = (block_end_pc + 2 + ((opcode & 0x07FF) * 2));           \
+      goto no_direct_branch;                                                  \
     }                                                                         \
   }                                                                           \
 
@@ -3011,8 +3034,15 @@ block_lookup_address_body(dual);
 
 #define thumb_instruction_width 2
 
+#ifdef OLD_COUNT
+#define thumb_base_cycles()                                                   \
+  cycle_count += waitstate_cycles_sequential[pc >> 24][1]                     \
+
+#else
 #define thumb_base_cycles()                                                   \
   cycle_count += cpu_waitstate_cycles_seq[0][pc >> 24]                        \
+
+#endif
 
 // Here's how this works: each instruction has three different sets of flag
 // attributes, each consisiting of a 4bit mask describing how that instruction

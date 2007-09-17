@@ -21,6 +21,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define OLD_COUNT
+
 #include <stdio.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -32,7 +34,6 @@
 #include <stdarg.h>
 #include <fastmath.h>
 #include <pspkernel.h>
-#include <pspdebug.h>
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspdisplay.h>
@@ -40,16 +41,15 @@
 #include <pspaudiolib.h>
 #include <psprtc.h>
 #include <psppower.h>
-#include <psputility_sysparam.h>
 #include <pspsdk.h>
 #include <psputilsforkernel.h>
+#include <psputility.h>
+
 #include <pspnet.h>
-#include <psputility_netmodules.h>
 #include <pspnet_adhoc.h>
 #include <pspnet_adhocctl.h>
 #include <pspnet_adhocmatching.h>
 #include <pspwlan.h>
-#include <psputility_osk.h>
 
 typedef s32 FILE_TAG_TYPE;
 typedef u32 FIXED16_16;    // 整数部16bit 実数部16bit の固定小数点

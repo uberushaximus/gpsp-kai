@@ -11,12 +11,17 @@ COMMON_FILE     = common.h cpu.h memory.h video.h input.h sound.h main.h gui.h z
 UI_COMMON_FILE  = fbm_print.h draw.h blend.h message.h
 
 PSP_EBOOT_ICON  = icon1.png
-#PSP_EBOOT_PIC1  = pic1.png 文字列が表示されないので保留
+#文字列が表示されないので保留
+#PSP_EBOOT_PIC1  = pic1.png 
 
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
-OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o adhoc.o draw.o blend.o
+OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o
+OBJS           += adhoc.o
+#OBJS           += blend.o
 
 TARGET          = UO_gpSP_kai
+
+#PSP_FW_VERSION=300
 
 VERSION_MAJOR = 3
 VERSION_MINOR = 1
@@ -28,17 +33,21 @@ PSP_EBOOT_TITLE = UnOfficial_gpSP_kai_${VERSION_MAJOR}.${VERSION_MINOR} ${VERSIO
 VPATH           += ..
 CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
 CFLAGS          += -Wall -Wredundant-decls -Wmissing-declarations
-CFLAGS          += -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
+CFLAGS          +=  -funsigned-char -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
 
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
 CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
 
+#USE_USER_LIBS = 1
+#CFLAGS          += -DUSER_MODE
+
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
 LIBS            += -lpspgu -lpsprtc -lpspaudio
-LIBS            += -lz -lpsppower -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
+LIBS            += -lz -lpsppower 
+LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
 
 include ${PSPSDK}/lib/build.mak
 
@@ -72,6 +81,6 @@ adhoc.o         : ${COMMON_FILE} adhoc.c adhoc.h
 
 draw.o         : ${COMMON_FILE} ${UI_COMMON_FILE} draw.c draw.h
 
-blend.o         : ${COMMON_FILE} ${UI_COMMON_FILE} blend.c blend.h
+#blend.o         : ${COMMON_FILE} ${UI_COMMON_FILE} blend.c blend.h
 
 all:

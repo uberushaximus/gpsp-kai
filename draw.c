@@ -40,7 +40,7 @@
 #define yesno_sy    (screen_height2 + 3)                // 中心から+3
 #define yesno_ey    (screen_height2 + 13)               // 中心から+13
 #define progress_color COLOR16(15,15,15)
-#define progress_wait (1 * 1000 * 1000)
+#define progress_wait (0.5 * 1000 * 1000)
 
 #define VRAM_POS(x, y)  (screen_address + (x + y * screen_pitch));
 
