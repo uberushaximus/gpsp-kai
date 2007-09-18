@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 test 18 svn rev.
+-UnOfficial gpSP kai 3.1 test 18 svn rev.241
 	拡大画面時の調整
 	GUIのアルファブレンド関数/テーブルデータを削除
 	ステートセーブにSLOT 10を追加
