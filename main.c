@@ -177,7 +177,7 @@ int exit_callback(int arg1, int arg2, void *common);
 int power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
-int user_main(SceSize args, char *argp);
+int user_main(SceSize args, char *argp[]);
 void psp_exception_handler(PspDebugRegBlock *regs);
 
 void set_cpu_clock(u32 clock)
@@ -291,8 +291,7 @@ void psp_exception_handler(PspDebugRegBlock *regs)
   pspDebugScreenPrintf("Exception Details:\n");
   pspDebugDumpException(regs);
   pspDebugScreenPrintf("\nThe offending routine may be identified with:\n\n"
-    "\tpsp-addr2line -e target.elf -f -C 0x%x 0x%x 0x%x\n",
-    regs->epc, regs->badvaddr, regs->r[31]);
+    "\tpsp-addr2line -e target.elf -f -C 0x%x 0x%x 0x%x\n", (int)regs->epc, (int)regs->badvaddr, (int)regs->r[31]);
 }
 
 //  XBMから呼び出されるmain
@@ -315,7 +314,7 @@ int main(int argc, char *argv[])
   if (pspSdkLoadAdhocModules() != 0)
     error_msg("not load adhoc modules!!\n");
 
-  main_thread = sceKernelCreateThread("User Mode Thread", user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", (SceKernelThreadEntry)user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(main_thread, 0, 0);
 
@@ -329,7 +328,7 @@ int main(int argc, char *argv[])
 #ifdef USER_MODE
 int main(int argc, char *argv[])
 #else
-int user_main(SceSize argc, char *argv)
+int user_main(SceSize argc, char *argv[])
 #endif
 {
   char load_filename[MAX_FILE];
@@ -440,7 +439,7 @@ int user_main(SceSize argc, char *argv)
 
   if(argc > 1)
   {
-    if(load_gamepak(argv[1]) == -1)
+    if(load_gamepak((char *)argv[1]) == -1)
     {
       printf("Failed to load gamepak %s, exiting.\n", load_filename);
       exit(-1);
@@ -507,7 +506,6 @@ u32 check_power()
 u32 update_gba()
 {
   irq_type irq_raised = IRQ_NONE;
-  u32 i;
 
   do {
     cpu_ticks += execute_cycles;
@@ -683,7 +681,7 @@ void synchronize()
   if(psp_fps_debug)
   {
     char print_buffer[256];
-    sprintf(print_buffer, "%02d (%02d) %02d X:%04d Y:%04d R:%04d", (int)fps, (int)frames_drawn, (int)left_buffer, sensorX, sensorY, sensorR);
+    sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
