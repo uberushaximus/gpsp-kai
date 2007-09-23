@@ -3596,9 +3596,10 @@ u32 load_state(char *savestate_filename, u32 slot_num)
     u16 *screen_capture      画面のイメージ
     u32 slot_num             スロットNo. メモリロードの判別に使用
   return
-    なし
+    0 ロード失敗
+    1 ロード成功
 --------------------------------------------------------*/
-void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
+u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 {
   char savestate_path[1024];
   FILE_ID savestate_file;
@@ -3608,11 +3609,7 @@ void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 
   sprintf(buf,"Save State No.%d.", (int)slot_num);
   if(yesno_dialog(buf) == 1)
-  {
-    real_frame_count = 0;
-    virtual_frame_count = 0;
-    return;
-  }
+    return 0;
 
   if (*DEFAULT_SAVE_DIR != (char)NULL) {
     sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
@@ -3656,6 +3653,7 @@ void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   real_frame_count = 0;
   virtual_frame_count = 0;
   pause_sound(0);
+  return 1;
 }
 
 #define memory_savestate_body(type)                                            \

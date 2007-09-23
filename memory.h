@@ -223,6 +223,6 @@ extern void update_backup_force();
 extern void bios_region_read_allow();
 extern void bios_region_read_protect();
 extern u32 load_state(char *savestate_filename, u32 slot_num);
-extern void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num);
+extern u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num);
 
 #endif

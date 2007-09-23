@@ -322,17 +322,30 @@ u32 update_input()
       {
         char current_savestate_filename[MAX_FILE];
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        return load_state(current_savestate_filename, SAVESTATE_SLOT);
+        if (load_state(current_savestate_filename, SAVESTATE_SLOT) == 1)
+          return 1;
+        else
+        {
+          pause_sound(0);
+          return 0;
+        }
       }
 
       case BUTTON_ID_SAVESTATE:
       {
         char current_savestate_filename[MAX_FILE];
         u16 *current_screen = copy_screen();
+        u32 ret;
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        save_state(current_savestate_filename, current_screen, SAVESTATE_SLOT);
+        ret = save_state(current_savestate_filename, current_screen, SAVESTATE_SLOT);
         free(current_screen);
-        return 0;
+        if (ret == 1)
+          return 0;
+        else
+        {
+          pause_sound(0);
+          return 0;
+        }
       }
 
       case BUTTON_ID_FASTFORWARD:
