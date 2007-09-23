@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.1 svn rev.
+-UnOfficial gpSP kai 3.1 svn rev.252
 	make用のディレクトリを変更
 	拡大表示時の右端のゴミ表示を修正
 	サウンドの乱れるバグを修正
