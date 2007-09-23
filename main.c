@@ -29,7 +29,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-//PSP_MAIN_THREAD_STACK_SIZE_KB(256);
+PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(0);
@@ -81,8 +81,8 @@ u32 hold_state = 0;
 char main_path[MAX_PATH];
 char rom_path[MAX_PATH];
 
-u32 quit_flag;
-u32 power_flag;
+vu32 quit_flag;
+vu32 power_flag;
 
 char *lang[9] =
   { "japanese",   // 0
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]);
 void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
 u32 check_power();
 int exit_callback(int arg1, int arg2, void *common);
-int power_callback(int unknown, int powerInfo, void *common);
+SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks();
 int user_main(SceSize args, char *argp[]);
@@ -222,26 +222,28 @@ int exit_callback(int arg1, int arg2, void *common)
   return 0;
 }
 
-int power_callback(int unknown, int powerInfo, void *common)
+SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *common)
 {
   if (powerInfo & PSP_POWER_CB_POWER_SWITCH)
     power_flag = 1;
-  else
+  else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
     power_flag = 0;
+
   return 0;
 }
 
 int CallbackThread(SceSize args, void *argp)
 {
-  int exit_callback_id, power_callback_id;
+  int id;
+  // 終了周りのコールバック
+  id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
+  sceKernelRegisterExitCallback(id);
 
-  // 終了周りのコールバック 
-  exit_callback_id = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-  sceKernelRegisterExitCallback(exit_callback_id);
-
-  // 電源周りのコールバック 
-  power_callback_id = sceKernelCreateCallback("Power Callback", power_callback, NULL); 
-  scePowerRegisterCallback(0, power_callback_id);
+#ifndef USER_MODE
+  // 電源周りのコールバック
+  id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL); 
+  scePowerRegisterCallback(0, id);
+#endif
 
   sceKernelSleepThreadCB();
 
@@ -252,7 +254,7 @@ int SetupCallbacks()
 {
   int callback_thread_id = 0;
 
-  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0x1000, 0, 0);
   if (callback_thread_id >= 0)
   {
     sceKernelStartThread(callback_thread_id, 0, 0);
@@ -279,6 +281,7 @@ void quit()
 #endif
 }
 
+#ifndef USER_MODE
 void psp_exception_handler(PspDebugRegBlock *regs)
 {
   pspDebugScreenInit();
@@ -296,6 +299,7 @@ void psp_exception_handler(PspDebugRegBlock *regs)
 
 //  XBMから呼び出されるmain
 //    HOMEボタン用のスレッドと本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
+#endif
 
 #ifndef USER_MODE
 int main(int argc, char *argv[])

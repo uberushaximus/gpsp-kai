@@ -85,7 +85,7 @@ extern void init_progress(u32 total, char *text);
 extern void update_progress(void);
 extern void show_progress(char *text);
 extern void scrollbar(u32 all,u32 view, u32 now);
-extern u32 yesno_diag(char *text);
+extern u32 yesno_dialog(char *text);
 
 #endif
 

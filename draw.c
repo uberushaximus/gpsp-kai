@@ -181,7 +181,12 @@ void draw_dialog(u32 sx, u32 sy, u32 ex, u32 ey)
 }
 
 /*--------------------------------------------------------
-  yes/no ダイヤログボックス return YES=0 NO=1
+  yes/no ダイヤログボックス
+  input
+    char *text 表示テキスト
+  return
+    0 YES
+    1 NO
 --------------------------------------------------------*/
 u32 yesno_dialog(char *text)
 {

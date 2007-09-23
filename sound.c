@@ -680,8 +680,10 @@ static int sound_update_thread(SceSize args, void *argp)
         for(loop = 0; loop < SAMPLE_SIZE; loop++)
         {
           sample = sound_buffer[sound_read_offset];
-          if (sample >  4095) sample =  4095;
-          if (sample < -4096) sample = -4096;
+//          if(sample > 2047) ;
+//          if(sample < -2048) ;
+          if(sample >  4095) sample =  4095;
+          if(sample < -4096) sample = -4096;
           buffer[1][loop] = sample << 3;
           sound_buffer[sound_read_offset] = 0;
           sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;

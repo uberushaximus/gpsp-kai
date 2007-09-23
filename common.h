@@ -33,7 +33,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <fastmath.h>
-#include <pspkernel.h>
+#include <zlib.h>
+
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspdisplay.h>
@@ -42,14 +43,17 @@
 #include <psprtc.h>
 #include <psppower.h>
 #include <pspsdk.h>
-#include <psputilsforkernel.h>
+#include <pspkernel.h>
 #include <psputility.h>
 
+#ifndef USER_MODE
+#include <psputilsforkernel.h>
 #include <pspnet.h>
 #include <pspnet_adhoc.h>
 #include <pspnet_adhocctl.h>
 #include <pspnet_adhocmatching.h>
 #include <pspwlan.h>
+#endif
 
 typedef s32 FILE_TAG_TYPE;
 typedef u32 FIXED16_16;    // 整数部16bit 実数部16bit の固定小数点
@@ -182,8 +186,12 @@ FILE *dbg_file;
 #include "fbm_print.h"
 #include "message.h"
 #include "bios.h"
+
+#ifndef USER_MODE
 #include "adhoc.h"
+#endif
+
 #include "draw.h"
-#include "blend.h"
+//#include "blend.h"
 
 #endif /* COMMON_H */

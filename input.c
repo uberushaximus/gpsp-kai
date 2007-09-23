@@ -97,6 +97,7 @@ u32 sensorR;
 #define BUTTON_REPEAT_START    200000
 #define BUTTON_REPEAT_CONTINUE 50000
 
+// GUI用の入力処理
 gui_action_type get_gui_input()
 {
   SceCtrlData ctrl_data;
@@ -259,6 +260,7 @@ gui_action_type get_gui_input_fs_hold(u32 button_id)
 
 u32 rapidfire_flag = 1;
 
+// エミュレーション時の入力処理
 u32 update_input()
 {
   SceCtrlData ctrl_data;
@@ -279,9 +281,9 @@ u32 update_input()
 
   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
-    sensorX = ctrl_data.Lx * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
-    sensorY = ctrl_data.Ly * 16;  // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
-    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
+    sensorX = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
+    sensorY = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
+//    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
     if(ctrl_data.Lx < analog_sensitivity)
       buttons |= PSP_CTRL_ANALOG_LEFT;
 
@@ -318,14 +320,14 @@ u32 update_input()
 
       case BUTTON_ID_LOADSTATE:
       {
-        char current_savestate_filename[512];
+        char current_savestate_filename[MAX_FILE];
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
         return load_state(current_savestate_filename, SAVESTATE_SLOT);
       }
 
       case BUTTON_ID_SAVESTATE:
       {
-        char current_savestate_filename[512];
+        char current_savestate_filename[MAX_FILE];
         u16 *current_screen = copy_screen();
         get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
         save_state(current_savestate_filename, current_screen, SAVESTATE_SLOT);

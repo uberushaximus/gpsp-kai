@@ -26,13 +26,15 @@ PSP_FW_VERSION=300
 VERSION_MAJOR = 3
 VERSION_MINOR = 1
 VERSION_BUILD = 18
-VERSION_OPT = test ${VERSION_BUILD}
+VERSION_OPT = user test ${VERSION_BUILD}
 
-PSP_EBOOT_TITLE = UnOfficial_gpSP_kai_${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT}
+PSP_EBOOT_TITLE = UO gpSP kai ${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT}
 
 VPATH           += ..
 CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
-CFLAGS          += -Wall -Wredundant-decls -Wmissing-declarations
+CFLAGS          += -Wall
+#CFLAGS          += -W -Wno-sign-compare
+#CFLAGS          += -Wshadow -Wbad-function-cast -Wconversion -Wstrict-prototypes -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wredundant-decls 
 CFLAGS          +=  -funsigned-char -ffast-math -fforce-addr -fmerge-all-constants -floop-optimize2 -funsafe-loop-optimizations -ftree-loop-linear
 
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
@@ -45,8 +47,7 @@ CFLAGS          += -DUSER_MODE
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
-LIBS            += -lpspgu -lpsprtc -lpspaudio
-LIBS            += -lz -lpsppower 
+LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower
 #LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
 
 include ${PSPSDK}/lib/build.mak

@@ -3821,6 +3821,7 @@ u32 output_field = 0;
 u32 init_screen = 1;
 u32 last_instruction = 0;
 
+/*
 void execute_arm(u32 cycles)
 {
   u32 pc = reg[REG_PC];
@@ -3892,6 +3893,7 @@ void execute_arm(u32 cycles)
     }
   }
 }
+*/
 
 void init_cpu()
 {

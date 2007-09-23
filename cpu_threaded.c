@@ -2775,6 +2775,13 @@ u32 translation_flush_count = 0;
         bios_region_read_protect();                                           \
       break;                                                                  \
                                                                               \
+    case 0x6:                                                                 \
+      location = (u16 *)(vram + (pc & 0x17FFF));                              \
+      block_lookup_translate(type, ram, 1);                                   \
+      if(translation_recursion_level == 0)                                    \
+        bios_region_read_protect();                                           \
+      break;                                                                  \
+                                                                              \
     case 0x8 ... 0xD:                                                         \
     {                                                                         \
       u32 hash_target = ((pc * 2654435761U) >> 16) &                          \

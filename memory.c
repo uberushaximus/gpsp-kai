@@ -560,6 +560,7 @@ u32 read_eeprom()
                                                                               \
     case 0x02:                                                                \
       /* external work RAM */                                                 \
+      address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
       value = ADDRESS##type(ewram, address);                                  \
       break;                                                                  \
                                                                               \
@@ -1379,22 +1380,22 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // Timer counts
     case 0x100:
-      ADDRESS16(io_registers, address) = value;
+//      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(0);
       break;
 
     case 0x104:
-      ADDRESS16(io_registers, address) = value;
+//      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(1);
       break;
 
     case 0x108:
-      ADDRESS16(io_registers, address) = value;
+//      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(2);
       break;
 
     case 0x10C:
-      ADDRESS16(io_registers, address) = value;
+//      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(3);
       break;
 
@@ -1681,7 +1682,7 @@ void write_backup(u32 address, u32 value)
 
 #define write_oam_ram8()                                                      \
   oam_update = 1;                                                             \
-  ADDRESS8(oam_ram, address & 0x3FF) = value                                  \
+  ADDRESS16(oam_ram, address & 0x3FF) = ((value << 8) | value)                \
 
 #define write_oam_ram16()                                                     \
   oam_update = 1;                                                             \
@@ -1983,9 +1984,9 @@ void write_rtc(u32 address, u32 value)
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      address &= 0x1FFFF;                                                     \
+      /*address &= 0x1FFFF;                                                     \
       if(address >= 0x18000)                                                  \
-        address -= 0x8000;                                                    \
+        address -= 0x8000;*/                                                    \
                                                                               \
       write_vram##type();                                                     \
       break;                                                                  \
@@ -2624,9 +2625,9 @@ dma_region_type dma_region_map[16] =
   dma_smc_vars_##type()                                                       \
 
 #define dma_vars_vram(type)                                                   \
-/*  type##_ptr &= 0x1FFFF;                                                      \
+  type##_ptr &= 0x1FFFF;                                                      \
   if(type##_ptr >= 0x18000)                                                   \
-    type##_ptr -= 0x8000*/                                                      \
+    type##_ptr -= 0x8000                                                      \
 
 #define dma_vars_palette_ram(type)                                            \
 
@@ -3375,7 +3376,6 @@ void init_memory()
   map_ram_region(read, 0x3000000, 0x4000000, 1, iwram);
   map_region(read, 0x4000000, 0x5000000, 1, io_registers);
   map_null(read, 0x5000000, 0x6000000);
-  map_null(read, 0x6000000, 0x7000000);
   map_vram(read);
   map_null(read, 0x7000000, 0x8000000);
   init_memory_gamepak();
@@ -3457,7 +3457,7 @@ void bios_region_read_protect()
   memory_map_read[0] = NULL;
 }
 
-// type = read / write_mem
+// type = read / read_mem / write_mem
 #define savestate_block(type)                                                 \
   cpu_##type##_savestate(savestate_file);                                     \
   update_progress();                                                          \
@@ -3472,6 +3472,15 @@ void bios_region_read_protect()
   video_##type##_savestate(savestate_file);                                   \
   update_progress();                                                          \
 
+/*--------------------------------------------------------
+  ステートロード
+  input
+    char *savestate_filename ロードするファイルネーム
+    u32 slot_num             スロットNo. メモリロードの判別に使用
+  return
+    0 ロード失敗
+    1 ロード成功
+--------------------------------------------------------*/
 u32 load_state(char *savestate_filename, u32 slot_num)
 {
   char savestate_path[MAX_PATH];
@@ -3483,11 +3492,9 @@ u32 load_state(char *savestate_filename, u32 slot_num)
 
   pause_sound(1);
 
-  sprintf(buf,"Load State No.%d.", slot_num);
+  sprintf(buf,"Load State No.%d.", (int)slot_num);
   if(yesno_dialog(buf) == 1)
-  {
-    return 1;
-  }
+    return 0;
 
   init_progress(9, "Load State."); // TODO:メッセージファイル化
 
@@ -3512,13 +3519,13 @@ u32 load_state(char *savestate_filename, u32 slot_num)
       FILE_CLOSE(savestate_file);
     }
     else
-      return 1;
+      return 0;
   }
   else
     if (mem_save_flag == 1)
       file_size = SAVESTATE_SIZE;
     else
-      return 1;
+      return 0;
 
   if (file_size == SAVESTATE_SIZE)
     write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u64);
@@ -3563,7 +3570,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
       real_frame_count = 0;
       virtual_frame_count = 0;
       pause_sound(0);
-      return 0;
+      return 1;
     }
   }
 
@@ -3579,9 +3586,18 @@ u32 load_state(char *savestate_filename, u32 slot_num)
   real_frame_count = 0;
   virtual_frame_count = 0;
   pause_sound(0);
-  return 0;
+  return 1;
 }
 
+/*--------------------------------------------------------
+  ステートセーブ
+  input
+    char *savestate_filename ロードするファイルネーム
+    u16 *screen_capture      画面のイメージ
+    u32 slot_num             スロットNo. メモリロードの判別に使用
+  return
+    なし
+--------------------------------------------------------*/
 void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 {
   char savestate_path[1024];
@@ -3590,9 +3606,11 @@ void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 
   pause_sound(1);
 
-  sprintf(buf,"Load State No.%d.", slot_num);
+  sprintf(buf,"Save State No.%d.", (int)slot_num);
   if(yesno_dialog(buf) == 1)
   {
+    real_frame_count = 0;
+    virtual_frame_count = 0;
     return;
   }
 
@@ -3639,7 +3657,6 @@ void save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   virtual_frame_count = 0;
   pause_sound(0);
 }
-
 
 #define memory_savestate_body(type)                                            \
 {                                                                             \

@@ -516,7 +516,7 @@ u32 arm_to_mips_reg[] =
   }                                                                           \
 
 #define generate_alu_immu(imm_type, reg_type, ireg_dest, ireg_src, imm)       \
-  if(((u32)imm >= 0) && ((u32)imm <= 65535))                                  \
+  if(/*((u32)imm >= 0) && */((u32)imm <= 65535))                                  \
   {                                                                           \
     mips_emit_##imm_type(ireg_dest, ireg_src, imm);                           \
   }                                                                           \

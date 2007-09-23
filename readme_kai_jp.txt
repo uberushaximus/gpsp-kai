@@ -3,6 +3,9 @@
 -- Release log --
 -UnOfficial gpSP kai 3.1 svn rev.
 	make用のディレクトリを変更
+	拡大表示時の右端のゴミ表示を修正
+	サウンドの乱れるバグを修正
+	ステートセーブ/ロードのバグを修正
 
 -UnOfficial gpSP kai 3.1 test 18 svn rev.241
 	拡大画面時の調整

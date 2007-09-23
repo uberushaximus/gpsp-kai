@@ -88,7 +88,7 @@ extern char rom_path[MAX_PATH];
 extern u32 update_backup_flag;
 extern u32 game_config_clock_speed;
 extern u32 hold_state;
-extern u32 quit_flag;
+extern vu32 quit_flag;
 extern volatile u32 real_frame_count;
 extern u32 virtual_frame_count;
 extern u32 max_frameskip;
@@ -159,7 +159,6 @@ u32 file_length(char *filename, s32 dummy);
       {                                                                       \
         /* カスケードモード */                                                \
         timer[timer_number].status = TIMER_CASCADE;                           \
-        u32 prescale = 0;                                                     \
         /* プリスケールの設定 */                                              \
         timer[timer_number].prescale = 0;                                     \
       }                                                                       \
