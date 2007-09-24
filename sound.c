@@ -573,7 +573,7 @@ void init_sound()
     reset_sound();
 
     // サウンド スレッドの作成
-    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 3 * 1024, 0, NULL);
+    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x18, 0x2000, 0, NULL);
     if (sound_thread < 0)
     {
       quit();
@@ -592,7 +592,7 @@ void reset_sound()
 
     audio_thread_exit_flag = 0;
     sound_on = 0;
-    memset(sound_buffer, 0, BUFFER_SIZE * 2);
+    memset(sound_buffer, 0, sizeof(sound_buffer));
 
     for (i = 0; i < 2; i++, ds++)
     {
@@ -602,7 +602,7 @@ void reset_sound()
       ds->fifo_base = 0;
       ds->fifo_fractional = 0;
       ds->last_cpu_ticks = 0;
-      memset(ds->fifo, 0, 32);
+      memset(ds->fifo, 0, sizeof(ds->fifo));
     }
 
     gbc_sound_buffer_index = 0;
@@ -613,7 +613,7 @@ void reset_sound()
     gbc_sound_master_volume_left = 0;
     gbc_sound_master_volume_right = 0;
     gbc_sound_master_volume = 0;
-    memset(wave_samples, 0, 64);
+    memset(wave_samples, 0, sizeof(wave_samples));
 
     pause_sound(1);
 
@@ -653,57 +653,57 @@ void sound_read_savestate(FILE_TAG_TYPE savestate_file)
  サウンド スレッド
  --------------------------------------------------------*/
 static int sound_update_thread(SceSize args, void *argp)
+{
+  int audio_handle; // オーディオチャンネルのハンドル。
+  s16 buffer[2][SAMPLE_SIZE];
+  u32 loop;
+  u32 buffer_num = 0;
+  s16 sample;
+
+  // オーディオチャンネルの取得。
+  audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+
+  // TODO:初期設定に移動
+  sound_read_offset = 0;
+  memset(buffer, 0, sizeof(buffer) / 2);
+  left_buffer = 0;
+
+  // メインループ
+  while(!audio_thread_exit_flag)
   {
-    int audio_handle; // オーディオチャンネルのハンドル。
-    s16 buffer[1][SAMPLE_SIZE];
-    u32 loop;
-    u32 buffer_num;
-    s16 sample;
-    // オーディオチャンネルの取得。
-    audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+    left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
+    buffer_num = global_enable_audio;
 
-    // TODO:初期設定に移動
-    sound_read_offset = 0;
-    memset(buffer, 0, SAMPLE_SIZE * 2 * 2);
-    left_buffer = 0;
-
-    // メインループ
-    while(!audio_thread_exit_flag)
+    if((CHECK_BUFFER() > SAMPLE_SIZE) && (pause_sound_flag == 0))
     {
-
-      left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
-      buffer_num = global_enable_audio;
-
-      if((CHECK_BUFFER() > SAMPLE_SIZE) && (pause_sound_flag == 0))
+      // todo memcopy*2と どっちが速い？
+      for(loop = 0; loop < SAMPLE_SIZE; loop++)
       {
-        // todo memcopy*2と どっちが速い？
-        for(loop = 0; loop < SAMPLE_SIZE; loop++)
-        {
-          sample = sound_buffer[sound_read_offset];
-//          if(sample > 2047) ;
-//          if(sample < -2048) ;
-          if(sample >  4095) sample =  4095;
-          if(sample < -4096) sample = -4096;
-          buffer[1][loop] = sample << 3;
-          sound_buffer[sound_read_offset] = 0;
-          sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
-        }
+        sample = sound_buffer[sound_read_offset];
+//        if(sample > 2047) ;
+//        if(sample < -2048) ;
+        if(sample >  4095) sample =  4095;
+        if(sample < -4096) sample = -4096;
+        buffer[1][loop] = sample << 3;
+        sound_buffer[sound_read_offset] = 0;
+        sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
       }
-      else
-      {
-        if (pause_sound_flag == 1)
-          buffer_num = 0;  // 全て0のデーターを再生
-        else
-          buffer_num = 1;  // 前回のデーターをそのまま再生
-      }
-      sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
-      sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.5);
     }
-
-    sceAudioChRelease(audio_handle);
-    sceKernelExitThread(0);
-    return 0;
+    else
+    {
+      if (pause_sound_flag == 1)
+        buffer_num = 0;  // 全て0のデーターを再生
+      else
+        buffer_num = 1;  // 前回のデーターをそのまま再生
+    }
+    sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
+    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.5);
   }
+
+  sceAudioChRelease(audio_handle);
+  sceKernelExitThread(0);
+  return 0;
+}
 
   // Special thanks to blarrg for the LSFR frequency used in Meridian, as posted
   // on the forum at http://meridian.overclocked.org:
@@ -739,6 +739,6 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 
 void synchronize_sound()
 {
-  while( CHECK_BUFFER() >= audio_buffer_size ) // TODO:調整必要
+  while(CHECK_BUFFER() >= audio_buffer_size) // TODO:調整必要
     sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 1.0);
 }

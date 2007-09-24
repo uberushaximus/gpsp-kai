@@ -40,6 +40,18 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
+#ifdef USER_MODE
+#define VER_MODE "user"
+#else
+#define VER_MODE "kernel"
+#endif
+
+#ifdef TEST_MODE
+#define VER_RELEASE "test"
+#else
+#define VER_RELEASE "release"
+#endif
+
 #define MAKE_MENU(name, init_function, passive_function)                      \
   MENU_TYPE name##_menu =                                                     \
   {                                                                           \
@@ -325,8 +337,8 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
     total_dirnames_allocated = 32;
     file_list = (char **)malloc(sizeof(char *) * 32);
     dir_list = (char **)malloc(sizeof(char *) * 32);
-    memset(file_list, 0, sizeof(u8 *) * 32);
-    memset(dir_list, 0, sizeof(u8 *) * 32);
+    memset(file_list, 0, sizeof(char *) * 32);
+    memset(dir_list, 0, sizeof(char *) * 32);
 
     num_files = 0;
     num_dirs = 0;
@@ -980,18 +992,20 @@ u32 menu(u16 *original_screen)
 
   void menu_save_state()
   {
+    menu_change_state();
     if(!first_load)
     {
       get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
       save_state(current_savestate_filename, original_screen, SAVESTATE_SLOT);
       pause_sound(1);
       clear_screen(COLOR_BG);
+      blit_to_screen(original_screen, 240, 160, 230, 40);
     }
-    menu_change_state();
   }
 
   void menu_load_state()
   {
+    menu_change_state();
     if(!first_load)
     {
       if (load_state(current_savestate_filename, SAVESTATE_SLOT) == 1)
@@ -1931,7 +1945,8 @@ static void print_status(u32 mode)
   sprintf(print_buffer_1, msg[MSG_MENU_BATTERY], scePowerGetBatteryLifePercent(), scePowerGetBatteryLifeTime());
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 0);
 
-  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB", (int)(gamepak_ram_buffer_size/1024/1024));
+  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %s %02d",
+      (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_MODE, VER_RELEASE, VERSION_BUILD);
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 10);
 
   if (mode == 0)

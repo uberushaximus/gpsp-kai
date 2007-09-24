@@ -45,6 +45,7 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <psputility.h>
+#include <kubridge.h>
 
 #ifndef USER_MODE
 #include <psputilsforkernel.h>

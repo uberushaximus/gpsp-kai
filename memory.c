@@ -3307,30 +3307,43 @@ void init_memory_gamepak()
 
 void init_gamepak_buffer()
 {
-  // Try to initialize 32MB (this is mainly for non-PSP platforms)
   gamepak_rom = NULL;
 
-  gamepak_ram_buffer_size = 16 * 1024 * 1024;
-  gamepak_rom = malloc(gamepak_ram_buffer_size);
-
-  if(gamepak_rom == NULL)
+#ifdef M64_MODE
+  // 新型と旧型の判別
+  if (kuKernelGetModel() != PSP_MODEL_SLIM_AND_LITE)
   {
-    // Try 16MB, for PSP, then lower in 2MB increments
-    gamepak_ram_buffer_size = 14 * 1024 * 1024;
+#endif
+    // 旧型の場合
+    // Try to initialize 16MB
+    gamepak_ram_buffer_size = 16 * 1024 * 1024;
     gamepak_rom = malloc(gamepak_ram_buffer_size);
 
-    while(gamepak_rom == NULL)
+    if(gamepak_rom == NULL)
     {
-      gamepak_ram_buffer_size -= (2 * 1024 * 1024);
+      // Try 14MB, for PSP, then lower in 2MB increments
+      gamepak_ram_buffer_size = 14 * 1024 * 1024;
       gamepak_rom = malloc(gamepak_ram_buffer_size);
-    }
-  }
 
+      while(gamepak_rom == NULL)
+      {
+        gamepak_ram_buffer_size -= (2 * 1024 * 1024);
+        gamepak_rom = malloc(gamepak_ram_buffer_size);
+      }
+    }
+#ifdef M64_MODE
+  }
+  else
+  {
+    // 新型の場合
+    gamepak_ram_buffer_size = 32 * 1024 * 1024;
+    gamepak_rom = (u8 *)0x0a000000;
+  }
+#endif
   // Here's assuming we'll have enough memory left over for this,
   // and that the above succeeded (if not we're in trouble all around)
   gamepak_ram_pages = gamepak_ram_buffer_size / (32 * 1024);
-  gamepak_memory_map = malloc(sizeof(gamepak_swap_entry_type) *
-   gamepak_ram_pages);
+  gamepak_memory_map = malloc(sizeof(gamepak_swap_entry_type) * gamepak_ram_pages);
 }
 
 void init_memory()

@@ -27,8 +27,8 @@
 
 #ifdef USER_MODE
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
-PSP_MAIN_THREAD_PRIORITY(0x11);
+PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
+PSP_MAIN_THREAD_PRIORITY(0x20);
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
@@ -228,22 +228,20 @@ SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *commo
     power_flag = 1;
   else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
     power_flag = 0;
-
   return 0;
 }
 
 int CallbackThread(SceSize args, void *argp)
 {
   int id;
+
   // 終了周りのコールバック
   id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
   sceKernelRegisterExitCallback(id);
 
-#ifndef USER_MODE
   // 電源周りのコールバック
   id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL); 
   scePowerRegisterCallback(0, id);
-#endif
 
   sceKernelSleepThreadCB();
 
@@ -254,7 +252,7 @@ int SetupCallbacks()
 {
   int callback_thread_id = 0;
 
-  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0x1000, 0, 0);
+  callback_thread_id = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
   if (callback_thread_id >= 0)
   {
     sceKernelStartThread(callback_thread_id, 0, 0);
@@ -298,7 +296,7 @@ void psp_exception_handler(PspDebugRegBlock *regs)
 }
 
 //  XBMから呼び出されるmain
-//    HOMEボタン用のスレッドと本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
+//    本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
 #endif
 
 #ifndef USER_MODE
@@ -497,15 +495,15 @@ int user_main(SceSize argc, char *argv[])
 }
 
 u32 check_power()
-  {
-    if (power_flag == 0) return 0;
-    FILE_CLOSE(gamepak_file_large);
-    u16 *screen_copy = copy_screen();
-    u32 ret_val = menu(screen_copy);
-    free(screen_copy);
-    FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
-    return ret_val;
-  }
+{
+  if (power_flag == 0) return 0;
+  FILE_CLOSE(gamepak_file_large);
+  u16 *screen_copy = copy_screen();
+  u32 ret_val = menu(screen_copy);
+  free(screen_copy);
+  FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+  return ret_val;
+}
 
 u32 update_gba()
 {

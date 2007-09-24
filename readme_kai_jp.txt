@@ -1,6 +1,12 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 01 svn rev.
+	ステートロードのスロットがずれるバグを修正
+	FW3.xxユーザーモード用のビルドに対応
+	新型PSPの増加メモリーに対応
+	標準PSPSDK+3.71M33付属のSDKにてビルド
+
 -UnOfficial gpSP kai 3.1 svn rev.252
 	make用のディレクトリを変更
 	拡大表示時の右端のゴミ表示を修正

@@ -25,7 +25,7 @@ PSP_FW_VERSION=300
 
 VERSION_MAJOR = 3
 VERSION_MINOR = 2
-VERSION_MODE = user
+VERSION_MODE = user 64M
 VERSION_RELEASE = test
 VERSION_BUILD = 01
 
@@ -46,12 +46,13 @@ CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
 
 #USE_USER_LIBS = 1
 CFLAGS          += -DUSER_MODE
+CFLAGS          += -DM64_MODE
 CFLAGS          += -DTEST_MODE
 
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
-LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower
+LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge
 #LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
 
 include ${PSPSDK}/lib/build.mak

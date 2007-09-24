@@ -2085,8 +2085,8 @@ void order_obj(u32 video_mode)
     obj_size = obj_attribute_0 & 0xC000;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
-    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
-     (obj_mode != 3) && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
+    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) && 
+        !((video_mode >= 3) && ((obj_attribute_2 & 0x3FF) < 512)))
     {
       obj_y = obj_attribute_0 & 0xFF;
       if(obj_y > 160)
