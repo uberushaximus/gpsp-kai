@@ -6,9 +6,9 @@
 
 PSPSDK          = ${shell psp-config --pspsdk-path}
 PREFIX          = ${shell psp-config --psp-prefix}
-COMMON_FILE     = common.h cpu.h memory.h video.h input.h sound.h main.h gui.h zip.h cheats.h
 
-UI_COMMON_FILE  = fbm_print.h draw.h blend.h message.h
+COMMON_FILE     = common.h cpu.h memory.h video.h input.h sound.h main.h gui.h zip.h cheats.h
+UI_COMMON_FILE  = fbm_print.h draw.h message.h
 
 PSP_EBOOT_ICON  = ../image/icon1.png
 #文字列が表示されないので保留
@@ -16,18 +16,33 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
 OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o
-#OBJS           += adhoc.o
-#OBJS           += blend.o
+
+ifdef ADHOC_MODE
+OBJS           += adhoc.o
+COMMON_FILE += adhoc.h
+endif
 
 TARGET          = UO_gpSP_kai
 
+ifdef USER_MODE
 PSP_FW_VERSION=300
+else
+PSP_FW_VERSION=150
+endif
 
-VERSION_MAJOR = 3
-VERSION_MINOR = 2
-VERSION_MODE = user 64M
+ifdef USER_MODE
+VERSION_MODE = user
+else
+VERSION_MODE = kernel
+endif
+
+ifdef M64_MODE
+VERSION_MODE += 64M
+endif
+
+ifdef TEST_MODE
 VERSION_RELEASE = test
-VERSION_BUILD = 01
+endif
 
 VERSION_OPT = ${VERSION_RELEASE} ${VERSION_BUILD}
 
@@ -44,49 +59,52 @@ CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
 CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
 
-#USE_USER_LIBS = 1
+ifdef USER_MODE
 CFLAGS          += -DUSER_MODE
+endif
+
+ifdef M64_MODE
 CFLAGS          += -DM64_MODE
+endif
+
+ifdef TEST_MODE
 CFLAGS          += -DTEST_MODE
+endif
+
+ifdef ADHOC_MODE
+CFLAGS          += -DADHOC_MODE
+endif
 
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
 LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge
-#LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
+
+ifdef ADHOC_MODE
+LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
+endif
 
 include ${PSPSDK}/lib/build.mak
 
 main.o         : ${COMMON_FILE} ${UI_COMMON_FILE} main.c
-
 cpu.o          : ${COMMON_FILE} cpu.c
-
 video.o        : ${COMMON_FILE} video.c
-
 memory.o       : ${COMMON_FILE} memory.c
-
 sound.o        : ${COMMON_FILE} sound.c
-
 input.o        : ${COMMON_FILE} input.c
-
 cpu_threaded.o : ${COMMON_FILE} cpu_threaded.c mips_emit.h bios.h
-
 gui.o          : ${COMMON_FILE} ${UI_COMMON_FILE} gui.c
-
 zip.o          : ${COMMON_FILE} zip.c
-
 cheats.o       : ${COMMON_FILE} cheats.c
-
 mips_stub.o    : mips_stub.S
-
 fbm_print.o    : ${COMMON_FILE} ${UI_COMMON_FILE} fbm_print.c
-
 bios.o         : ${COMMON_FILE} bios.c bios.h
-
-#adhoc.o         : ${COMMON_FILE} adhoc.c adhoc.h
-
 draw.o         : ${COMMON_FILE} ${UI_COMMON_FILE} draw.c draw.h
 
-#blend.o         : ${COMMON_FILE} ${UI_COMMON_FILE} blend.c blend.h
+ifdef ADHOC_MODE
+#adhoc.o         : ${COMMON_FILE} adhoc.c adhoc.h
+endif
 
 all:
+	rm ./PARAM.SFO
+

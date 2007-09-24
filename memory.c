@@ -3308,10 +3308,14 @@ void init_memory_gamepak()
 void init_gamepak_buffer()
 {
   gamepak_rom = NULL;
+  u8 *buf = (u8 *)0x0a000000;
 
+pspDebugScreenInit();
+
+if (sceKernelDevkitVersion() < 0x03070110)
 #ifdef M64_MODE
   // 新型と旧型の判別
-  if (kuKernelGetModel() != PSP_MODEL_SLIM_AND_LITE)
+  if ((kuKernelGetModel() != PSP_MODEL_SLIM_AND_LITE)||(sceKernelDevkitVersion() < 0x03070110))
   {
 #endif
     // 旧型の場合

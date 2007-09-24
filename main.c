@@ -312,9 +312,11 @@ int main(int argc, char *argv[])
 
   pspDebugInstallErrorHandler(psp_exception_handler);
 
+#ifdef ADHOC_MODE
   // adhoc用モジュールのロード
   if (pspSdkLoadAdhocModules() != 0)
     error_msg("not load adhoc modules!!\n");
+#endif
 
   main_thread = sceKernelCreateThread("User Mode Thread", (SceKernelThreadEntry)user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
