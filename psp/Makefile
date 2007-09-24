@@ -6,7 +6,11 @@
 
 USER_MODE = 1
 M64_MODE = 1
+VERSION_MAJOR = 3
+VERSION_MINOR = 2
+VERSION_BUILD = 02
+TEST_MODE = 1
+#ADHOC_MODE = 1
 
-include ../Makefile_ver.in
-include ../Makefile.in
+include Makefile.in
 
