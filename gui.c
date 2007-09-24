@@ -1361,7 +1361,8 @@ u32 menu(u16 *original_screen)
   }
 
   choose_menu(&main_menu);
-
+  current_menu = &main_menu;
+  
   for(i = 0; i < MAX_CHEATS; i++)
   {
     if(i >= num_cheats)
@@ -1483,7 +1484,7 @@ u32 menu(u16 *original_screen)
         if(current_option->option_type & ACTION_TYPE)
           current_option->action_function();
 
-        if(current_option->option_type & SUBMENU_TYPE)
+        else if(current_option->option_type & SUBMENU_TYPE)
           choose_menu(current_option->sub_menu);
         break;
 
