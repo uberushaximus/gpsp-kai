@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 02 svn rev.
+-UnOfficial gpSP kai 3.2 test 02 svn rev.271
 	増設メモリの判定にファームのバージョンチェックを追加
 	拡大時に表示される上下の薄い線の除去
 	Makefileの分割
