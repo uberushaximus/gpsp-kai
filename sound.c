@@ -573,7 +573,7 @@ void init_sound()
     reset_sound();
 
     // サウンド スレッドの作成
-    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x18, 0x2000, 0, NULL);
+    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 0x2000, 0, NULL);
     if (sound_thread < 0)
     {
       quit();

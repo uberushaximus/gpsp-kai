@@ -138,9 +138,9 @@ s32 translate_block_arm(u32 pc, translation_region_type translation_region,
 s32 translate_block_thumb(u32 pc, translation_region_type translation_region,
  u32 smc_enable);
 
-#define ROM_TRANSLATION_CACHE_SIZE (1024 * 512 * 4)  /* 2MB */
-#define RAM_TRANSLATION_CACHE_SIZE (1024 * 512 * 1)  /* 512 KB */
-#define BIOS_TRANSLATION_CACHE_SIZE (1024 * 128 * 1) /* 128 KB */
+#define ROM_TRANSLATION_CACHE_SIZE  (1024 * 512 * 5)  /* 2560 KB 0x28 0000 */
+#define RAM_TRANSLATION_CACHE_SIZE  (1024 * 128 * 1)  /*  128 KB 0x02 0000 現在の所 0x020000を超えた状況はない*/
+#define BIOS_TRANSLATION_CACHE_SIZE (1024 *  32 * 1)  /*   32 KB 0x00 8000 現在の所 0x008000を超えた状況はない*/
 #define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 
 extern u8 rom_translation_cache[ROM_TRANSLATION_CACHE_SIZE];

@@ -28,7 +28,7 @@
 #ifdef USER_MODE
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
-PSP_MAIN_THREAD_PRIORITY(0x20);
+PSP_MAIN_THREAD_PRIORITY(0x11);
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
@@ -687,6 +687,7 @@ void synchronize()
     char print_buffer[256];
     sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
+    dump_translation_cache();
   }
 
   // フレームスキップ フラグの初期化

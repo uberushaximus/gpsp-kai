@@ -2075,7 +2075,7 @@ void order_obj(u32 video_mode)
   u16 *oam_ptr = oam_ram + 508;
 
   memset( obj_priority_count, 0, sizeof(obj_priority_count) );
-  //  memset( obj_priority_list, 0, sizeof(obj_priority_list) );
+//  memset( obj_priority_list, 0, sizeof(obj_priority_list) );
   memset( obj_alpha_count, 0, sizeof(obj_alpha_count) );
 
   for(obj_num = 127; obj_num >= 0; obj_num--, oam_ptr -= 4)
@@ -2085,8 +2085,10 @@ void order_obj(u32 video_mode)
     obj_size = obj_attribute_0 & 0xC000;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
-    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) && 
-        !((video_mode >= 3) && ((obj_attribute_2 & 0x3FF) < 512)))
+//    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) && 
+//        !((video_mode >= 3) && ((obj_attribute_2 & 0x3FF) < 512)))
+    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
+       (obj_mode != 3) && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
     {
       obj_y = obj_attribute_0 & 0xFF;
       if(obj_y > 160)

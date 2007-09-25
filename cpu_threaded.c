@@ -3499,17 +3499,21 @@ void flush_translation_cache_bios()
 
 void dump_translation_cache()
 {
-  FILE *fp = fopen("ram_cache.bin", "wb");
-  fwrite(ram_translation_cache, ram_translation_ptr - ram_translation_cache,
-   1, fp);
-  fclose(fp);
-  fp = fopen("rom_cache.bin", "wb");
-  fwrite(rom_translation_cache, rom_translation_ptr - rom_translation_cache,
-    1, fp);
-  fclose(fp);
-  fp = fopen("bios_cache.bin", "wb");
-  fwrite(bios_translation_cache, bios_translation_ptr - bios_translation_cache,
-    1, fp);
-  fclose(fp);
+//  FILE *fp = fopen("ram_cache.bin", "wb");
+//  fwrite(ram_translation_cache, ram_translation_ptr - ram_translation_cache,
+//   1, fp);
+//  fclose(fp);
+//  fp = fopen("rom_cache.bin", "wb");
+//  fwrite(rom_translation_cache, rom_translation_ptr - rom_translation_cache,
+//    1, fp);
+//  fclose(fp);
+//  fp = fopen("bios_cache.bin", "wb");
+//  fwrite(bios_translation_cache, bios_translation_ptr - bios_translation_cache,
+//    1, fp);
+//  fclose(fp);
+  char print_buffer[256];
+  sprintf(print_buffer, "RAM:%08X ROM:%08X BIOS:%08X", ram_translation_ptr - ram_translation_cache, rom_translation_ptr - rom_translation_cache, bios_translation_ptr - bios_translation_cache);
+  PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
+
 }
 
