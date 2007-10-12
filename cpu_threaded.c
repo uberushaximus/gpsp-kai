@@ -82,7 +82,7 @@ typedef struct
   u32 rn = (opcode >> 16) & 0x0F;                                             \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
   u32 imm;                                                                    \
-  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2)                         \
+  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E)                               \
 
 #define arm_decode_psr_reg()                                                  \
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
@@ -93,7 +93,7 @@ typedef struct
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
   u32 imm;                                                                    \
-  ROR(imm, opcode & 0xFF, ((opcode >> 8) & 0x0F) * 2)                         \
+  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E)                               \
 
 #define arm_decode_branchx()                                                  \
   u32 rn = opcode & 0x0F                                                      \
@@ -140,7 +140,7 @@ typedef struct
   u32 reg_list = opcode & 0xFFFF                                              \
 
 #define arm_decode_branch()                                                   \
-  s32 offset = ((s32)(opcode & 0xFFFFFF) << 8) >> 6                           \
+  s32 offset = (s32)(opcode << 8) >> 6                                        \
 
 #define thumb_decode_shift()                                                  \
   u32 imm = (opcode >> 6) & 0x1F;                                             \
@@ -184,8 +184,8 @@ typedef struct
 #define thumb_decode_rlist()                                                  \
   u32 reg_list = opcode & 0xFF                                                \
 
-#define thumb_decode_branch_cond()                                            \
-  s32 offset = (s8)(opcode & 0xFF)                                            \
+//#define thumb_decode_branch_cond()                                            \
+//  s32 offset = (s32)(opcode << 24) >> 24                                      \
 
 #define thumb_decode_swi()                                                    \
   u32 comment = opcode & 0xFF                                                 \
@@ -2770,13 +2770,6 @@ u32 translation_flush_count = 0;
                                                                               \
     case 0x3:                                                                 \
       location = (u16 *)(iwram + (pc & 0x7FFF));                              \
-      block_lookup_translate(type, ram, 1);                                   \
-      if(translation_recursion_level == 0)                                    \
-        bios_region_read_protect();                                           \
-      break;                                                                  \
-                                                                              \
-    case 0x6:                                                                 \
-      location = (u16 *)(vram + (pc & 0x17FFF));                              \
       block_lookup_translate(type, ram, 1);                                   \
       if(translation_recursion_level == 0)                                    \
         bios_region_read_protect();                                           \

@@ -97,7 +97,7 @@
   NULL,                                                                       \
   cheat_format_str[number],                                                   \
   enable_disable_options,                                                     \
-  &(game_config_cheats[number].cheat_active),                                 \
+  &(game_config_cheats_flag[number].cheat_active),                                 \
   2,                                                                          \
   msg[MSG_CHEAT_MENU_HELP_0],                                                 \
   (number) % 10,                                                              \
@@ -778,8 +778,8 @@ s32 load_game_config_file()
 
       for(i = 0; i < MAX_CHEATS; i++)
       {
-        game_config_cheats[i].cheat_active = file_options[4 + i] % 2;
-        game_config_cheats[i].cheat_name[0] = 0;
+        game_config_cheats_flag[i].cheat_active = file_options[4 + i] % 2;
+        game_config_cheats_flag[i].cheat_name[0] = 0;
       }
 
       FILE_CLOSE(game_config_file);
@@ -796,8 +796,8 @@ s32 load_game_config_file()
 
   for(i = 0; i < MAX_CHEATS; i++)
   {
-    game_config_cheats[i].cheat_active = 0;
-    game_config_cheats[i].cheat_name[0] = 0;
+    game_config_cheats_flag[i].cheat_active = 0;
+    game_config_cheats_flag[i].cheat_name[0] = 0;
   }
 
   return -1;
@@ -1062,7 +1062,7 @@ u32 menu(u16 *original_screen)
         }
         else
         {
-          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats[i].cheat_name);
+          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats_flag[i].cheat_name);
         }
       }
       choose_menu(current_menu);
@@ -1341,7 +1341,7 @@ u32 menu(u16 *original_screen)
     for(i = 0; i<10; i++)
     {
       cheats_misc_options[i].display_string = cheat_format_str[(10 * menu_cheat_page) + i];
-      cheats_misc_options[i].current_option = &(game_config_cheats[(10 * menu_cheat_page) + i].cheat_active);
+      cheats_misc_options[i].current_option = &(game_config_cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
     }
   }
 
@@ -1371,7 +1371,7 @@ u32 menu(u16 *original_screen)
     }
     else
     {
-      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats[i].cheat_name);
+      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats_flag[i].cheat_name);
     }
   }
 
@@ -1766,7 +1766,7 @@ static s32 save_game_config_file()
 
     for(i = 0; i < MAX_CHEATS; i++)
     {
-      file_options[4 + i] = game_config_cheats[i].cheat_active;
+      file_options[4 + i] = game_config_cheats_flag[i].cheat_active;
     }
 
     FILE_WRITE_ARRAY(game_config_file, file_options);

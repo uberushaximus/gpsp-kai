@@ -482,7 +482,7 @@ void update_gbc_sound(u32 cpu_ticks)
       gbc_sound_partial_ticks &= 0xFFFF;
     }
 
-    if (sound_on == 1)
+    if (sound_on == 0)
     {
       // Channel 0
       gs = gbc_sound_channel + 0;
@@ -491,8 +491,7 @@ void update_gbc_sound(u32 cpu_ticks)
         sound_status |= 0x01;
         sample_data = gs->sample_data;
         envelope_volume = gs->envelope_volume;
-        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP)
-        ;
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, SWEEP);
       }
 
       // Channel 1
@@ -502,16 +501,14 @@ void update_gbc_sound(u32 cpu_ticks)
         sound_status |= 0x02;
         sample_data = gs->sample_data;
         envelope_volume = gs->envelope_volume;
-        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP)
-        ;
+        GBC_SOUND_RENDER_CHANNEL(SAMPLES, 8, ENVELOPE, NOSWEEP);
       }
 
       // Channel 2
       gs = gbc_sound_channel + 2;
       if (gbc_sound_wave_update)
       {
-        GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank)
-        ;
+        GBC_SOUND_LOAD_WAVE_RAM(gs->wave_bank);
         gbc_sound_wave_update = 0;
       }
 
@@ -524,13 +521,11 @@ void update_gbc_sound(u32 cpu_ticks)
           if (gs->wave_bank == 1)
             sample_data += 32;
 
-          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP)
-          ;
+          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 32, NOENVELOPE, NOSWEEP);
         }
         else
         {
-          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP)
-          ;
+          GBC_SOUND_RENDER_CHANNEL(SAMPLES, 64, NOENVELOPE, NOSWEEP);
         }
       }
 
@@ -543,13 +538,11 @@ void update_gbc_sound(u32 cpu_ticks)
 
         if (gs->noise_type == 1)
         {
-          GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP)
-          ;
+          GBC_SOUND_RENDER_CHANNEL(NOISE, HALF, ENVELOPE, NOSWEEP);
         }
         else
         {
-          GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP)
-          ;
+          GBC_SOUND_RENDER_CHANNEL(NOISE, FULL, ENVELOPE, NOSWEEP);
         }
       }
     }
@@ -557,7 +550,8 @@ void update_gbc_sound(u32 cpu_ticks)
     ADDRESS16(io_registers, 0x84) = sound_status;
 
     gbc_sound_last_cpu_ticks = cpu_ticks;
-    gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks * 2)) % BUFFER_SIZE;
+    // サウンドタイミングの調整
+    gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks << 1)) % BUFFER_SIZE;
   }
 
 void init_sound()

@@ -17,30 +17,26 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
 OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o
 
-ifdef ADHOC_MODE
+ifeq ($(ADHOC_MODE), 1)
 OBJS           += adhoc.o
 COMMON_FILE += adhoc.h
 endif
 
 TARGET          = UO_gpSP_kai
 
-ifdef USER_MODE
+ifeq ($(USER_MODE), 1)
 PSP_FW_VERSION=300
-else
-PSP_FW_VERSION=150
-endif
-
-ifdef USER_MODE
 VERSION_MODE = user
 else
+PSP_FW_VERSION=150
 VERSION_MODE = kernel
 endif
 
-ifdef M64_MODE
+ifeq ($(M64_MODE), 1)
 VERSION_MODE += 64M
 endif
 
-ifdef TEST_MODE
+ifeq ($(TEST_MODE), 1)
 VERSION_RELEASE = test
 endif
 
@@ -59,20 +55,24 @@ CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
 CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
 
-ifdef USER_MODE
+ifeq ($(USER_MODE), 1)
 CFLAGS          += -DUSER_MODE
 endif
 
-ifdef M64_MODE
+ifeq ($(M64_MODE), 1)
 CFLAGS          += -DM64_MODE
 endif
 
-ifdef TEST_MODE
+ifeq ($(TEST_MODE), 1)
 CFLAGS          += -DTEST_MODE
 endif
 
-ifdef ADHOC_MODE
+ifeq ($(ADHOC_MODE), 1)
 CFLAGS          += -DADHOC_MODE
+endif
+
+ifeq ($(C_CORE_MODE), 1)
+CFLAGS          += -DC_CORE_MODE
 endif
 
 ASFLAGS         = ${CFLAGS}

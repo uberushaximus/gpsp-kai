@@ -18,10 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/******************************************************************************
+ * cheat.c
+ * チートの処理
+ ******************************************************************************/
+
+/******************************************************************************
+ * ヘッダファイルの読込み
+ ******************************************************************************/
 #include "common.h"
 
-CHEAT_TYPE game_config_cheats[MAX_CHEATS];
+CHEAT_TYPE game_config_cheats_flag[MAX_CHEATS];
 u32 num_cheats;
+
+
 
 void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant);
 void process_cheat_gs1(CHEAT_TYPE *cheat);
@@ -29,32 +39,24 @@ void process_cheat_gs3(CHEAT_TYPE *cheat);
 
 void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant)
 {
-  u32 i/*, i2, code_position*/;
+  u32 i;
   u32 address = *address_ptr;
   u32 value = *value_ptr;
   u32 r = 0xc6ef3720;
+  const u32 seeds_v1[4] = {0x09f4fbbd, 0x9681884a, 0x352027e9, 0xf3dee5a7};
+  const u32 seeds_v3[4] = {0x7aa9648f, 0x7fae6994, 0xc0efaad5, 0x42712c57};
 
-  u32 seeds_v1[4] =
-  {
-    0x09f4fbbd, 0x9681884a, 0x352027e9, 0xf3dee5a7
-  };
-  u32 seeds_v3[4] =
-  {
-    0x7aa9648f, 0x7fae6994, 0xc0efaad5, 0x42712c57
-  };
   u32 *seeds;
 
   if(cheat_variant == CHEAT_TYPE_GAMESHARK_V1)
-    seeds = seeds_v1;
+    seeds = (u32 *)seeds_v1;
   else
-    seeds = seeds_v3;
+    seeds = (u32 *)seeds_v3;
 
   for(i = 0; i < 32; i++)
   {
-    value -= ((address << 4) + seeds[2]) ^ (address + r) ^
-     ((address >> 5) + seeds[3]);
-    address -= ((value << 4) + seeds[0]) ^ (value + r) ^
-     ((value >> 5) + seeds[1]);
+    value -= ((address << 4) + seeds[2]) ^ (address + r) ^ ((address >> 5) + seeds[3]);
+    address -= ((value << 4) + seeds[0]) ^ (value + r) ^ ((value >> 5) + seeds[1]);
     r -= 0x9e3779b9;
   }
 
@@ -100,9 +102,9 @@ void add_cheats(char *cheats_filename)
       }
 
       if(!strcasecmp(current_line, "gameshark_v1") ||
-       !strcasecmp(current_line, "gameshark_v2") ||
-       !strcasecmp(current_line, "PAR_v1") ||
-       !strcasecmp(current_line, "PAR_v2"))
+         !strcasecmp(current_line, "gameshark_v2") ||
+         !strcasecmp(current_line, "PAR_v1") ||
+         !strcasecmp(current_line, "PAR_v2"))
       {
         current_cheat_variant = CHEAT_TYPE_GAMESHARK_V1;
       }
@@ -134,25 +136,25 @@ void add_cheats(char *cheats_filename)
 
       if(current_cheat_variant != CHEAT_TYPE_INVALID)
       {
-        strncpy(game_config_cheats[num_cheats].cheat_name, name_ptr, CHEAT_NAME_LENGTH - 1);
-        game_config_cheats[num_cheats].cheat_name[CHEAT_NAME_LENGTH - 1] = 0;
-        cheat_name_length = strlen(game_config_cheats[num_cheats].cheat_name);
+        strncpy(game_config_cheats_flag[num_cheats].cheat_name, name_ptr, CHEAT_NAME_LENGTH - 1);
+        game_config_cheats_flag[num_cheats].cheat_name[CHEAT_NAME_LENGTH - 1] = 0;
+        cheat_name_length = strlen(game_config_cheats_flag[num_cheats].cheat_name);
         if(cheat_name_length &&
-         ((game_config_cheats[num_cheats].cheat_name[cheat_name_length - 1] == '\n') ||
-         (game_config_cheats[num_cheats].cheat_name[cheat_name_length - 1] == '\r')))
+         ((game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\n') ||
+         (game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')))
         {
-          game_config_cheats[num_cheats].cheat_name[cheat_name_length - 1] = 0;
+          game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
           cheat_name_length--;
         }
 
         if(cheat_name_length &&
-         game_config_cheats[num_cheats].cheat_name[cheat_name_length - 1] == '\r')
+         game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')
         {
-          game_config_cheats[num_cheats].cheat_name[cheat_name_length - 1] = 0;
+          game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
         }
 
-        game_config_cheats[num_cheats].cheat_variant = current_cheat_variant;
-        cheat_code_ptr = game_config_cheats[num_cheats].cheat_codes;
+        game_config_cheats_flag[num_cheats].cheat_variant = current_cheat_variant;
+        cheat_code_ptr = game_config_cheats_flag[num_cheats].cheat_codes;
         num_cheat_lines = 0;
 
         while(fgets(current_line, 256, cheats_file))
@@ -172,7 +174,7 @@ void add_cheats(char *cheats_filename)
           num_cheat_lines++;
         }
 
-        game_config_cheats[num_cheats].num_cheat_lines = num_cheat_lines;
+        game_config_cheats_flag[num_cheats].num_cheat_lines = num_cheat_lines;
 
         num_cheats++;
         if (num_cheats == MAX_CHEATS) break;
@@ -401,22 +403,21 @@ void process_cheats()
 
   for(i = 0; i < num_cheats; i++)
   {
-    if(game_config_cheats[i].cheat_active)
+    if(game_config_cheats_flag[i].cheat_active == 1)
     {
-      switch(game_config_cheats[i].cheat_variant)
+      switch(game_config_cheats_flag[i].cheat_variant)
       {
         case CHEAT_TYPE_GAMESHARK_V1:
         case CHEAT_TYPE_DIRECT_V1:
-          process_cheat_gs1(game_config_cheats + i);
+          process_cheat_gs1(game_config_cheats_flag + i);
           break;
 
         case CHEAT_TYPE_GAMESHARK_V3:
         case CHEAT_TYPE_DIRECT_V3:
-          process_cheat_gs3(game_config_cheats + i);
+          process_cheat_gs3(game_config_cheats_flag + i);
           break;
 
         default:
-          ;
           break;
       }
     }

@@ -2061,6 +2061,16 @@ render_scanline_obj_builder(copy, copy_tile, 2D, no_partial_alpha);
 render_scanline_obj_builder(copy, copy_bitmap, 1D, no_partial_alpha);
 render_scanline_obj_builder(copy, copy_bitmap, 2D, no_partial_alpha);
 
+// OBJ DATAを保存しておいてちょこっと高速化
+#define MAX_OBJ 128
+s32 obj_x_buf[MAX_OBJ];
+s32 obj_y_buf[MAX_OBJ];
+s32 obj_size_buf[MAX_OBJ];
+s32 obj_mode_buf[MAX_OBJ];
+s32 obj_width_buf[MAX_OBJ];
+s32 obj_height_buf[MAX_OBJ];
+u32 obj_priority_buf[MAX_OBJ];
+
 // TODO 高速化
 // 前回のレジスタの内容と比較して、変更無し時は処理をスキップすれば高速化できるかも
 void order_obj(u32 video_mode)
@@ -2225,9 +2235,7 @@ fill_line_builder(color32);
 // The operation is optimized towards saturation not occuring.
 
 #define blend_saturate_pixel()                                                \
-  pixel_bottom = palette_ram[(pixel_pair >> 16) & 0x1FF];           \
-  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x03E07C1F /*0x07E0F81F*/;          \
-  pixel_top = ((pixel_top * blend_a) + (pixel_bottom * blend_b)) >> 4;        \
+  blend_pixel();                                                              \
   if(pixel_top & 0x04008020/*0x08010020*/)                                                  \
   {                                                                           \
     if(pixel_top & 0x04000000/*0x08000000*/)                                                \
@@ -3027,8 +3035,6 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
     render_window_clip_obj(type, start, end);                                 \
   }                                                                           \
 
-
-
 #define render_window_single(type, window_number)                             \
   u32 winin = io_registers[REG_WININ];                                        \
   window_coords(window_number);                                               \
@@ -3104,7 +3110,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Just OBJ windows */                                                    \
     case 0x04:                                                                \
     {                                                                         \
-      /*u32 window_obj_enable = winout >> 8;*/                                    \
+      u32 window_obj_enable = winout >> 8;                                    \
       render_window_clip_obj(type, 0, 240);                                   \
       break;                                                                  \
     }                                                                         \
@@ -3112,7 +3118,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 0 and OBJ window */                                             \
     case 0x05:                                                                \
     {                                                                         \
-      /*u32 window_obj_enable = winout >> 8;*/                                    \
+      u32 window_obj_enable = winout >> 8;                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(0);                                                       \
       render_window_multi(type, 0, obj);                                      \
@@ -3122,7 +3128,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 1 and OBJ window */                                             \
     case 0x06:                                                                \
     {                                                                         \
-      /*u32 window_obj_enable = winout >> 8;*/                                    \
+      u32 window_obj_enable = winout >> 8;                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(1);                                                       \
       render_window_multi(type, 1, obj);                                      \
@@ -3132,7 +3138,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 0, 1, and OBJ window */                                         \
     case 0x07:                                                                \
     {                                                                         \
-      /*u32 window_obj_enable = winout >> 8;*/                                \
+      u32 window_obj_enable = winout >> 8;                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(0);                                                       \
       window_coords(1);                                                       \
@@ -3266,15 +3272,14 @@ void init_video()
   gecb.finish_arg = NULL;
   gecbid = sceGeSetCallback(&gecb);
 
-  screen_vertex[0] = (float)(0.0 + 0.5);
-  screen_vertex[1] = (float)(0.0 + 0.5);
-  screen_vertex[2] = (float)(0.0 + 0.5);
-  screen_vertex[3] = (float)(0.0 + 0.5);
-  screen_vertex[4] = (float)0.0;
-  screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.5);
-  screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.5);
-  screen_vertex[7] = (float)(PSP_SCREEN_WIDTH - 0.5);
-  screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.5);
+  screen_vertex[0] = (float)(0.0 + 0.25);
+  screen_vertex[1] = (float)(0.0 + 0.25);
+  screen_vertex[2] = (float)(0.0 + 0.0);
+  screen_vertex[3] = (float)(0.0 + 0.0);
+  screen_vertex[5] = (float)(GBA_SCREEN_WIDTH - 0.25);
+  screen_vertex[6] = (float)(GBA_SCREEN_HEIGHT - 0.25);
+  screen_vertex[7] = (float)(PSP_SCREEN_WIDTH - 0.0);
+  screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.0);
   screen_vertex[9] = (float)0.0;
 
   // Set framebuffer to PSP VRAM

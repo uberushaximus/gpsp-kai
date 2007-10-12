@@ -202,6 +202,8 @@ void init_main()
 
   timer[0].direct_sound_channels = TIMER_DS_CHANNEL_BOTH;
   timer[1].direct_sound_channels = TIMER_DS_CHANNEL_NONE;
+  timer[0].partial_adjust = 0;
+  timer[1].partial_adjust = 0;
 
   cpu_ticks = 0;
   frame_ticks = 0;
@@ -352,6 +354,12 @@ int user_main(SceSize argc, char *argv[])
   getcwd(main_path, 512);
 #endif
 
+#ifdef ADHOC_MODE
+  // adhoc用モジュールのロード
+  if (pspSdkLoadAdhocModules() != 0)
+    error_msg("not load adhoc modules!!\n");
+#endif
+
   // Copy the directory path of the executable into main_path
   chdir(main_path);
 
@@ -434,12 +442,14 @@ int user_main(SceSize argc, char *argv[])
 
   show_progress("Initialization end"); // TODO:メッセージファイル化
 
+#ifdef ADHOC_MODE
   // WLANのスイッチがONならばadhoc接続のテスト
-//  if (sceWlanDevIsPowerOn() == 1)
-//  {
-//    adhocInit("adhoc test");
-//    adhocTerm();
-//  }
+  if (sceWlanDevIsPowerOn() == 1)
+  {
+    adhocInit("adhoc test");
+    adhocTerm();
+  }
+#endif
 
   if(argc > 1)
   {
@@ -491,8 +501,11 @@ int user_main(SceSize argc, char *argv[])
   virtual_frame_count = 0;
 
   // エミュレートの開始
+#ifdef C_CORE_MODE
+  execute_arm(execute_cycles);
+#else
   execute_arm_translate(execute_cycles);
-//  execute_arm(execute_cycles);
+#endif
   return 0;
 }
 

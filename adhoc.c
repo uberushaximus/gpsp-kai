@@ -302,7 +302,9 @@ static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *
 
 u32 pspSdkLoadAdhocModules(void)
   {
-    u32 modID;
+
+#ifndef USER_MODE
+  u32 modID;
 
     modID = pspSdkLoadStartModule("flash0:/kd/ifhandle.prx", PSP_MEMORY_PARTITION_KERNEL);
     if (modID < 0)
@@ -342,6 +344,10 @@ u32 pspSdkLoadAdhocModules(void)
 
     sceKernelDcacheWritebackAll();
     sceKernelIcacheInvalidateAll();
+#else
+  sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
+  sceUtilityLoadNetModule(PSP_NET_MODULE_ADHOC);
+#endif
 
     return 0;
   }
@@ -459,7 +465,7 @@ error_msg("");
 
 u32 adhocTerm(void)
   {
-    adhoc_init_progress(5, "DISCONNECTING");
+    adhoc_init_progress(4/*5*/, "DISCONNECTING");
 
     sceNetAdhocctlDisconnect();
     update_progress();
@@ -473,8 +479,8 @@ u32 adhocTerm(void)
     sceNetAdhocTerm();
     update_progress();
 
-    sceNetTerm();
-    update_progress();
+//    sceNetTerm();
+//    update_progress();
 
     show_progress("DISCONNECTED");
 
@@ -487,7 +493,7 @@ u32 adhocTerm(void)
 
 static void adhocDisconnect(void)
   {
-    adhoc_init_progress(8, "DISCONNECTING");
+    adhoc_init_progress(7/*8*/, "DISCONNECTING");
 
     sceNetAdhocMatchingStop(matchingId);
     update_progress();
@@ -510,8 +516,8 @@ static void adhocDisconnect(void)
     sceNetAdhocTerm();
     update_progress();
 
-    sceNetTerm();
-    update_progress();
+//    sceNetTerm();
+//    update_progress();
 
     show_progress("DISCONNECTED");
   }

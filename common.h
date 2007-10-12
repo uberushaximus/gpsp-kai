@@ -18,11 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/******************************************************************************
+ * common.h
+ * 共通ヘッダ
+ ******************************************************************************/
+
 #ifndef COMMON_H
 #define COMMON_H
 
 #define OLD_COUNT
 
+/******************************************************************************
+ * ヘッダファイルの読込み
+ ******************************************************************************/
 #include <stdio.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -33,6 +41,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <fastmath.h>
+
 #include <zlib.h>
 
 #include <pspctrl.h>
@@ -47,14 +56,22 @@
 #include <psputility.h>
 #include <kubridge.h>
 
-#ifndef USER_MODE
-#include <psputilsforkernel.h>
+#ifdef ADHOC_MODE
 #include <pspnet.h>
 #include <pspnet_adhoc.h>
 #include <pspnet_adhocctl.h>
 #include <pspnet_adhocmatching.h>
 #include <pspwlan.h>
+#ifndef USER_MODE
+#include <psputilsforkernel.h>
+#else
+#include <psputility_netmodules.h>
 #endif
+#endif
+
+/******************************************************************************
+ * マクロ等の定義
+ ******************************************************************************/
 
 typedef s32 FILE_TAG_TYPE;
 typedef u32 FIXED16_16;    // 整数部16bit 実数部16bit の固定小数点
@@ -175,6 +192,9 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define DBGOUT(...) fprintf(dbg_file, __VA_ARGS__)
 FILE *dbg_file;
 
+/******************************************************************************
+ * ローカルなヘッダファイルの読込み
+ ******************************************************************************/
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"
@@ -187,12 +207,10 @@ FILE *dbg_file;
 #include "fbm_print.h"
 #include "message.h"
 #include "bios.h"
+#include "draw.h"
 
-#ifndef USER_MODE
+#ifdef ADHOC_MODE
 #include "adhoc.h"
 #endif
-
-#include "draw.h"
-//#include "blend.h"
 
 #endif /* COMMON_H */
