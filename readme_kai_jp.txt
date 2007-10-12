@@ -3,6 +3,7 @@
 -- Release log --
 -UnOfficial gpSP kai 3.2 test 03 svn rev.
 	AHDOCの初期化/初期化テストを追加
+		WLANがONになっている場合、モジュールの読込み・待受けテスト・切断を行います
 	DirectSoundの音ズレを修正
 
 -UnOfficial gpSP kai 3.2 test 02 svn rev.271

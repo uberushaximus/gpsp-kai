@@ -48,12 +48,11 @@ typedef struct
   s32 count;
   u32 reload;
   u32 prescale;
-  u32 stop_cpu_ticks;
+  u32 stop_cpu_ticks; /* NOT USE */
   FIXED16_16 frequency_step;
   TIMER_DS_CHANNEL_TYPE direct_sound_channels;
   TIMER_IRQ_TYPE irq;
   TIMER_STATUS_TYPE status;
-  u32 partial_adjust;
 } TIMER_TYPE;
 
 typedef enum
@@ -125,7 +124,7 @@ u32 file_length(char *filename, s32 dummy);
 // TODO:32bitアクセスと8/16bitアクセスで処理を分ける必要がある
 // 8/16ビットアクセス時には呼び出す必要がない？
 #define COUNT_TIMER(timer_number)                                             \
-  timer[timer_number].reload = 0x10000 - value;                                \
+  timer[timer_number].reload = 0x10000 - value;                               \
   if(timer_number < 2)                                                        \
   {                                                                           \
     u32 timer_reload =                                                        \
@@ -133,21 +132,18 @@ u32 file_length(char *filename, s32 dummy);
     SOUND_UPDATE_FREQUENCY_STEP(timer_number);                                \
   }                                                                           \
 
-// タイマーの値の調整？
-// TODO:サウンドのズレはこのあたりの処理が問題?
+// タイマーの値の調整
 #define ADJUST_SOUND_BUFFER(timer_number, channel)                            \
   if(timer[timer_number].direct_sound_channels & (0x01 << channel))           \
   {                                                                           \
-    direct_sound_channel[channel].buffer_index =                              \
-     (direct_sound_channel[channel].buffer_index + adjust * 2) % BUFFER_SIZE; \
-                                                                              \
+    direct_sound_channel[channel].buffer_index = gbc_sound_buffer_index;      \
   }                                                                           \
 
 // タイマーのアクセスとカウント開始処理
 #define TRIGGER_TIMER(timer_number)                                           \
   if(value & 0x80)                                                            \
   {                                                                           \
-    /* スタートビットが”1”だった場合 */                                       \
+    /* スタートビットが”1”だった場合 */                                     \
     if(timer[timer_number].status == TIMER_INACTIVE)                          \
     {                                                                         \
       /* タイマーが停止していた場合 */                                        \
@@ -186,16 +182,7 @@ u32 file_length(char *filename, s32 dummy);
                                                                               \
       if(timer_number < 2)                                                    \
       {                                                                       \
-        /* 小数点以下を切り捨てていたので、GBCサウンドと同様の処理にする */   \
-        FIXED16_16 adjust = FLOAT_TO_FP16_16(((float)(cpu_ticks - timer[timer_number].stop_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);\
-        timer[timer_number].partial_adjust += FP16_16_FRACTIONAL_PART(adjust);\
-        adjust = FP16_16_TO_U32(adjust);                                      \
-        if (timer[timer_number].partial_adjust > 0xFFFF)                      \
-        {                                                                     \
-          adjust += 1;                                                        \
-          timer[timer_number].partial_adjust &= 0xFFFF;                       \
-        }                                                                     \
-                                                                              \
+        /* 小数点以下を切り捨てていたので、GBCサウンドと同様の処理にした*/   \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
         ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
         ADJUST_SOUND_BUFFER(timer_number, 1);                                 \
@@ -207,7 +194,6 @@ u32 file_length(char *filename, s32 dummy);
     if(timer[timer_number].status != TIMER_INACTIVE)                          \
     {                                                                         \
       timer[timer_number].status = TIMER_INACTIVE;                            \
-      timer[timer_number].stop_cpu_ticks = cpu_ticks;                         \
     }                                                                         \
   }                                                                           \
   ADDRESS16(io_registers, 0x102 + (timer_number * 4)) = value;                \

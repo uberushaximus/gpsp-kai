@@ -482,7 +482,7 @@ void update_gbc_sound(u32 cpu_ticks)
       gbc_sound_partial_ticks &= 0xFFFF;
     }
 
-    if (sound_on == 0)
+    if (sound_on == 1)
     {
       // Channel 0
       gs = gbc_sound_channel + 0;
