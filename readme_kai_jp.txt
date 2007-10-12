@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 03 svn rev.
+-UnOfficial gpSP kai 3.2 test 03 svn rev.278
 	AHDOCの初期化/初期化テストを追加
 		WLANがONになっている場合、モジュールの読込み・待受けテスト・切断を行います
 	DirectSoundの音ズレを修正
