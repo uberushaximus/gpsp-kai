@@ -1,6 +1,10 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 04 svn rev.
+	zipファイル使用時のフリーズバグの対応
+	PSP-2000でのスリープ時のメモリ破壊に対応(NJ氏のHPでのコメントを参考にしました)
+
 -UnOfficial gpSP kai 3.2 test 03 svn rev.278
 	AHDOCの初期化/初期化テストを追加
 		WLANがONになっている場合、モジュールの読込み・待受けテスト・切断を行います

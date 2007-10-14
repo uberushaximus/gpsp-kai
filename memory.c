@@ -155,6 +155,7 @@ u32 bios_read_protect;
 
 // Keeps us knowing how much we have left.
 u8 *gamepak_rom;
+u8 *gamepak_rom_resume;
 u32 gamepak_size;
 
 DMA_TRANSFER_TYPE dma[4];
@@ -3302,7 +3303,8 @@ void init_gamepak_buffer()
   {
     // 新型の場合
     gamepak_ram_buffer_size = 32 * 1024 * 1024;
-    gamepak_rom = (u8 *)0x0a000000;
+    gamepak_rom = (u8 *)PSP2K_MEM_TOP;
+    gamepak_rom_resume = malloc(4 * 1024 * 1024);
   }
 #endif
   // Here's assuming we'll have enough memory left over for this,

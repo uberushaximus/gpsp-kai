@@ -22,10 +22,9 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEM_STATE_NUM 10
+#define MEM_STATE_NUM (10)
 
-#define MAX_TRANSLATION_GATES 8
-#define MAX_IDLE_LOOPS 8
+#define PSP2K_MEM_TOP (0x0a000000)
 
 typedef enum
 {
@@ -154,6 +153,7 @@ extern char gamepak_filename_raw[MAX_PATH];
 extern u32 gamepak_crc32;
 
 extern u8 *gamepak_rom;
+extern u8 *gamepak_rom_resume;
 extern u32 gamepak_ram_buffer_size;
 extern u32 oam_update;
 extern u32 gbc_sound_update;

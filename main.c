@@ -29,7 +29,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(512);
+PSP_MAIN_THREAD_STACK_SIZE_KB(384);
 #else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(0);
@@ -221,12 +221,34 @@ int exit_callback(int arg1, int arg2, void *common)
   return 0;
 }
 
+// サスペンド/復旧時の処理
 SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *common)
 {
   if (powerInfo & PSP_POWER_CB_POWER_SWITCH)
+  {
+    // サスペンド時の処理
     power_flag = 1;
+
+#ifdef M64_MODE
+    // 新型PSPの場合、増設メモリの一部をメインメモリに待避
+    if (kuKernelGetModel() == PSP_MODEL_SLIM_AND_LITE)
+    {
+      memcpy(gamepak_rom_resume,(void *)(PSP2K_MEM_TOP + 0x1c00000), 0x400000);
+    }
+#endif
+  }
   else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
+  {
     power_flag = 0;
+
+#ifdef M64_MODE
+    // 新型PSPの場合、メインメモリから増設メモリへ内容を復旧
+    if (kuKernelGetModel() == PSP_MODEL_SLIM_AND_LITE)
+    {
+      memcpy((void *)(PSP2K_MEM_TOP + 0x1c00000),gamepak_rom_resume, 0x400000);
+    }
+#endif
+  }
   return 0;
 }
 
@@ -946,3 +968,4 @@ void raise_interrupt(irq_type irq_raised)
     reg[CHANGED_PC_STATUS] = 1;
   }
 }
+

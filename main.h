@@ -19,9 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/******************************************************************************
+ * main.h
+ * メインヘッダ
+ ******************************************************************************/
 #ifndef MAIN_H
 #define MAIN_H
 
+/******************************************************************************
+ * マクロ等の定義
+ ******************************************************************************/
 typedef enum
 {
   TIMER_INACTIVE,
@@ -61,58 +68,6 @@ typedef enum
   manual_frameskip,
   no_frameskip
 } frameskip_type;
-
-extern u32 cpu_ticks;
-extern u32 frame_ticks;
-extern u32 execute_cycles;
-extern u32 game_config_frameskip_type;
-extern u32 game_config_frameskip_value;
-extern u32 game_config_random_skip;
-extern u32 global_cycles_per_instruction;
-extern u32 synchronize_flag;
-extern u32 skip_next_frame_flag;
-extern TIMER_TYPE timer[4];
-extern u32 prescale_table[];
-extern u32 cycle_memory_access;
-extern u32 cycle_pc_relative_access;
-extern u32 cycle_sp_relative_access;
-extern u32 cycle_block_memory_access;
-extern u32 cycle_block_memory_sp_access;
-extern u32 cycle_block_memory_words;
-extern u32 cycle_dma16_words;
-extern u32 cycle_dma32_words;
-extern u32 flush_ram_count;
-extern u64 base_timestamp;
-extern char main_path[MAX_PATH];
-extern char rom_path[MAX_PATH];
-extern u32 update_backup_flag;
-extern u32 game_config_clock_speed;
-extern u32 hold_state;
-extern vu32 quit_flag;
-extern vu32 power_flag;
-extern volatile u32 real_frame_count;
-extern u32 virtual_frame_count;
-extern u32 max_frameskip;
-extern u32 num_skipped_frames;
-extern u64 frame_count_initial_timestamp;
-extern int date_format;
-
-void set_cpu_clock(u32 clock);
-u32 update_gba();
-void reset_gba();
-void synchronize();
-void quit();
-void delay_us(u32 us_count);
-void get_ticks_us(u64 *tick_return);
-void game_name_ext(u8 *src, u8 *buffer, u8 *extension);
-void main_read_mem_savestate(FILE_TAG_TYPE savestate_file);
-void main_write_mem_savestate(FILE_TAG_TYPE savestate_file);
-void main_read_savestate(FILE_TAG_TYPE savestate_file);
-void error_msg(char *text);
-void set_cpu_mode(CPU_MODE_TYPE new_mode);
-void raise_interrupt(irq_type irq_raised);
-void change_ext(char *src, char *buffer, char *extension);
-u32 file_length(char *filename, s32 dummy);
 
 // TODO:タイマーカウンタ周りの処理は再検討
 
@@ -198,5 +153,63 @@ u32 file_length(char *filename, s32 dummy);
   }                                                                           \
   ADDRESS16(io_registers, 0x102 + (timer_number * 4)) = value;                \
 
-#endif
+/******************************************************************************
+ * グローバル変数の宣言
+ ******************************************************************************/
+extern u32 cpu_ticks;
+extern u32 frame_ticks;
+extern u32 execute_cycles;
+extern u32 game_config_frameskip_type;
+extern u32 game_config_frameskip_value;
+extern u32 game_config_random_skip;
+extern u32 global_cycles_per_instruction;
+extern u32 synchronize_flag;
+extern u32 skip_next_frame_flag;
+extern TIMER_TYPE timer[4];
+extern u32 prescale_table[];
+extern u32 cycle_memory_access;
+extern u32 cycle_pc_relative_access;
+extern u32 cycle_sp_relative_access;
+extern u32 cycle_block_memory_access;
+extern u32 cycle_block_memory_sp_access;
+extern u32 cycle_block_memory_words;
+extern u32 cycle_dma16_words;
+extern u32 cycle_dma32_words;
+extern u32 flush_ram_count;
+extern u64 base_timestamp;
+extern char main_path[MAX_PATH];
+extern char rom_path[MAX_PATH];
+extern u32 update_backup_flag;
+extern u32 game_config_clock_speed;
+extern u32 hold_state;
+extern vu32 quit_flag;
+extern vu32 power_flag;
+extern volatile u32 real_frame_count;
+extern u32 virtual_frame_count;
+extern u32 max_frameskip;
+extern u32 num_skipped_frames;
+extern u64 frame_count_initial_timestamp;
+extern int date_format;
+
+/******************************************************************************
+ * グローバル関数の宣言
+ ******************************************************************************/
+void set_cpu_clock(u32 clock);
+u32 update_gba();
+void reset_gba();
+void synchronize();
+void quit();
+void delay_us(u32 us_count);
+void get_ticks_us(u64 *tick_return);
+void game_name_ext(u8 *src, u8 *buffer, u8 *extension);
+void main_read_mem_savestate(FILE_TAG_TYPE savestate_file);
+void main_write_mem_savestate(FILE_TAG_TYPE savestate_file);
+void main_read_savestate(FILE_TAG_TYPE savestate_file);
+void error_msg(char *text);
+void set_cpu_mode(CPU_MODE_TYPE new_mode);
+void raise_interrupt(irq_type irq_raised);
+void change_ext(char *src, char *buffer, char *extension);
+u32 file_length(char *filename, s32 dummy);
+
+#endif /* MAIN_H */
 
