@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
     error_msg("not load adhoc modules!!\n");
 #endif
 
-  main_thread = sceKernelCreateThread("User Mode Thread", (SceKernelThreadEntry)user_main, 0x11, 512 * 1024, PSP_THREAD_ATTR_USER, NULL);
+  main_thread = sceKernelCreateThread("User Mode Thread", (SceKernelThreadEntry)user_main, 0x11, 384 * 1024, PSP_THREAD_ATTR_USER, NULL);
 
   sceKernelStartThread(main_thread, 0, 0);
 

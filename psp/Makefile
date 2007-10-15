@@ -6,8 +6,7 @@
 
 VERSION_MAJOR = 3
 VERSION_MINOR = 2
-VERSION_BUILD = 03
-
+VERSION_BUILD = 04
 # コンパイル条件の設定
 
 # カーネルアプリとユーザーアプリの切替 CFW3.60以上ではUSER_MODE=1が必須

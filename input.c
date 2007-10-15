@@ -20,6 +20,7 @@
  */
 
 #include "common.h"
+#include <pspctrl_kernel.h>
 
 // Special thanks to psp298 for the analog->dpad code!
 
@@ -306,6 +307,13 @@ u32 update_input()
       button_id = gamepad_config_map[i];
     // HOMEが押されたらMENUに移行
     if (ctrl_data.Buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
+
+    if(psp_fps_debug)
+    {
+      char print_buffer[256];
+      sprintf(print_buffer, "input data:%X", (int)ctrl_data.Buttons);
+      PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 30);
+    }
 
     switch(button_id)
     {
