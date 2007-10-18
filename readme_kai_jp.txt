@@ -1,6 +1,15 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 05 svn rev.
+	スタックサイズを調整し、ZIPファイル使用時の不具合に対応
+	prxにてカーネルモード特有の機能を使えることがわかったので、カーネルモードのコンパイル設定を削除
+		ソースにはまだ#ifdef等が残っています。将来削除予定。
+	テレビ出力のフル画面に対応
+		D端子での接続にて確認。
+		その他のケーブルでの確認情報お待ちしています。
+	サウンドのボリュームを元に戻した
+
 -UnOfficial gpSP kai 3.2 test 04 svn rev.282
 	zipファイル使用時のフリーズバグの対応
 	PSP-2000でのスリープ時のメモリ破壊に対応(NJ氏のHPでのコメントを参考にしました)
