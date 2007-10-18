@@ -23,5 +23,3 @@ C_CORE_MODE = 0
 # WLANのON/OFF
 ADHOC_MODE = 1
 
-include Makefile.in
-

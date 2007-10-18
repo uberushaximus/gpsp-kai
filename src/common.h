@@ -208,7 +208,7 @@ FILE *dbg_file;
 #include "message.h"
 #include "bios.h"
 #include "draw.h"
-#include "read_ctrl.h"
+#include "homehook.h"
 #include "dvemgr.h"
 
 #ifdef ADHOC_MODE

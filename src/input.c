@@ -75,7 +75,7 @@ extern u32 psp_fps_debug;
 u32 global_enable_analog = 1;
 u32 analog_sensitivity_level = 4;
 
-#define PSP_ALL_BUTTON_MASK 0xFFFF
+#define PSP_ALL_BUTTON_MASK 0x1FFFF
 
 u32 last_buttons = 0;
 u64 button_repeat_timestamp;
@@ -102,6 +102,7 @@ u32 sensorR;
 gui_action_type get_gui_input()
 {
   SceCtrlData ctrl_data;
+  unsigned int ctrl_buttons;
   gui_action_type new_button = CURSOR_NONE;
   u32 new_buttons;
   u32 analog_sensitivity = 92 - (analog_sensitivity_level * 4);
@@ -113,6 +114,8 @@ gui_action_type get_gui_input()
     quit();
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
+  ctrl_buttons = readHomeButton();
+  ctrl_data.Buttons |= ctrl_buttons;
 
   if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
@@ -269,6 +272,7 @@ u32 update_input()
 {
   SceCtrlData ctrl_data;
   u32 buttons;
+  u32 ctrl_buttons;
   u32 non_repeat_buttons;
   u32 button_id = 0;
   u32 i;
@@ -280,10 +284,11 @@ u32 update_input()
   sensorR = 0x650;
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
+  ctrl_buttons = readHomeButton();
 
-  buttons = ctrl_data.Buttons;
+  buttons = ctrl_data.Buttons | ctrl_buttons;
 
-  if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  if((global_enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
     sensorX = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
     sensorY = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
@@ -309,7 +314,7 @@ u32 update_input()
     if(non_repeat_buttons & button_psp_mask_to_config[i])
       button_id = gamepad_config_map[i];
     // HOMEが押されたらMENUに移行
-    if (ctrl_data.Buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
+    if (buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
 
     switch(button_id)
     {
@@ -412,7 +417,7 @@ void init_input()
 {
   sceCtrlSetSamplingCycle(0);
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
-  init_read_button(sceKernelDevkitVersion());
+  initHomeButton(sceKernelDevkitVersion());
 }
 
 // type = READ / WRITE_MEM

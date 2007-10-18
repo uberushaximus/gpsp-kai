@@ -260,8 +260,8 @@ int CallbackThread(SceSize args, void *argp)
   int id;
 
   // 終了周りのコールバック
-  id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
-  sceKernelRegisterExitCallback(id);
+//  id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
+//  sceKernelRegisterExitCallback(id);
 
   // 電源周りのコールバック
   id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL); 
@@ -365,13 +365,17 @@ int user_main(SceSize argc, char *argv[])
   psp_model = get_model();
 
   // HOMEボタンを読取り可能にする
-//  if(pspSdkLoadStartModule("read_ctrl.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
-//    error_msg("Error in load/start module.\n");
+  if(pspSdkLoadStartModule("homehook.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
+  {
+    error_msg("Error in load/start homehook module.\n");
+    quit();
+  }
 
   // PSP-2000なら、外部出力用のモジュールを読込む
   if(psp_model != psp_1000)
   {
-    pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL);
+    if(pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
+      error_msg("Error in load/start TV OUT module.\n");
   }
   
   quit_flag = 0;

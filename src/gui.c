@@ -1487,8 +1487,7 @@ u32 menu(u16 *original_screen)
   }  // end while
 
 // menu終了時の処理
-
-  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ctrl_data.Buttons != 0);
+  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0xF3F9) != 0);
 
 //  set_gba_resolution(screen_scale);
   video_resolution_small();

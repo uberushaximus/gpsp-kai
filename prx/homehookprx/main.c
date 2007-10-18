@@ -22,6 +22,7 @@ int sceCtrl_driver_C4AAD55F(SceCtrlData *pad_data, int count);
 #define sceCtrlPeekBufferPositive		sceCtrl_driver_3A622550
 #define sceCtrlPeekBufferPositive371	sceCtrl_driver_C4AAD55F
 
+#define CTRL_MASK (PSP_CTRL_NOTE | PSP_CTRL_SCREEN | PSP_CTRL_VOLUP | PSP_CTRL_VOLDOWN | PSP_CTRL_HOME)
 
 /******************************************************************************
 	local variables
@@ -49,7 +50,8 @@ static int home_button_thread(SceSize args, void *argp)
 		if (__sceCtrlPeekBufferPositive)
 		{
 			(*__sceCtrlPeekBufferPositive)(&paddata, 1);
-			home_button = paddata.Buttons & PSP_CTRL_HOME;
+			//HOMEãƒœã‚¿ãƒ³ä»¥å¤–ã®ç‰¹æ®Šãƒœã‚¿ãƒ³ã‚‚èª­è¾¼ã‚€(å°†æ¥ã®æ‹¡å¼µç”¨)
+			home_button = paddata.Buttons & CTRL_MASK;
 		}
 
 		sceKernelDelayThread(1000000/60);
@@ -93,9 +95,9 @@ int module_start(SceSize args, void *argp)
 		sceKernelStartThread(home_thread, 0, 0);
 
 #if 0
-	// user mode—p‚Ìƒ‚ƒWƒ…[ƒ‹‚ğƒAƒ“ƒ[ƒh‚·‚éB
-	// Homeƒ{ƒ^ƒ“‚Ìƒ_ƒCƒAƒƒO‚Í•\¦‚³‚ê‚È‚­‚È‚é‚ªA
-	// AdHoc‚Ìƒ‚ƒWƒ…[ƒ‹‚ª“Ç‚İ‚ß‚È‚­‚È‚é“™A–â‘è‚ ‚èB
+	// user modeç”¨ã®ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã‚’ã‚¢ãƒ³ãƒ­ãƒ¼ãƒ‰ã™ã‚‹ã€‚
+	// Homeãƒœã‚¿ãƒ³ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã¯è¡¨ç¤ºã•ã‚Œãªããªã‚‹ãŒã€
+	// AdHocã®ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ãŒèª­ã¿è¾¼ã‚ãªããªã‚‹ç­‰ã€å•é¡Œã‚ã‚Šã€‚
 	SceUID modIDs[16];
 	int count;
 
