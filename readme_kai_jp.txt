@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 05 svn rev.317
+-UnOfficial gpSP kai 3.2 test 05 svn rev.319
 	スタックサイズを調整し、ZIPファイル使用時の不具合に対応
 	HOMEボタンでのメニューに対応
 		(現在ボリューム表示がありませんが、test06にて実装予定です)
