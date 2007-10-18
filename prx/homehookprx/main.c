@@ -65,7 +65,7 @@ static int home_button_thread(SceSize args, void *argp)
 
 void initHomeButton(int devkit_version)
 {
-	if (devkit_version < 0x03060010)
+	if (devkit_version < 0x03070110/*0x03060010*/)
 		__sceCtrlPeekBufferPositive = sceCtrlPeekBufferPositive;
 	else
 		__sceCtrlPeekBufferPositive = sceCtrlPeekBufferPositive371;
