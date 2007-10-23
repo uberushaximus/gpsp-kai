@@ -1,0 +1,59 @@
+gpSPのconfig fileの技術資料
+すべてuo gpSP kai 3.2 test 06以降の仕様です
+
+dir.cfg
+	各種のフォルダを指定する
+	行頭が!以外は全てコメントとして無視される
+	全てEBOOT.PBPからの相対表記になっている
+	!が行頭の行について
+		1行目 ROM file フォルダ
+		2行目 SAVE file フォルダ
+		3行目 GAME config fle フォルダ
+		4行目 screen shot フォルダ
+		5行目 cheat file フォルダ
+	となっている
+	指定したフォルダが存在しない場合、エラーもしくはEBOOT.PBPと同じフォルダが使用される
+
+*.fntと*.msgはgpSP起動時に、本体の言語設定により、
+	japanese/english/french/spanish/german/italian
+	dutch/portuguese/russian/korean/chinese_traditional/chinese_simplified
+をそれぞれ読込む
+
+*.fnt
+	フォントファイルを指定する
+	フォントファイルはfbm形式をしようする
+	行頭が!以外は全てコメントとして無視される
+	全てEBOOT.PBPからの相対表記になっている
+	!が行頭の行について
+		1行目 1バイトキャラクタのフォントファイル
+		2行目 2バイトキャラクタのフォントファイル
+	となっている
+	フォントファイルが存在しない/フォーマットが違う場合はエラーにて終了する
+
+*.msg
+	各種メッセージのファイル	
+	行頭が!以外は全てコメントとして無視される
+	各種メッセージの順番は決まっているので、順番を入替えると正常に動作しない
+	コメントの英文を参考に変更すること
+	printf文の1番目の引数の実態なので、%d等の順番/数を変更すると不具合が発生する
+	メッセージの順番はmesseage.hで指示される
+	16kb以上には対応していないが、message.hを変更することで対応できる
+	日本語の場合はSJISコードを使用する
+	読込み時出来ない場合、エラーにて終了する
+
+gpsp.cfg
+	gpSP本体の設定ファイル
+	存在しない場合、自動で作成される
+	内容は以下
+		1word			ヘッダ
+		2word			バージョン番号
+		3word			screen_scale
+		4word			screen_filter
+		5word			enable_audio
+		6word			audio_buffer_size_number
+		7word			update_backup_flag
+		8word			enable_analog
+		9word			analog_sensitivity_level
+		10~25word	gamepad_config_map[16]
+
+	ヘッダ	'gpSP'
