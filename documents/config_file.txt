@@ -55,5 +55,7 @@ gpsp.cfg
 		8word			enable_analog
 		9word			analog_sensitivity_level
 		10~25word	gamepad_config_map[16]
+		26word			video_interlace
+		27word			video_ratio
 
 	ヘッダ	'gpSP'
