@@ -72,7 +72,7 @@ u32 gamepad_config_map[16] =
 
 extern u32 psp_fps_debug;
 
-u32 global_enable_analog = 1;
+u32 enable_analog = 1;
 u32 analog_sensitivity_level = 4;
 
 #define PSP_ALL_BUTTON_MASK 0x1FFFF
@@ -117,7 +117,7 @@ gui_action_type get_gui_input()
   ctrl_buttons = readHomeButton();
   ctrl_data.Buttons |= ctrl_buttons;
 
-  if((global_enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  if((enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
     if(ctrl_data.Lx < analog_sensitivity)
       ctrl_data.Buttons = PSP_CTRL_LEFT;
@@ -285,10 +285,9 @@ u32 update_input()
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
   ctrl_buttons = readHomeButton();
-
   buttons = ctrl_data.Buttons | ctrl_buttons;
 
-  if((global_enable_analog) && !(buttons & PSP_CTRL_HOLD))
+  if((enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
     sensorX = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
     sensorY = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096

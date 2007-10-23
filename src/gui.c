@@ -40,6 +40,20 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
+typedef struct
+{
+  u32 screen_scale;
+  u32 screen_filter;
+  u32 enable_audio;
+  u32 audio_buffer_size_number;
+  u32 update_backup_flag;
+  u32 enable_analog;
+  u32 analog_sensitivity_level;
+  u32 gamepad_config_map[16];
+} GPSP_CONFIG_V10;
+
+GPSP_CONFIG_V10 gpsp_config;
+
 #ifdef USER_MODE
 #define VER_MODE "user"
 #else
@@ -828,10 +842,10 @@ s32 load_config_file()
 
       screen_scale = file_options[0] % 3;
       screen_filter = file_options[1] % 2;
-      global_enable_audio = file_options[2] % 2;
+      enable_audio = file_options[2] % 2;
       audio_buffer_size_number = file_options[3] % 11;
       update_backup_flag = file_options[4] % 2;
-      global_enable_analog = file_options[5] % 2;
+      enable_analog = file_options[5] % 2;
       analog_sensitivity_level = file_options[6] % 10;
 
       // Sanity check: Make sure there's a MENU or FRAMESKIP
@@ -1176,7 +1190,7 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config_random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &global_enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
@@ -1266,7 +1280,7 @@ u32 menu(u16 *original_screen)
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_1], 1),
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_2], 2),
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_3], 3),
-    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &global_enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
     NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
     SUBMENU_OPTION(NULL, msg[MSG_A_PAD_MENU_6], msg[MSG_A_PAD_MENU_HELP_2], 11)
   };
@@ -1783,10 +1797,10 @@ static s32 save_config_file()
 
     file_options[0] = screen_scale;
     file_options[1] = screen_filter;
-    file_options[2] = global_enable_audio;
+    file_options[2] = enable_audio;
     file_options[3] = audio_buffer_size_number;
     file_options[4] = update_backup_flag;
-    file_options[5] = global_enable_analog;
+    file_options[5] = enable_analog;
     file_options[6] = analog_sensitivity_level;
 
     for(i = 0; i < 16; i++)

@@ -279,7 +279,7 @@
 DIRECT_SOUND_STRUCT direct_sound_channel[2];
 GBC_SOUND_STRUCT gbc_sound_channel[4];
 u32 sound_on = 0;
-u32 global_enable_audio = 1;
+u32 enable_audio = 1;
 u32 audio_buffer_size_number = 1;
 u32 gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
 u32 left_buffer;
@@ -666,7 +666,7 @@ static int sound_update_thread(SceSize args, void *argp)
   while(!audio_thread_exit_flag)
   {
     left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
-    buffer_num = global_enable_audio;
+    buffer_num = enable_audio;
 
     if((CHECK_BUFFER() > SAMPLE_SIZE) && (pause_sound_flag == 0))
     {
@@ -734,5 +734,5 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 void synchronize_sound()
 {
   while(CHECK_BUFFER() >= audio_buffer_size) // TODO:調整必要
-    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 1.0);
+    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.25);
 }

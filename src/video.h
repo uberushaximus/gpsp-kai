@@ -24,6 +24,11 @@
 #define FONT_WIDTH  6
 #define FONT_HEIGHT 10
 
+#define INTERLACE     0
+#define NON_INTERLACE 1
+#define R4_3  0
+#define R16_9 1
+
 void update_scanline();
 void update_screen();
 void init_video();
@@ -97,6 +102,8 @@ extern u32 screen_height2;
 extern u32 screen_scale;
 extern u32 current_scale;
 extern u32 screen_filter;
+
+extern u32 interlace_mode;
 
 void set_gba_resolution_small(video_scale_type scale);
 void set_gba_resolution_large();

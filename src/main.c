@@ -84,17 +84,22 @@ char rom_path[MAX_PATH];
 vu32 quit_flag;
 vu32 power_flag;
 
-char *lang[9] =
-  { "japanese",   // 0
-    "english",    // 1
-    "french",     // 2
-    "spanish",    // 3
-    "german",     // 4
-    "italian",    // 5
-    "dutch",      // 6
-    "portuguese", // 7
-    "Russia"      // 8
-    };
+char *lang[12] =
+  { "japanese",                // 0
+    "english",                 // 1
+    "french",                  // 2
+    "spanish",                 // 3
+    "german",                  // 4
+    "italian",                 // 5
+    "dutch",                   // 6
+    "portuguese",              // 7
+    "russian",                 // 8
+    "korean",                  // 9
+    "chinese_traditional",     // 10
+    "chinese_simplified"       // 11
+  };
+
+#define MAX_LANG_NUM 11
 
 int lang_num;
 int date_format;
@@ -402,6 +407,8 @@ int user_main(SceSize argc, char *argv[])
   chdir(main_path);
 
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
+  // 言語が設定外の場合英語に設定
+  if(lang_num > MAX_LANG_NUM) lang_num = 1;
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
   init_main();
@@ -489,6 +496,9 @@ int user_main(SceSize argc, char *argv[])
   }
 #endif
 
+//  sceImposeSetHomePopup(0); 
+//  sceImposeHomeButton(1);
+
   if(argc > 1)
   {
     if(load_gamepak((char *)argv[1]) == -1)
@@ -557,6 +567,8 @@ u32 check_power()
   FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
   return ret_val;
 }
+
+u32 sync_flag = 0;
 
 u32 update_gba()
 {
@@ -660,7 +672,23 @@ u32 update_gba()
             quit();
 
           update_gbc_sound(cpu_ticks);
-          synchronize();
+
+          if(interlace_mode == INTERLACE)
+          {
+            synchronize();
+          }
+          else
+          {
+            if(sync_flag == 0)
+            {
+              sync_flag = 1;
+            }
+            else
+            {
+              synchronize();
+              sync_flag = 0;
+            }
+          }
 
           update_screen();
 

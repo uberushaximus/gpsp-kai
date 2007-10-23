@@ -3226,6 +3226,8 @@ u32 screen_flip = 0;
 u32 frame_to_render;
 
 u32 video_out_mode;
+u32 interlace_mode;
+u32 aspect_ratio;
 
 void update_screen()
 {
@@ -3311,6 +3313,7 @@ void init_video()
   GE_CMD(VADDR, ((u32)screen_vertex & 0x00FFFFFF));
   // Primitive kick: render sprite (primitive 6), 2 vertices
   GE_CMD(PRIM, (6 << 16) | 2);
+//  GE_CMD(PRIM, (6 << 16) | 2);
   // Done with commands
   GE_CMD(FINISH, 0);
   // Raise signal interrupt
@@ -3360,9 +3363,12 @@ void video_resolution_large()
     screen_height = PSP_SCREEN_HEIGHT;
     screen_width2 = screen_width / 2;
     screen_height2 = screen_height / 2;
-    set_video_out();
+//    set_video_out();
+    pspDveMgrSetVideoOut(0, 0, 720, 272, 1, 15, 0);
+
     sceGuStart(GU_DIRECT, display_list);
-    if(video_out_mode == 0)
+//    if(video_out_mode == 0)
+    if(video_out_mode < 2)
     {
       screen_address = psp_gu_vram_base;
       sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0, PSP_LINE_SIZE);
@@ -3371,8 +3377,8 @@ void video_resolution_large()
     else
     {
       screen_address = psp_gu_vram_base + 120 + (104 * PSP_LINE_SIZE);
-      sceGuDispBuffer(720, 480, (void*)0, PSP_LINE_SIZE);
-      sceGuScissor(0, 0, 720, 480);
+      sceGuDispBuffer(720, 503, (void*)0, PSP_LINE_SIZE);
+      sceGuScissor(0, 0, 720, 503);
     }
     sceGuEnable(GU_SCISSOR_TEST);
     sceGuFinish();
@@ -3401,8 +3407,8 @@ void video_resolution_small()
     }
     else
     {
-      sceGuDispBuffer(720, 480, (void*)0, PSP_LINE_SIZE);
-      sceGuScissor(0, 0, 750, 480);
+      sceGuDispBuffer(720, 503, (void*)0, PSP_LINE_SIZE);
+      sceGuScissor(0, 0, 720, 503);
     }
     sceGuEnable(GU_SCISSOR_TEST);
     sceGuFinish();
@@ -3410,7 +3416,8 @@ void video_resolution_small()
   set_gba_resolution_small(screen_scale);
 }
 
-// VIDEO OUTの有効画素は690x460(GBAの2.85倍)?
+// VIDEO OUTの有効画素は674x450(GBAの2.85倍)?
+// インタレース時の有効画素は674x220
 const float screen_setting_small[3][3][10] =
 {
   { /* PSP display */
@@ -3419,13 +3426,16 @@ const float screen_setting_small[3][3][10] =
     { 0.25, 0.25,   0,   0, 0, GBA_SCREEN_WIDTH-0.25, GBA_SCREEN_HEIGHT-0.25, PSP_SCREEN_WIDTH    , PSP_SCREEN_HEIGHT    , 0} /* fullscreen */
   },
   { /* composite/S out */
-    {    0,    0, 240, 160, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160, 0},/* unscaled */
-    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 690                 , 460                  , 0},/* aspect */
-    {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 480                  , 0} /* fullscreen */
+//    {    0,    0, 240, 160, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160, 0},/* unscaled */
+//    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 690                 , 460                  , 0},/* aspect */
+//    {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 480                  , 0} /* fullscreen */
+      {    0,    0, 120,  40, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH*2+120, GBA_SCREEN_HEIGHT+40, 0},/* unscaled */
+      {    0,    0,  20,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 674+20              , 220+10                  , 0},/* aspect */
+      {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 240                  , 0} /* fullscreen */
   },
   { /* component/D out */
     {    0,    0, 240, 160, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160, 0},/* unscaled */
-    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 690                 , 460                  , 0},/* aspect */
+    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 675+15              , 450+10               , 0},/* aspect */
     {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 480                  , 0} /* fullscreen */
   }
 };
@@ -3444,6 +3454,17 @@ void set_gba_resolution_small(video_scale_type scale)
   screen_vertex[8] = screen_setting_small[video_out_mode][scale][8];
   screen_vertex[9] = screen_setting_small[video_out_mode][scale][9];
 
+  screen_vertex[10] = screen_setting_small[video_out_mode][scale][0];
+  screen_vertex[11] = screen_setting_small[video_out_mode][scale][1];
+  screen_vertex[12] = screen_setting_small[video_out_mode][scale][2];
+  screen_vertex[13] = screen_setting_small[video_out_mode][scale][3]+262;
+  screen_vertex[14] = screen_setting_small[video_out_mode][scale][4];
+  screen_vertex[15] = screen_setting_small[video_out_mode][scale][5];
+  screen_vertex[16] = screen_setting_small[video_out_mode][scale][6];
+  screen_vertex[17] = screen_setting_small[video_out_mode][scale][7];
+  screen_vertex[18] = screen_setting_small[video_out_mode][scale][8]+262;
+  screen_vertex[19] = screen_setting_small[video_out_mode][scale][9];
+
   sceGuStart(GU_DIRECT, display_list);
   if(screen_filter == filter_bilinear)
     sceGuTexFilter(GU_LINEAR, GU_LINEAR);
@@ -3461,12 +3482,12 @@ void clear_screen(u16 color)
   u32 i;
   u16 *src_ptr;
   
-  if(video_direct == 0)
-  {
-    i = 240 * 160;
-    src_ptr = screen_address;
-  }
-  else
+//  if(video_direct == 0)
+//  {
+//    i = 240 * 160;
+//    src_ptr = screen_address;
+//  }
+//  else
   {
     i = PSP_LINE_SIZE * 512;
     src_ptr = psp_gu_vram_base;
@@ -3536,6 +3557,7 @@ void set_video_out()
     {
       case 0: /* ケーブル未接続 */
         video_out_mode = 0;
+        pspDveMgrSetVideoOut(0, 0, 480, 272, 1, 15, 0);
         break;
 
       case 1: /* コンポジット or S端子 */
@@ -3544,8 +3566,10 @@ void set_video_out()
         break;
 
       case 2: /* コンポーネント or D端子 */
-        video_out_mode = 2;
-        pspDveMgrSetVideoOut(0, 0x1D2, 720, 480, 1, 15, 0);
+//        video_out_mode = 2;
+//        pspDveMgrSetVideoOut(0, 0x1D2, 720, 480, 1, 15, 0);
+        video_out_mode = 1;
+        pspDveMgrSetVideoOut(0, 0x1D1, 720, 503, 1, 15, 0);
         break;
     }
   }
