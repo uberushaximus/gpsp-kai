@@ -4,7 +4,7 @@
 -UnOfficial gpSP kai 3.2 test 06 svn rev.
 	ロシア語用のメッセージ/フォントファイルのファイル名を変更
 	中国語/韓国語のメッセージ/フォントファイルを追加(翻訳はしていません。内容は英語と同じです)
-	gpsp configとgame configを構造体に変更、ファイルにヘッダを追加
+	gpsp configとgame configを構造体に変更、cfgファイルにヘッダを追加
 
 
 
