@@ -58,4 +58,48 @@ gpsp.cfg
 		26word			video_interlace
 		27word			video_ratio
 
-	ヘッダ	'gpSP'
+	ヘッダ 
+		'gpSP'をASCIIコードで格納
+		0x50527067
+		(リトルエンディアンなので、変数には'PSpg'として代入)
+
+	バージョン番号
+		バージョン番号を0x10000倍して格納
+		V1.0では0x00010000
+
+	screen_scale
+		画面の拡大モードの設定値
+		enum値 video_scale_typeを格納
+		unscaled			拡大無し 3:2 モード
+		scaled_aspect	拡大有り 3:2 モード
+		fullscreen			フル画面 モード
+
+	screen_filter
+		フィルターの設定値
+		enum値 video_filter_typeを格納
+		filter_nearest		フィルター無し
+		filter_bilinear		リニアフィルター
+
+	enable_audio
+		サウンドのon/off設定
+		0		サウンド 無し
+		1		サウンド 有り
+
+	audio_buffer_size_number
+		オーディオバッファのサイズ設定値
+		0(最小)～10(最大)
+		実際は音の遅れをどこまで許容するかの設定値
+
+	update_backup_flag
+
+
+	enable_analog
+
+	analog_sensitivity_level
+
+	gamepad_config_map[16]
+
+	video_interlace
+
+	video_ratio
+	

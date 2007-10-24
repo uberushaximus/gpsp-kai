@@ -449,6 +449,7 @@ u32 gbc_sound_envelope_volume_table[16] =
     FIXED_DIV(15, 15, 14) };
 
 volatile /*static*/ u32 gbc_sound_buffer_index = 0;
+
 u32 gbc_sound_last_cpu_ticks = 0;
 u32 gbc_sound_partial_ticks = 0;
 

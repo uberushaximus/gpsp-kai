@@ -96,6 +96,7 @@ typedef enum
   }                                                                           \
 
 // タイマーの値の調整
+// TODO:調整必要
 #define ADJUST_SOUND_BUFFER(timer_number, channel)                            \
   if(timer[timer_number].direct_sound_channels & (0x01 << channel))           \
   {                                                                           \
