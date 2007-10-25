@@ -98,9 +98,10 @@ static u32 video_direct = 0;
 
 #define GBA_BUFFER_SIZE (240*160*2)
 #define PSP_DISPLAY_BUFFER_SIZE (PSP_LINE_SIZE * 512 * 2)
-// フレームバッファ 512*272*16bit + 240*160*16bit*2 0x04000000~0x04069800 422kb
+// フレームバッファ 768*512*16bit + 240*160*16bit*2 + 480*272*16bit 0x04000000~0x04125400 1173kb
 static u16 *screen_texture = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
 u16 *screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
+static u16 *menu_screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2);
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
