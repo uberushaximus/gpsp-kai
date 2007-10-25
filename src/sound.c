@@ -732,6 +732,7 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
     }
   }
 
+// サウンドデータが一定以下になるまで、エミュレータを停止
 void synchronize_sound()
 {
   while(CHECK_BUFFER() >= audio_buffer_size) // TODO:調整必要

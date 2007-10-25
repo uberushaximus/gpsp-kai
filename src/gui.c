@@ -1114,12 +1114,6 @@ u32 menu(u16 *original_screen)
 
   void submenu_main()
   {
-//    strncpy(print_buffer, gamepak_filename, 80);
-//    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 10);
-//    sprintf(print_buffer, "%s  %s  %s", gamepak_title,
-//     gamepak_code, gamepak_maker);
-//    PRINT_STRING_BG(print_buffer, COLOR_ROM_INFO, COLOR_BG, 10, 20);
-
     get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
   }
 
@@ -1287,29 +1281,22 @@ u32 menu(u16 *original_screen)
 
   MAKE_MENU(analog_config, submenu_analog, NULL);
 
+  /*--------------------------------------------------------
+     メイン オプション
+  --------------------------------------------------------*/
   MENU_OPTION_TYPE main_options[] =
   {
-    SUBMENU_OPTION(&graphics_sound_menu, msg[MSG_MAIN_MENU_0], msg[MSG_MAIN_MENU_HELP_0], 0), 
-
-    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_1], 2),
-
-    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_2], 3),
-
-    SUBMENU_OPTION(&savestate_menu, msg[MSG_MAIN_MENU_3], msg[MSG_MAIN_MENU_HELP_3], 4),
-
-    SUBMENU_OPTION(&gamepad_config_menu, msg[MSG_MAIN_MENU_4], msg[MSG_MAIN_MENU_HELP_4], 6),
-
-    SUBMENU_OPTION(&analog_config_menu, msg[MSG_MAIN_MENU_5], msg[MSG_MAIN_MENU_HELP_5], 7),
-
-    SUBMENU_OPTION(&cheats_misc_menu, msg[MSG_MAIN_MENU_6], msg[MSG_MAIN_MENU_HELP_6], 9),
-
-    ACTION_OPTION(menu_load, NULL, msg[MSG_MAIN_MENU_7], msg[MSG_MAIN_MENU_HELP_7], 11),
-
-    ACTION_OPTION(menu_restart, NULL, msg[MSG_MAIN_MENU_8], msg[MSG_MAIN_MENU_HELP_8], 12), 
-
-    ACTION_OPTION(menu_exit, NULL, msg[MSG_MAIN_MENU_9], msg[MSG_MAIN_MENU_HELP_9], 13), 
-
-    ACTION_OPTION(menu_quit, NULL, msg[MSG_MAIN_MENU_10], msg[MSG_MAIN_MENU_HELP_10], 15) 
+    SUBMENU_OPTION(&graphics_sound_menu, msg[MSG_MAIN_MENU_0], msg[MSG_MAIN_MENU_HELP_0], 0),                                         /*  0行目 */
+    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_1], 2),  /*  2行目 */
+    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_2], 3),  /*  3行目 */
+    SUBMENU_OPTION(&savestate_menu, msg[MSG_MAIN_MENU_3], msg[MSG_MAIN_MENU_HELP_3], 4),                                              /*  4行目 */
+    SUBMENU_OPTION(&gamepad_config_menu, msg[MSG_MAIN_MENU_4], msg[MSG_MAIN_MENU_HELP_4], 6),                                         /*  6行目 */
+    SUBMENU_OPTION(&analog_config_menu, msg[MSG_MAIN_MENU_5], msg[MSG_MAIN_MENU_HELP_5], 7),                                          /*  7行目 */
+    SUBMENU_OPTION(&cheats_misc_menu, msg[MSG_MAIN_MENU_6], msg[MSG_MAIN_MENU_HELP_6], 9),                                            /*  9行目 */
+    ACTION_OPTION(menu_load, NULL, msg[MSG_MAIN_MENU_7], msg[MSG_MAIN_MENU_HELP_7], 11),                                              /* 11行目 */
+    ACTION_OPTION(menu_restart, NULL, msg[MSG_MAIN_MENU_8], msg[MSG_MAIN_MENU_HELP_8], 12),                                           /* 12行目 */
+    ACTION_OPTION(menu_exit, NULL, msg[MSG_MAIN_MENU_9], msg[MSG_MAIN_MENU_HELP_9], 13),                                              /* 13行目 */
+    ACTION_OPTION(menu_quit, NULL, msg[MSG_MAIN_MENU_10], msg[MSG_MAIN_MENU_HELP_10], 15)                                             /* 15行目 */
   };
 
   MAKE_MENU(main, submenu_main, NULL);
@@ -1501,7 +1488,10 @@ u32 menu(u16 *original_screen)
   }  // end while
 
 // menu終了時の処理
-  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0xF3F9) != 0);
+  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0x1F3F9) != 0)
+  {
+    sceKernelDelayThread(10);
+  }
 
 //  set_gba_resolution(screen_scale);
   video_resolution_small();

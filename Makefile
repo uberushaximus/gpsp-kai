@@ -4,9 +4,9 @@
 
 # Global definitions
 
-clean: dvemgr homehookprx gpsp
+clean: systembuttons_prx dvemgr homehookprx gpsp
 
-all: dvemgr homehookprx main
+all: systembuttons_prx dvemgr homehookprx main
 
 dvemgr:
 	make -C ./prx/dvemgr/
@@ -16,3 +16,6 @@ main:
 
 homehookprx:
 	make -C ./prx/homehookprx/
+
+systembuttons_prx:
+	make -C ./prx/systembuttons_prx/
