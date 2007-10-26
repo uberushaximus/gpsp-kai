@@ -301,56 +301,11 @@ static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *
  --------------------------------------------------------*/
 
 u32 pspSdkLoadAdhocModules(void)
-  {
-
-#ifndef USER_MODE
-  u32 modID;
-
-    modID = pspSdkLoadStartModule("flash0:/kd/ifhandle.prx", PSP_MEMORY_PARTITION_KERNEL);
-    if (modID < 0)
-      return modID;
-
-    modID = pspSdkLoadStartModule("flash0:/kd/memab.prx", PSP_MEMORY_PARTITION_KERNEL);
-    if (modID < 0)
-      return modID;
-
-    modID = pspSdkLoadStartModule("flash0:/kd/pspnet_adhoc_auth.prx", PSP_MEMORY_PARTITION_KERNEL);
-    if (modID < 0)
-      return modID;
-
-    modID = pspSdkLoadStartModule("flash0:/kd/pspnet.prx", PSP_MEMORY_PARTITION_USER);
-    if (modID < 0)
-      return modID;
-    else
-      pspSdkFixupImports(modID);
-
-    modID = pspSdkLoadStartModule("flash0:/kd/pspnet_adhoc.prx", PSP_MEMORY_PARTITION_USER);
-    if (modID < 0)
-      return modID;
-    else
-      pspSdkFixupImports(modID);
-
-    modID = pspSdkLoadStartModule("flash0:/kd/pspnet_adhocctl.prx", PSP_MEMORY_PARTITION_USER);
-    if (modID < 0)
-      return modID;
-    else
-      pspSdkFixupImports(modID);
-
-    modID = pspSdkLoadStartModule("flash0:/kd/pspnet_adhoc_matching.prx", PSP_MEMORY_PARTITION_USER);
-    if (modID < 0)
-      return modID;
-    else
-      pspSdkFixupImports(modID);
-
-    sceKernelDcacheWritebackAll();
-    sceKernelIcacheInvalidateAll();
-#else
+{
   sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
   sceUtilityLoadNetModule(PSP_NET_MODULE_ADHOC);
-#endif
-
-    return 0;
-  }
+  return 0;
+}
 
 /*--------------------------------------------------------
  初期化

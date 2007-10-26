@@ -3393,12 +3393,12 @@ void init_memory()
   map_null(write, 0x8000000, 0xE000000);
   map_null(write, 0xE000000, 0x10000000);
 
-  memset(io_registers, 0, 0x8000);
-  memset(oam_ram, 0, 0x400);
-  memset(palette_ram, 0, 0x400);
-  memset(iwram, 0, 0x10000);
-  memset(ewram, 0, 0x80000);
-  memset(vram, 0, 0x18000);
+  memset(io_registers, 0, sizeof(io_registers));
+  memset(oam_ram, 0, sizeof(oam_ram));
+  memset(palette_ram, 0, sizeof(palette_ram));
+  memset(iwram, 0, sizeof(iwram));
+  memset(ewram, 0, sizeof(ewram));
+  memset(vram, 0, sizeof(vram));
 
   io_registers[REG_DISPCNT] = 0x80;
   io_registers[REG_P1] = 0x3FF;

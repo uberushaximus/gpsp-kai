@@ -3323,9 +3323,9 @@ void init_video()
   GE_CMD(NOP, 0);
 }
 
-u32 screen_scale = scaled_aspect;
-u32 current_scale = scaled_aspect;
-u32 screen_filter = filter_bilinear;
+//u32 screen_scale = scaled_aspect;
+//u32 current_scale = scaled_aspect;
+//u32 screen_filter = filter_bilinear;
 
 void flip_screen()
 {
@@ -3390,7 +3390,7 @@ void video_resolution_small()
 {
   if(video_direct != 0)
   {
-    set_gba_resolution_small(screen_scale);
+    set_gba_resolution_small(gpsp_config.screen_scale);
     video_direct = 0;
     screen_address = screen_texture;
     screen_flip = 0;
@@ -3414,7 +3414,7 @@ void video_resolution_small()
     sceGuEnable(GU_SCISSOR_TEST);
     sceGuFinish();
   }
-  set_gba_resolution_small(screen_scale);
+  set_gba_resolution_small(gpsp_config.screen_scale);
 }
 
 // VIDEO OUTの有効画素は674x450(GBAの2.85倍)?
@@ -3443,7 +3443,7 @@ const float screen_setting_small[3][3][10] =
 
 void set_gba_resolution_small(video_scale_type scale)
 {
-  screen_scale = scale;
+//  gpsp_config.screen_scale = scale;
   screen_vertex[0] = screen_setting_small[video_out_mode][scale][0];
   screen_vertex[1] = screen_setting_small[video_out_mode][scale][1];
   screen_vertex[2] = screen_setting_small[video_out_mode][scale][2];
@@ -3467,7 +3467,7 @@ void set_gba_resolution_small(video_scale_type scale)
   screen_vertex[19] = screen_setting_small[video_out_mode][scale][9];
 
   sceGuStart(GU_DIRECT, display_list);
-  if(screen_filter == filter_bilinear)
+  if(gpsp_config.screen_filter == filter_bilinear)
     sceGuTexFilter(GU_LINEAR, GU_LINEAR);
   else
     sceGuTexFilter(GU_NEAREST, GU_NEAREST);

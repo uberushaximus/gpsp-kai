@@ -29,7 +29,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(128*3);
+PSP_MAIN_THREAD_STACK_SIZE_KB(256);
 #else
 PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(0);
@@ -507,7 +507,7 @@ int user_main(SceSize argc, char *argv[])
       exit(-1);
     }
 
-//    set_gba_resolution(screen_scale);
+//    set_gba_resolution(gpsp_config.screen_scale);
     video_resolution_small();
 
     init_cpu();
@@ -532,7 +532,7 @@ int user_main(SceSize argc, char *argv[])
         quit();
       }
 
-//      set_gba_resolution(screen_scale);
+//      set_gba_resolution(gpsp_config.screen_scale);
       video_resolution_small();
 
       init_cpu();

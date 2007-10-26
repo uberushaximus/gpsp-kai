@@ -40,17 +40,9 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
-typedef struct
-{
-  u32 screen_scale;
-  u32 screen_filter;
-  u32 enable_audio;
-  u32 audio_buffer_size_number;
-  u32 update_backup_flag;
-  u32 enable_analog;
-  u32 analog_sensitivity_level;
-  u32 gamepad_config_map[16];
-} GPSP_CONFIG_V10;
+#define GPSP_CONFIG_VER 0x00010000
+#define GPSP_CONFIG_HEADER "gpSP"
+#define GPSP_CONFIG_HEADER_SIZE 4
 
 GPSP_CONFIG_V10 gpsp_config;
 
@@ -831,37 +823,25 @@ s32 load_config_file()
 
   if(FILE_CHECK_VALID(config_file))
   {
-    u32 file_size = file_length(config_path, config_file);
-
-    // Sanity check: File size must be the right size
-    if(file_size == (23 * 4))
+    u32 header, ver;
+    // ヘッダーのチェック
+    FILE_READ_VARIABLE(config_file, header);
+    if(strncmp((const char *)&header, GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE) != 0)
     {
-      u32 file_options[file_size / 4];
-      u32 i;
-      FILE_READ_ARRAY(config_file, file_options);
-
-      screen_scale = file_options[0] % 3;
-      screen_filter = file_options[1] % 2;
-      enable_audio = file_options[2] % 2;
-      audio_buffer_size_number = file_options[3] % 11;
-      update_backup_flag = file_options[4] % 2;
-      enable_analog = file_options[5] % 2;
-      analog_sensitivity_level = file_options[6] % 10;
-
-      // Sanity check: Make sure there's a MENU or FRAMESKIP
-      // key, if not assign to triangle
-
-      for(i = 0; i < 16; i++)
-      {
-        gamepad_config_map[i] = file_options[7 + i] % (BUTTON_ID_NONE + 1);
-      }
-
       FILE_CLOSE(config_file);
+      return -1;
     }
-
+    FILE_READ_VARIABLE(config_file, ver);
+    switch(ver)
+    {
+      case 0x10000: /* 1.0 */
+        FILE_READ_VARIABLE(config_file, gpsp_config);
+        break;
+    }
+    FILE_CLOSE(config_file);
     return 0;
   }
-
+  FILE_CLOSE(config_file);
   return -1;
 }
 
@@ -1174,9 +1154,9 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &screen_scale, 3, msg[MSG_G_S_MENU_HELP_0], 2),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 3, msg[MSG_G_S_MENU_HELP_0], 2),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 3),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 3),
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_2], frameskip_options, &game_config_frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
 
@@ -1184,9 +1164,9 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config_random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &gpsp_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
 
@@ -1488,12 +1468,13 @@ u32 menu(u16 *original_screen)
   }  // end while
 
 // menu終了時の処理
+  sceKernelDelayThread(10);
   while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0x1F3F9) != 0)
   {
     sceKernelDelayThread(10);
   }
 
-//  set_gba_resolution(screen_scale);
+//  set_gba_resolution(gpsp_config.screen_scale);
   video_resolution_small();
 
   game_config_clock_speed = (clock_speed_number + 1) * 333 / 10;
@@ -1771,39 +1752,22 @@ static s32 save_game_config_file()
 
 static s32 save_config_file()
 {
-  char config_path[512];
+  char config_path[MAX_PATH];
   FILE_ID config_file;
 
   sprintf(config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
-
   FILE_OPEN(config_file, config_path, WRITE);
 
   save_game_config_file();
 
   if(FILE_CHECK_VALID(config_file))
   {
-    u32 file_options[23];
-    u32 i;
-
-    file_options[0] = screen_scale;
-    file_options[1] = screen_filter;
-    file_options[2] = enable_audio;
-    file_options[3] = audio_buffer_size_number;
-    file_options[4] = update_backup_flag;
-    file_options[5] = enable_analog;
-    file_options[6] = analog_sensitivity_level;
-
-    for(i = 0; i < 16; i++)
-    {
-      file_options[7 + i] = gamepad_config_map[i];
-    }
-
-    FILE_WRITE_ARRAY(config_file, file_options);
+    FILE_WRITE(config_file, (int *)GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE);
+    FILE_WRITE(config_file, (int *)GPSP_CONFIG_VER, sizeof(u32));
+    FILE_WRITE_VARIABLE(config_file, gpsp_config);
     FILE_CLOSE(config_file);
-
     return 0;
   }
-
   return -1;
 }
 

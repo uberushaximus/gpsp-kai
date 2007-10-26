@@ -62,11 +62,7 @@
 #include <pspnet_adhocctl.h>
 #include <pspnet_adhocmatching.h>
 #include <pspwlan.h>
-#ifndef USER_MODE
-#include <psputilsforkernel.h>
-#else
 #include <psputility_netmodules.h>
-#endif
 #endif
 
 /******************************************************************************

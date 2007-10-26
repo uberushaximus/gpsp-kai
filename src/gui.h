@@ -25,6 +25,18 @@
 #ifndef GUI_H
 #define GUI_H
 
+typedef struct
+{
+  u32 screen_scale;
+  u32 screen_filter;
+  u32 enable_audio;
+  u32 audio_buffer_size_number;
+  u32 update_backup_flag;
+  u32 enable_analog;
+  u32 analog_sensitivity_level;
+  u32 gamepad_config_map[16];
+} GPSP_CONFIG_V10;
+
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/
@@ -34,6 +46,8 @@ extern char DEFAULT_SAVE_DIR[MAX_PATH];
 extern char DEFAULT_CFG_DIR[MAX_PATH];
 extern char DEFAULT_SS_DIR[MAX_PATH];
 extern char DEFAULT_CHEAT_DIR[MAX_PATH];
+
+extern GPSP_CONFIG_V10 gpsp_config;
 
 /******************************************************************************
  * グローバル関数の宣言
