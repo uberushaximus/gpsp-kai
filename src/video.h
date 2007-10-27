@@ -99,9 +99,7 @@ extern u32 screen_height;
 extern u32 screen_width2;
 extern u32 screen_height2;
 
-//extern u32 screen_scale;
-//extern u32 current_scale;
-//extern u32 screen_filter;
+extern u32 current_scale;
 
 extern u32 interlace_mode;
 

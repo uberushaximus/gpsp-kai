@@ -43,8 +43,12 @@
 #define GPSP_CONFIG_VER 0x00010000
 #define GPSP_CONFIG_HEADER "gpSP"
 #define GPSP_CONFIG_HEADER_SIZE 4
-
 GPSP_CONFIG_V10 gpsp_config;
+
+#define GAME_CONFIG_VER 0x00010000
+#define GAME_CONFIG_HEADER "gcfg"
+#define GAME_CONFIG_HEADER_SIZE 4
+GAME_CONFIG_V10 game_config;
 
 #ifdef USER_MODE
 #define VER_MODE "user"
@@ -74,9 +78,9 @@ GPSP_CONFIG_V10 gpsp_config;
   NULL,                                                                       \
   display_string,                                                             \
   gamepad_config_buttons,                                                     \
-  gamepad_config_map + gamepad_config_line_to_button[number],                 \
+  game_config.gamepad_config_map + gamepad_config_line_to_button[number],                 \
   sizeof(gamepad_config_buttons) / sizeof(gamepad_config_buttons[0]),         \
-  gamepad_help[gamepad_config_map[                                            \
+  gamepad_help[game_config.gamepad_config_map[                                            \
    gamepad_config_line_to_button[number]]],                                   \
   number,                                                                     \
   STRING_SELECTION_TYPE                                                     \
@@ -89,9 +93,9 @@ GPSP_CONFIG_V10 gpsp_config;
   NULL,                                                                       \
   display_string,                                                             \
   gamepad_config_buttons,                                                     \
-  gamepad_config_map + number + 12,                                           \
+  game_config.gamepad_config_map + number + 12,                                           \
   sizeof(gamepad_config_buttons) / sizeof(gamepad_config_buttons[0]),         \
-  gamepad_help[gamepad_config_map[number + 12]],                              \
+  gamepad_help[game_config.gamepad_config_map[number + 12]],                              \
   number + 2,                                                                 \
   STRING_SELECTION_TYPE                                                     \
 }                                                                             \
@@ -260,7 +264,6 @@ static char font8[MAX_PATH];
 static char font16[MAX_PATH];
 static u32 menu_cheat_page = 0;
 static u32 gamepad_config_line_to_button[] = { 8, 6, 7, 9, 1, 2, 3, 0, 4, 5, 11, 10 };
-static u32 clock_speed_number;
 
 /******************************************************************************
  * ローカル関数の宣言
@@ -732,6 +735,58 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
 }
 
 /*--------------------------------------------------------
+  game cfgの初期化
+--------------------------------------------------------*/
+void init_game_config()
+{
+  u32 i;
+  //標準のキーマップ
+  const u32 gamepad_config_map_init[MAX_GAMEPAD_CONFIG_MAP] =
+  {
+      BUTTON_ID_MENU,     /* △ */
+      BUTTON_ID_A,        /* ○ */
+      BUTTON_ID_B,        /* × */
+      BUTTON_ID_START,    /* □ */
+      BUTTON_ID_L,        /* [L] */
+      BUTTON_ID_R,        /* [R] */
+      BUTTON_ID_DOWN,     /* ↓ */
+      BUTTON_ID_LEFT,     /* ← */
+      BUTTON_ID_UP,       /* ↑ */
+      BUTTON_ID_RIGHT,    /* → */
+      BUTTON_ID_SELECT,   /* [SELECT] */
+      BUTTON_ID_START,    /* [START] */
+      BUTTON_ID_UP,       /* (↑) */
+      BUTTON_ID_DOWN,     /* (↓) */
+      BUTTON_ID_LEFT,     /* (←) */
+      BUTTON_ID_RIGHT     /* (→) */
+  };
+  game_config.frameskip_type = auto_frameskip;
+  game_config.frameskip_value = 9;
+  game_config.random_skip = 0;
+  game_config.clock_speed_number = 9;
+  game_config.audio_buffer_size_number = 1;
+  game_config.update_backup_flag = 0;
+  for(i = 0; i < MAX_CHEATS; i++)
+  {
+    game_config.cheats_flag[i].cheat_active = 0;
+    game_config.cheats_flag[i].cheat_name[0] = 0;
+  }
+  memcpy(game_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
+}
+
+/*--------------------------------------------------------
+  gpSP cfgの初期化
+--------------------------------------------------------*/
+void init_gpsp_config()
+{
+  gpsp_config.screen_scale = scaled_aspect;
+  gpsp_config.screen_filter = filter_bilinear;
+  gpsp_config.enable_audio = 1;
+  gpsp_config.enable_analog = 1;
+  gpsp_config.analog_sensitivity_level = 4;
+}
+
+/*--------------------------------------------------------
   game cfgファイルの読込み
 --------------------------------------------------------*/
 s32 load_game_config_file()
@@ -763,24 +818,10 @@ s32 load_game_config_file()
       u32 file_options[file_size / 4];
 
       FILE_READ_ARRAY(game_config_file, file_options);
-      game_config_frameskip_type = file_options[0] % 3;
-      game_config_frameskip_value = file_options[1];
-      game_config_random_skip = file_options[2] % 2;
-      game_config_clock_speed = file_options[3];
-
-      if(game_config_clock_speed > 333)
-        game_config_clock_speed = 333;
-
-      if(game_config_clock_speed < 33)
-        game_config_clock_speed = 33;
-
-      clock_speed_number = (game_config_clock_speed / 33) - 1;
-
-      if(game_config_frameskip_value < 0)
-        game_config_frameskip_value = 0;
-
-      if(game_config_frameskip_value > 99)
-        game_config_frameskip_value = 99;
+      game_config.frameskip_type = file_options[0] % 3;
+      game_config.frameskip_value = file_options[1] % 100;
+      game_config.random_skip = file_options[2] % 2;
+      game_config.clock_speed_number = file_options[3] % 10;
 
       for(i = 0; i < MAX_CHEATS; i++)
       {
@@ -794,18 +835,7 @@ s32 load_game_config_file()
   }
 
   // 読み込めなかった場合の初期値の設定
-  game_config_frameskip_type = auto_frameskip;
-  game_config_frameskip_value = 9;
-  game_config_random_skip = 0;
-  game_config_clock_speed = 333;
-  clock_speed_number = 9;
-
-  for(i = 0; i < MAX_CHEATS; i++)
-  {
-    game_config_cheats_flag[i].cheat_active = 0;
-    game_config_cheats_flag[i].cheat_name[0] = 0;
-  }
-
+  init_game_config();
   return -1;
 }
 
@@ -919,7 +949,6 @@ u32 menu(u16 *original_screen)
 
   void menu_quit()
   {
-//    game_config_clock_speed = (clock_speed_number + 1) * 33;
     save_config_file();
     quit();
   }
@@ -930,7 +959,7 @@ u32 menu(u16 *original_screen)
     char load_filename[MAX_FILE];
     save_game_config_file();
 
-//    if(!update_backup_flag)
+//    if(!gpsp_config.update_backup_flag)
       update_backup_force();
 
     if(load_file(file_ext, load_filename, DEFAULT_ROM_DIR) != -1)
@@ -1062,8 +1091,7 @@ u32 menu(u16 *original_screen)
   {
     clear_help();
     current_option->help_string =
-     gamepad_help[gamepad_config_map[
-     gamepad_config_line_to_button[current_option_num]]];
+     gamepad_help[game_config.gamepad_config_map[gamepad_config_line_to_button[current_option_num]]];
   }
 
   void submenu_graphics_sound()
@@ -1158,15 +1186,15 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 3),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_2], frameskip_options, &game_config_frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_2], frameskip_options, &game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
 
-    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_3], &game_config_frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
+    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_3], &game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config_random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &gpsp_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
 
@@ -1195,9 +1223,9 @@ u32 menu(u16 *original_screen)
 
     ACTION_OPTION(menu_load_cheat_file, NULL, msg[MSG_CHEAT_MENU_1], msg[MSG_CHEAT_MENU_HELP_1], 11), 
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 13), 
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 13), 
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 14), 
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 14), 
 
     SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16) 
   };
@@ -1254,8 +1282,8 @@ u32 menu(u16 *original_screen)
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_1], 1),
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_2], 2),
     ANALOG_CONFIG_OPTION(msg[MSG_A_PAD_MENU_3], 3),
-    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
-    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &gpsp_config.enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
+    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &gpsp_config.analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
     SUBMENU_OPTION(NULL, msg[MSG_A_PAD_MENU_6], msg[MSG_A_PAD_MENU_HELP_2], 11)
   };
 
@@ -1318,9 +1346,8 @@ u32 menu(u16 *original_screen)
 
   video_resolution_large();
 
-  clock_speed_number = (game_config_clock_speed / 33) - 1;
   // MENU時は222MHz
-  set_cpu_clock(222);
+  set_cpu_clock(10);
 
   if(gamepak_filename[0] == 0)
   {
@@ -1477,8 +1504,7 @@ u32 menu(u16 *original_screen)
 //  set_gba_resolution(gpsp_config.screen_scale);
   video_resolution_small();
 
-  game_config_clock_speed = (clock_speed_number + 1) * 333 / 10;
-  set_cpu_clock(game_config_clock_speed);
+  set_cpu_clock(game_config.clock_speed_number);
 
   pause_sound(0);
   real_frame_count = 0;
@@ -1731,10 +1757,10 @@ static s32 save_game_config_file()
   {
     u32 file_options[4 + MAX_CHEATS];
 
-    file_options[0] = game_config_frameskip_type;
-    file_options[1] = game_config_frameskip_value;
-    file_options[2] = game_config_random_skip;
-    file_options[3] = game_config_clock_speed;
+    file_options[0] = game_config.frameskip_type;
+    file_options[1] = game_config.frameskip_value;
+    file_options[2] = game_config.random_skip;
+    file_options[3] = game_config.clock_speed_number;
 
     for(i = 0; i < MAX_CHEATS; i++)
     {

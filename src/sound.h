@@ -298,9 +298,7 @@ extern u32 gbc_sound_master_volume;
 
 extern u32 sound_on;
 
-extern u32 enable_audio;
 extern u32 left_buffer;
-extern u32 audio_buffer_size_number;
 extern u32 gbc_sound_wave_volume[4];
 
 extern volatile u32 gbc_sound_buffer_index;

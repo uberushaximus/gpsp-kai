@@ -197,15 +197,15 @@ FILE *dbg_file;
 #include "input.h"
 #include "sound.h"
 #include "main.h"
-#include "gui.h"
-#include "zip.h"
 #include "cheats.h"
+#include "zip.h"
 #include "fbm_print.h"
 #include "message.h"
 #include "bios.h"
 #include "draw.h"
 #include "homehook.h"
 #include "dvemgr.h"
+#include "gui.h"
 
 #ifdef ADHOC_MODE
 #include "adhoc.h"

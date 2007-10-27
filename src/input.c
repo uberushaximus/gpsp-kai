@@ -50,30 +50,7 @@ void trigger_key(u32 key)
 
 u32 key = 0;
 
-u32 gamepad_config_map[16] =
-{
-  BUTTON_ID_MENU,
-  BUTTON_ID_A,
-  BUTTON_ID_B,
-  BUTTON_ID_START,
-  BUTTON_ID_L,
-  BUTTON_ID_R,
-  BUTTON_ID_DOWN,
-  BUTTON_ID_LEFT,
-  BUTTON_ID_UP,
-  BUTTON_ID_RIGHT,
-  BUTTON_ID_SELECT,
-  BUTTON_ID_START,
-  BUTTON_ID_UP,
-  BUTTON_ID_DOWN,
-  BUTTON_ID_LEFT,
-  BUTTON_ID_RIGHT
-};
-
 extern u32 psp_fps_debug;
-
-u32 enable_analog = 1;
-u32 analog_sensitivity_level = 4;
 
 #define PSP_ALL_BUTTON_MASK 0x1FFFF
 
@@ -105,7 +82,7 @@ gui_action_type get_gui_input()
   unsigned int ctrl_buttons;
   gui_action_type new_button = CURSOR_NONE;
   u32 new_buttons;
-  u32 analog_sensitivity = 92 - (analog_sensitivity_level * 4);
+  u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
 
   delay_us(25000);
@@ -117,7 +94,7 @@ gui_action_type get_gui_input()
   ctrl_buttons = readHomeButton();
   ctrl_data.Buttons |= ctrl_buttons;
 
-  if((enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  if((gpsp_config.enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
     if(ctrl_data.Lx < analog_sensitivity)
       ctrl_data.Buttons = PSP_CTRL_LEFT;
@@ -277,7 +254,7 @@ u32 update_input()
   u32 button_id = 0;
   u32 i;
   u32 new_key = 0;
-  u32 analog_sensitivity = 92 - (analog_sensitivity_level * 4);
+  u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
   sensorX = 0x800;
   sensorY = 0x800;
@@ -287,7 +264,7 @@ u32 update_input()
   ctrl_buttons = readHomeButton();
   buttons = ctrl_data.Buttons | ctrl_buttons;
 
-  if((enable_analog) && !(buttons & PSP_CTRL_HOLD))
+  if((gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
     sensorX = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
     sensorY = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
@@ -311,7 +288,7 @@ u32 update_input()
   for(i = 0; i < 16; i++)
   {
     if(non_repeat_buttons & button_psp_mask_to_config[i])
-      button_id = gamepad_config_map[i];
+      button_id = game_config.gamepad_config_map[i];
     // HOMEが押されたらMENUに移行
     if (buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
 
@@ -377,7 +354,7 @@ u32 update_input()
 
     if(buttons & button_psp_mask_to_config[i])
     {
-      button_id = gamepad_config_map[i];
+      button_id = game_config.gamepad_config_map[i];
       if(button_id < BUTTON_ID_MENU)
       {
         new_key |= button_id_to_gba_mask[button_id];

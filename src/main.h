@@ -168,9 +168,6 @@ typedef enum
 extern u32 cpu_ticks;
 extern u32 frame_ticks;
 extern u32 execute_cycles;
-extern u32 game_config_frameskip_type;
-extern u32 game_config_frameskip_value;
-extern u32 game_config_random_skip;
 extern u32 global_cycles_per_instruction;
 extern u32 synchronize_flag;
 extern u32 skip_next_frame_flag;
@@ -188,8 +185,6 @@ extern u32 flush_ram_count;
 extern u64 base_timestamp;
 extern char main_path[MAX_PATH];
 extern char rom_path[MAX_PATH];
-extern u32 update_backup_flag;
-extern u32 game_config_clock_speed;
 extern u32 hold_state;
 extern vu32 quit_flag;
 extern vu32 power_flag;

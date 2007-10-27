@@ -40,10 +40,6 @@ PSP_MAIN_THREAD_ATTR(0);
  ******************************************************************************/
 
 TIMER_TYPE timer[4];                              // タイマー
-u32 game_config_frameskip_type = auto_frameskip;  // フレームスキップの種類
-u32 game_config_frameskip_value = 9;              // フレームスキップ数
-u32 game_config_random_skip = 0;                  // ランダムスキップのon/off
-u32 game_config_clock_speed = 333;                // クロック数
 
 u32 global_cycles_per_instruction = 1;
 u64 frame_count_initial_timestamp = 0;
@@ -73,8 +69,6 @@ u32 cycle_dma16_words = 0;
 u32 cycle_dma32_words = 0;
 
 u32 synchronize_flag = 1;
-
-u32 update_backup_flag = 1;
 
 u32 hold_state = 0;
 
@@ -188,9 +182,12 @@ int SetupCallbacks();
 int user_main(SceSize args, char *argp[]);
 void psp_exception_handler(PspDebugRegBlock *regs);
 
-void set_cpu_clock(u32 clock)
+// クロックの変更
+void set_cpu_clock(u32 num)
 {
-  scePowerSetClockFrequency(clock, clock, clock / 2);
+  const u32 clock_speed_table[11] = {33, 66, 100, 133, 166, 200, 233, 266, 300, 333, 222};
+  num = num % 11;
+  scePowerSetClockFrequency(clock_speed_table[num], clock_speed_table[num], clock_speed_table[num] / 2);
 }
 
 void init_main()
@@ -292,7 +289,7 @@ int SetupCallbacks()
 
 void quit()
 {
-//  if(!update_backup_flag)
+//  if(!gpsp_config.update_backup_flag)
     update_backup_force();
 
   sound_exit();
@@ -542,7 +539,7 @@ int user_main(SceSize argc, char *argv[])
   }
 
   last_frame = 0;
-  set_cpu_clock(game_config_clock_speed);
+  set_cpu_clock(game_config.clock_speed_number);
 
   pause_sound(0);
   real_frame_count = 0;
@@ -692,7 +689,7 @@ u32 update_gba()
 
           update_screen();
 
-          if(update_backup_flag)
+          if(game_config.update_backup_flag)
             update_backup();
 
           process_cheats();
@@ -774,7 +771,7 @@ void synchronize()
   // 内部フレーム値の増加
   frames++;
 
-  switch(game_config_frameskip_type)
+  switch(game_config.frameskip_type)
   {
   // オートフレームスキップ時
     case auto_frameskip:
@@ -783,7 +780,7 @@ void synchronize()
       // 内部フレーム数に遅れが出ている場合
       if(real_frame_count > virtual_frame_count)
       {
-        if(num_skipped_frames < game_config_frameskip_value)  // スキップしたフレームが設定より小さい
+        if(num_skipped_frames < game_config.frameskip_value)  // スキップしたフレームが設定より小さい
         {
           // 次のフレームはスキップ
           skip_next_frame_flag = 1;
@@ -830,10 +827,10 @@ void synchronize()
     case manual_frameskip:
       virtual_frame_count++;
       // フレームスキップ数増加
-      num_skipped_frames = (num_skipped_frames + 1) % (game_config_frameskip_value + 1);
-      if(game_config_random_skip)
+      num_skipped_frames = (num_skipped_frames + 1) % (game_config.frameskip_value + 1);
+      if(game_config.random_skip)
       {
-        if(num_skipped_frames != (rand() % (game_config_frameskip_value + 1)))
+        if(num_skipped_frames != (rand() % (game_config.frameskip_value + 1)))
           skip_next_frame_flag = 1;
         else
           frames_drawn_count++;

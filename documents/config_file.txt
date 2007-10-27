@@ -88,18 +88,59 @@ gpsp.cfg
 	audio_buffer_size_number
 		オーディオバッファのサイズ設定値
 		0(最小)～10(最大)
-		実際は音の遅れをどこまで許容するかの設定値
+		※実際は音の遅れをどこまで許容するかの設定値
 
 	update_backup_flag
-
+		メモリースティックへのバックアップファイルの更新設定値
+		0		終了時/新規ROMロード時に更新
+		1		常に更新かつ終了時/新規ROMロード時に更新
+		※常に更新の場合、頻繁にバックアップを更新するROMにて速度低下/ノイズの増加等の不具合を引き起こす
+		※強制電源断/フリーズ以外では問題ないので、終了時更新がお勧め
 
 	enable_analog
+		アナログパッドの有効/無効の切替
 
 	analog_sensitivity_level
+		アナログパッドの感度の調整
 
 	gamepad_config_map[16]
+		キーコンフィグの設定
 
 	video_interlace
 
 	video_ratio
 	
+ROMファイル名.cfg
+	ROMファイルごとの設定ファイル
+	存在しない場合、自動で作成される
+	内容は以下
+		1word			ヘッダ
+		2word			バージョン番号
+		3word			frameskip_type
+		4word			frameskip_value
+		5word			random_skip
+		6word			clock_speed
+		7~36word		cheat_flag[30]
+
+	ヘッダ 
+		'gcfg'をASCIIコードで格納
+		0x
+
+	バージョン番号
+		バージョン番号を0x10000倍して格納
+		V1.0では0x00010000
+
+	frameskip_type
+		フレームスキップの種類
+
+	frameskip_value
+		フレームスキップの値
+
+	random_skip
+		ランダムスキップの設定値
+
+	clock_speed
+		CPUのクロック値
+
+	cheat_flag[30]
+		チートのON/OFFフラグ

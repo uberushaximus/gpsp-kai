@@ -25,17 +25,28 @@
 #ifndef GUI_H
 #define GUI_H
 
+#define MAX_GAMEPAD_CONFIG_MAP 16
+
 typedef struct
 {
   u32 screen_scale;
   u32 screen_filter;
   u32 enable_audio;
-  u32 audio_buffer_size_number;
-  u32 update_backup_flag;
   u32 enable_analog;
   u32 analog_sensitivity_level;
-  u32 gamepad_config_map[16];
 } GPSP_CONFIG_V10;
+
+typedef struct
+{
+  u32 frameskip_type;
+  u32 frameskip_value;
+  u32 random_skip;
+  u32 clock_speed_number;
+  u32 audio_buffer_size_number;
+  u32 update_backup_flag;
+  CHEAT_TYPE cheats_flag[MAX_CHEATS];
+  u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
+} GAME_CONFIG_V10;
 
 /******************************************************************************
  * グローバル変数の宣言
@@ -48,6 +59,7 @@ extern char DEFAULT_SS_DIR[MAX_PATH];
 extern char DEFAULT_CHEAT_DIR[MAX_PATH];
 
 extern GPSP_CONFIG_V10 gpsp_config;
+extern GAME_CONFIG_V10 game_config;
 
 /******************************************************************************
  * グローバル関数の宣言

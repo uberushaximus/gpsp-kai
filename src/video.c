@@ -3323,9 +3323,7 @@ void init_video()
   GE_CMD(NOP, 0);
 }
 
-//u32 screen_scale = scaled_aspect;
-//u32 current_scale = scaled_aspect;
-//u32 screen_filter = filter_bilinear;
+u32 current_scale = scaled_aspect;
 
 void flip_screen()
 {
