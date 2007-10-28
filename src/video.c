@@ -104,6 +104,15 @@ u32 screen_height = 160;
 u32 screen_width2 = 240 / 2;
 u32 screen_height2 = 160 / 2;
 
+static const ScePspIMatrix4 dither_matrix =
+{
+  // Bayer dither
+  {  0,  8,  2, 10 },
+  { 12,  4, 14,  6 },
+  {  3, 11,  1,  9 },
+  { 15,  7, 13,  5 }
+};
+
 //#define PSP_ALL_BUTTON_MASK 0xFFFF
 
 #define GE_CMD_FBP    0x9C
@@ -3223,8 +3232,6 @@ u32 screen_flip = 0;
 u32 frame_to_render;
 
 u32 video_out_mode;
-u32 interlace_mode;
-u32 aspect_ratio;
 
 void update_screen()
 {
@@ -3272,6 +3279,9 @@ void init_video()
   sceGuFrontFace(GU_CW);
   sceGuDisable(GU_BLEND);
 
+  sceGuSetDither(&dither_matrix);
+  sceGuEnable(GU_DITHER);
+
   sceGuFinish();
   sceGuSync(0, 0);
 
@@ -3295,6 +3305,16 @@ void init_video()
   screen_vertex[7] = (float)(PSP_SCREEN_WIDTH - 0.0);
   screen_vertex[8] = (float)(PSP_SCREEN_HEIGHT - 0.0);
   screen_vertex[9] = (float)0.0;
+  screen_vertex[10] = (float)0.0;
+  screen_vertex[11] = (float)0.0;
+  screen_vertex[12] = (float)0.0;
+  screen_vertex[13] = (float)0.0;
+  screen_vertex[14] = (float)0.0;
+  screen_vertex[15] = (float)0.0;
+  screen_vertex[16] = (float)0.0;
+  screen_vertex[17] = (float)0.0;
+  screen_vertex[18] = (float)0.0;
+  screen_vertex[19] = (float)0.0;
 
   // Set framebuffer to PSP VRAM
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
@@ -3320,7 +3340,7 @@ void init_video()
   GE_CMD(VADDR, ((u32)screen_vertex & 0x00FFFFFF));
   // Primitive kick: render sprite (primitive 6), 2 vertices
   GE_CMD(PRIM, (6 << 16) | 2);
-//  GE_CMD(PRIM, (6 << 16) | 2);
+  GE_CMD(PRIM, (6 << 16) | 2);
   // Done with commands
   GE_CMD(FINISH, 0);
   // Raise signal interrupt

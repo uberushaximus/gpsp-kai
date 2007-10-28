@@ -116,8 +116,6 @@ extern u32 screen_height2;
 
 extern u32 current_scale;
 
-extern u32 interlace_mode;
-
 void set_gba_resolution_small(video_scale_type scale);
 void set_gba_resolution_large();
 

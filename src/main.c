@@ -670,7 +670,8 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
 
-          if(interlace_mode == INTERLACE)
+          //TODO
+          if(gpsp_config.screen_interlace == INTERLACE)
           {
             synchronize();
           }
