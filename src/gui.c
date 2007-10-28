@@ -795,46 +795,37 @@ s32 load_game_config_file()
   char game_config_filename[MAX_FILE];
   char game_config_path[MAX_PATH];
   FILE_ID game_config_file;
-  u32 i;
+  u32 header, ver;
 
   change_ext(gamepak_filename, game_config_filename, ".cfg");
 
-  if (DEFAULT_CFG_DIR != NULL) {
+  if (DEFAULT_CFG_DIR != NULL)
     sprintf(game_config_path, "%s/%s", DEFAULT_CFG_DIR, game_config_filename);
-  }
   else
-  {
     strcpy(game_config_path, game_config_filename);
-  }
 
   FILE_OPEN(game_config_file, game_config_path, READ);
 
   if(FILE_CHECK_VALID(game_config_file))
   {
-    u32 file_size = file_length(game_config_path, game_config_file);
-
-    // Sanity check: File size must be the right size
-    if(file_size == ((4 + MAX_CHEATS) * 4))
+    // ヘッダーのチェック
+    FILE_READ_VARIABLE(game_config_file, header);
+    if(strncmp((const char *)&header, GAME_CONFIG_HEADER, GAME_CONFIG_HEADER_SIZE) != 0)
     {
-      u32 file_options[file_size / 4];
-
-      FILE_READ_ARRAY(game_config_file, file_options);
-      game_config.frameskip_type = file_options[0] % 3;
-      game_config.frameskip_value = file_options[1] % 100;
-      game_config.random_skip = file_options[2] % 2;
-      game_config.clock_speed_number = file_options[3] % 10;
-
-      for(i = 0; i < MAX_CHEATS; i++)
-      {
-        game_config_cheats_flag[i].cheat_active = file_options[4 + i] % 2;
-        game_config_cheats_flag[i].cheat_name[0] = 0;
-      }
-
       FILE_CLOSE(game_config_file);
-      return 0;
+      return -1;
     }
+    FILE_READ_VARIABLE(game_config_file, ver);
+    switch(ver)
+    {
+      case 0x10000: /* 1.0 */
+        FILE_READ_VARIABLE(game_config_file, game_config);
+        break;
+    }
+    FILE_CLOSE(game_config_file);
+    return 0;
   }
-
+  FILE_CLOSE(game_config_file);
   // 読み込めなかった場合の初期値の設定
   init_game_config();
   return -1;
@@ -845,37 +836,40 @@ s32 load_game_config_file()
 --------------------------------------------------------*/
 s32 load_config_file()
 {
-  char config_path[MAX_PATH];
-  FILE_ID config_file;
+  char gpsp_config_path[MAX_PATH];
+  FILE_ID gpsp_config_file;
+  u32 header, ver;
 
-  sprintf(config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
+  sprintf(gpsp_config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
 
-  FILE_OPEN(config_file, config_path, READ);
+  FILE_OPEN(gpsp_config_file, gpsp_config_path, READ);
 
-  if(FILE_CHECK_VALID(config_file))
+  if(FILE_CHECK_VALID(gpsp_config_file))
   {
-    u32 header, ver;
     // ヘッダーのチェック
-    FILE_READ_VARIABLE(config_file, header);
+    FILE_READ_VARIABLE(gpsp_config_file, header);
     if(strncmp((const char *)&header, GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE) != 0)
     {
-      FILE_CLOSE(config_file);
+      FILE_CLOSE(gpsp_config_file);
       return -1;
     }
-    FILE_READ_VARIABLE(config_file, ver);
+    FILE_READ_VARIABLE(gpsp_config_file, ver);
     switch(ver)
     {
       case 0x10000: /* 1.0 */
-        FILE_READ_VARIABLE(config_file, gpsp_config);
+        FILE_READ_VARIABLE(gpsp_config_file, gpsp_config);
         break;
     }
-    FILE_CLOSE(config_file);
+    FILE_CLOSE(gpsp_config_file);
     return 0;
   }
-  FILE_CLOSE(config_file);
+  FILE_CLOSE(gpsp_config_file);
   return -1;
 }
 
+/*--------------------------------------------------------
+  メニューの表示
+--------------------------------------------------------*/
 u32 menu(u16 *original_screen)
 {
   gui_action_type gui_action;
@@ -1348,9 +1342,9 @@ u32 menu(u16 *original_screen)
 
   // ここからメニューの処理
 
-  button_up_wait();
-
   pause_sound(1);
+
+  button_up_wait();
 
   video_resolution_large();
 
