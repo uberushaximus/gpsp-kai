@@ -747,7 +747,7 @@ void init_game_config()
       BUTTON_ID_MENU,     /* △ */
       BUTTON_ID_A,        /* ○ */
       BUTTON_ID_B,        /* × */
-      BUTTON_ID_START,    /* □ */
+      BUTTON_ID_FPS,      /* □ */
       BUTTON_ID_L,        /* [L] */
       BUTTON_ID_R,        /* [R] */
       BUTTON_ID_DOWN,     /* ↓ */
@@ -765,7 +765,7 @@ void init_game_config()
   game_config.frameskip_value = 9;
   game_config.random_skip = 0;
   game_config.clock_speed_number = 9;
-  game_config.audio_buffer_size_number = 1;
+  game_config.audio_buffer_size_number = 2;
   game_config.update_backup_flag = 0;
   for(i = 0; i < MAX_CHEATS; i++)
   {
@@ -863,6 +863,8 @@ s32 load_config_file()
     FILE_CLOSE(gpsp_config_file);
     return 0;
   }
+  // 読み込めなかった場合の初期値の設定
+  init_gpsp_config();
   FILE_CLOSE(gpsp_config_file);
   return -1;
 }
@@ -1742,67 +1744,59 @@ void get_savestate_filename_noshot(u32 slot, char *name_buffer)
 /******************************************************************************
  * ローカル関数の定義
  ******************************************************************************/
+/*--------------------------------------------------------
+  game cfgファイルの書込
+--------------------------------------------------------*/
 static s32 save_game_config_file()
 {
   char game_config_filename[MAX_FILE];
   char game_config_path[MAX_PATH];
-  u32 i;
   FILE_ID game_config_file;
 
   if(gamepak_filename[0] == 0) return -1;
 
   change_ext(gamepak_filename, game_config_filename, ".cfg");
 
-  if (DEFAULT_CFG_DIR != NULL) {
+  if (DEFAULT_CFG_DIR != NULL)
     sprintf(game_config_path, "%s/%s", DEFAULT_CFG_DIR, game_config_filename);
-  }
   else
-  {
     strcpy(game_config_path, game_config_filename);
-  }
 
   FILE_OPEN(game_config_file, game_config_path, WRITE);
   if(FILE_CHECK_VALID(game_config_file))
   {
-    u32 file_options[4 + MAX_CHEATS];
-
-    file_options[0] = game_config.frameskip_type;
-    file_options[1] = game_config.frameskip_value;
-    file_options[2] = game_config.random_skip;
-    file_options[3] = game_config.clock_speed_number;
-
-    for(i = 0; i < MAX_CHEATS; i++)
-    {
-      file_options[4 + i] = game_config_cheats_flag[i].cheat_active;
-    }
-
-    FILE_WRITE_ARRAY(game_config_file, file_options);
+    FILE_WRITE(game_config_file, (int *)GAME_CONFIG_HEADER, GAME_CONFIG_HEADER_SIZE);
+    FILE_WRITE(game_config_file, (int *)GAME_CONFIG_VER, sizeof(u32));
+    FILE_WRITE_VARIABLE(game_config_file, game_config);
     FILE_CLOSE(game_config_file);
-
     return 0;
   }
-
+  FILE_CLOSE(game_config_file);
   return -1;
 }
 
+/*--------------------------------------------------------
+  gpSP cfgファイルの書込
+--------------------------------------------------------*/
 static s32 save_config_file()
 {
-  char config_path[MAX_PATH];
-  FILE_ID config_file;
+  char gpsp_config_path[MAX_PATH];
+  FILE_ID gpsp_config_file;
 
-  sprintf(config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
-  FILE_OPEN(config_file, config_path, WRITE);
+  sprintf(gpsp_config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
+  FILE_OPEN(gpsp_config_file, gpsp_config_path, WRITE);
 
   save_game_config_file();
 
-  if(FILE_CHECK_VALID(config_file))
+  if(FILE_CHECK_VALID(gpsp_config_file))
   {
-    FILE_WRITE(config_file, (int *)GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE);
-    FILE_WRITE(config_file, (int *)GPSP_CONFIG_VER, sizeof(u32));
-    FILE_WRITE_VARIABLE(config_file, gpsp_config);
-    FILE_CLOSE(config_file);
+    FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE);
+    FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_VER, sizeof(u32));
+    FILE_WRITE_VARIABLE(gpsp_config_file, gpsp_config);
+    FILE_CLOSE(gpsp_config_file);
     return 0;
   }
+  FILE_CLOSE(gpsp_config_file);
   return -1;
 }
 
