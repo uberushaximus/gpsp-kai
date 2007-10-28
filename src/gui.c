@@ -278,6 +278,7 @@ static void print_status(u32 mode);
 static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u16 day, u16 wday, u16 hour, u16 min, u16 sec, u32 msec);
 static void save_ss_bmp(u16 *image);
 void _flush_cache();
+void button_up_wait();
 
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 {
@@ -892,7 +893,7 @@ u32 menu(u16 *original_screen)
   MENU_OPTION_TYPE *display_option;
   u32 current_option_num;
 
-  SceCtrlData ctrl_data;
+//  SceCtrlData ctrl_data; /* TODO */
 
   auto void choose_menu();
   auto void clear_help();
@@ -941,6 +942,7 @@ u32 menu(u16 *original_screen)
     msg[MSG_PAD_MENU_CFG_HELP_21]
   };
 
+  //ローカル関数の定義
   void menu_exit()
   {
     if(!first_load)
@@ -1342,6 +1344,12 @@ u32 menu(u16 *original_screen)
     }
   }
 
+  // ローカル関数の定義 終了
+
+  // ここからメニューの処理
+
+  button_up_wait();
+
   pause_sound(1);
 
   video_resolution_large();
@@ -1495,11 +1503,7 @@ u32 menu(u16 *original_screen)
   }  // end while
 
 // menu終了時の処理
-  sceKernelDelayThread(10);
-  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0x1F3F9) != 0)
-  {
-    sceKernelDelayThread(10);
-  }
+  button_up_wait();
 
 //  set_gba_resolution(gpsp_config.screen_scale);
   video_resolution_small();
@@ -1511,6 +1515,17 @@ u32 menu(u16 *original_screen)
   virtual_frame_count = 0;
   return return_value;
 }
+
+void button_up_wait()
+{
+  SceCtrlData ctrl_data;
+  sceKernelDelayThread(10);
+  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons | readHomeButton()) & 0x1F3F9) != 0)
+  {
+    sceKernelDelayThread(10);
+  }
+}
+
 
 u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 {
