@@ -98,7 +98,7 @@ UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
 
 main.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
 cpu.o						: ${COMMON_FILE} ${SRC_DIR}cpu.c
-video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c
+video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c ${SRC_DIR}video_setting.h
 memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
 sound.o					: ${COMMON_FILE} ${SRC_DIR}sound.c
 input.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c

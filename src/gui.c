@@ -782,6 +782,8 @@ void init_gpsp_config()
 {
   gpsp_config.screen_scale = scaled_aspect;
   gpsp_config.screen_filter = filter_bilinear;
+  gpsp_config.screen_ratio = R4_3;
+  gpsp_config.screen_interlace = NON_INTERLACE;
   gpsp_config.enable_audio = 1;
   gpsp_config.enable_analog = 1;
   gpsp_config.analog_sensitivity_level = 4;

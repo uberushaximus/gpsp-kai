@@ -24,8 +24,8 @@
 #define FONT_WIDTH  6
 #define FONT_HEIGHT 10
 
-#define INTERLACE     0
-#define NON_INTERLACE 1
+#define NON_INTERLACE 0
+#define INTERLACE     1
 #define R4_3  0
 #define R16_9 1
 
@@ -91,6 +91,21 @@ typedef enum
   filter_nearest,
   filter_bilinear
 } video_filter_type;
+
+typedef struct
+{
+  float u;
+  float v;
+  float x;
+  float y;
+  float z;
+} VERTEX;
+
+typedef struct
+{
+  VERTEX p1;
+  VERTEX p2;
+} SPRITE;
 
 extern u16 *screen_address;
 extern u32 screen_pitch;

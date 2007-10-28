@@ -20,6 +20,7 @@
  */
 
 #include "common.h"
+#include "video_setting.h"
 
 #define render_scanline_dest_normal         u16
 #define render_scanline_dest_alpha          u32
@@ -82,11 +83,6 @@ void render_scanline_window_tile(u16 *scanline, u32 dispcnt);
 void render_scanline_window_bitmap(u16 *scanline, u32 dispcnt);
 void set_video_out();
 
-#define GBA_SCREEN_WIDTH 240
-#define GBA_SCREEN_HEIGHT 160
-
-#define PSP_SCREEN_WIDTH 480
-#define PSP_SCREEN_HEIGHT 272
 #define PSP_LINE_SIZE 768
 
 static float *screen_vertex = (float *)0x441FC100;
@@ -3236,9 +3232,19 @@ void update_screen()
     flip_screen();
 }
 
+#define SCREEN_INTERLACE 2  /* on/off */
+#define SCREEN_RATIO     2  /* 4:3/16:9 */
+#define SCREEN_OUT       3  /* PSP/analog/digital */
+#define SCREEN_SCALE     5  /* non-scale/scale/full/etc 1/etc 2 */
+#define SCREEN_SPRITE    2  /* スプライトの数 */
+
+SPRITE screen_setting_small[SCREEN_OUT][SCREEN_RATIO][SCREEN_INTERLACE][SCREEN_SCALE][SCREEN_SPRITE];
+
 void init_video()
 {
   video_out_mode = 0;
+
+  memcpy(screen_setting_small, screen_setting_small_init, sizeof(screen_setting_small));
 
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
@@ -3415,54 +3421,32 @@ void video_resolution_small()
   set_gba_resolution_small(gpsp_config.screen_scale);
 }
 
-// VIDEO OUTの有効画素は674x450(GBAの2.85倍)?
-// インタレース時の有効画素は674x220
-const float screen_setting_small[3][3][10] =
-{
-  { /* PSP display */
-    {    0,    0, 120,  56, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+120, GBA_SCREEN_HEIGHT+ 56, 0},/* unscaled */
-    { 0.25, 0.25,  36,   0, 0, GBA_SCREEN_WIDTH-0.25, GBA_SCREEN_HEIGHT-0.25, 408+36              , PSP_SCREEN_HEIGHT    , 0},/* aspect */
-    { 0.25, 0.25,   0,   0, 0, GBA_SCREEN_WIDTH-0.25, GBA_SCREEN_HEIGHT-0.25, PSP_SCREEN_WIDTH    , PSP_SCREEN_HEIGHT    , 0} /* fullscreen */
-  },
-  { /* composite/S out */
-//    {    0,    0, 240, 160, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160, 0},/* unscaled */
-//    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 690                 , 460                  , 0},/* aspect */
-//    {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 480                  , 0} /* fullscreen */
-      {    0,    0, 120,  40, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH*2+120, GBA_SCREEN_HEIGHT+40, 0},/* unscaled */
-      {    0,    0,  20,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 674+20              , 220+10                  , 0},/* aspect */
-      {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 240                  , 0} /* fullscreen */
-  },
-  { /* component/D out */
-    {    0,    0, 240, 160, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160, 0},/* unscaled */
-    {    0,    0,  15,  10, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 675+15              , 450+10               , 0},/* aspect */
-    {    0,    0,   0,   0, 0, GBA_SCREEN_WIDTH     , GBA_SCREEN_HEIGHT     , 720                 , 480                  , 0} /* fullscreen */
-  }
-};
-
 void set_gba_resolution_small(video_scale_type scale)
 {
 //  gpsp_config.screen_scale = scale;
-  screen_vertex[0] = screen_setting_small[video_out_mode][scale][0];
-  screen_vertex[1] = screen_setting_small[video_out_mode][scale][1];
-  screen_vertex[2] = screen_setting_small[video_out_mode][scale][2];
-  screen_vertex[3] = screen_setting_small[video_out_mode][scale][3];
-  screen_vertex[4] = screen_setting_small[video_out_mode][scale][4];
-  screen_vertex[5] = screen_setting_small[video_out_mode][scale][5];
-  screen_vertex[6] = screen_setting_small[video_out_mode][scale][6];
-  screen_vertex[7] = screen_setting_small[video_out_mode][scale][7];
-  screen_vertex[8] = screen_setting_small[video_out_mode][scale][8];
-  screen_vertex[9] = screen_setting_small[video_out_mode][scale][9];
+  ;
 
-  screen_vertex[10] = screen_setting_small[video_out_mode][scale][0];
-  screen_vertex[11] = screen_setting_small[video_out_mode][scale][1];
-  screen_vertex[12] = screen_setting_small[video_out_mode][scale][2];
-  screen_vertex[13] = screen_setting_small[video_out_mode][scale][3]+262;
-  screen_vertex[14] = screen_setting_small[video_out_mode][scale][4];
-  screen_vertex[15] = screen_setting_small[video_out_mode][scale][5];
-  screen_vertex[16] = screen_setting_small[video_out_mode][scale][6];
-  screen_vertex[17] = screen_setting_small[video_out_mode][scale][7];
-  screen_vertex[18] = screen_setting_small[video_out_mode][scale][8]+262;
-  screen_vertex[19] = screen_setting_small[video_out_mode][scale][9];
+  screen_vertex[0] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p1.u;
+  screen_vertex[1] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p1.v;
+  screen_vertex[2] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p1.x;
+  screen_vertex[3] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p1.y;
+  screen_vertex[4] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p1.z;
+  screen_vertex[5] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p2.u;
+  screen_vertex[6] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p2.v;
+  screen_vertex[7] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p2.x;
+  screen_vertex[8] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p2.y;
+  screen_vertex[9] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][0].p2.z;
+
+  screen_vertex[10] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p1.u;
+  screen_vertex[11] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p1.v;
+  screen_vertex[12] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p1.x;
+  screen_vertex[13] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p1.y;
+  screen_vertex[14] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p1.z;
+  screen_vertex[15] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p2.u;
+  screen_vertex[16] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p2.v;
+  screen_vertex[17] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p2.x;
+  screen_vertex[18] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p2.y;
+  screen_vertex[19] = screen_setting_small[video_out_mode][gpsp_config.screen_ratio][gpsp_config.screen_interlace][scale][1].p2.z;
 
   sceGuStart(GU_DIRECT, display_list);
   if(gpsp_config.screen_filter == filter_bilinear)
@@ -3565,10 +3549,8 @@ void set_video_out()
         break;
 
       case 2: /* コンポーネント or D端子 */
-//        video_out_mode = 2;
-//        pspDveMgrSetVideoOut(0, 0x1D2, 720, 480, 1, 15, 0);
-        video_out_mode = 1;
-        pspDveMgrSetVideoOut(0, 0x1D1, 720, 503, 1, 15, 0);
+        video_out_mode = 2;
+        pspDveMgrSetVideoOut(0, 0x1D2, 720, 480, 1, 15, 0);
         break;
     }
   }
