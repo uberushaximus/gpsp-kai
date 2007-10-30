@@ -107,9 +107,7 @@ static u32 video_draw_frame = FRAME_MENU;
 #define GBA_BUFFER_SIZE (240*160*2)
 #define MENU_BUFFER_SIZE (480*272*2)
 #define PSP_DISPLAY_BUFFER_SIZE (768 * 512 * 2)
-static u16 *game_screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
 u16 *screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
-static u16 *menu_screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2);
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
@@ -119,7 +117,7 @@ u32 screen_height2 = 160 / 2;
 static u32 flip_address[2][2] = 
 {
   { 0x04000000+ PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
-  { 0x04000000+ PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + MENU_BUFFER_SIZE }
+  { 0x04000000+ PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
 static const ScePspIMatrix4 dither_matrix =
@@ -3330,8 +3328,8 @@ void init_video()
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
   GE_CMD(FBW, (((u32)psp_gu_vram_base & 0xFF000000) >> 8) | 768);
   // Set texture 0 to the screen texture
-  GE_CMD(TBP0, ((u32)game_screen_address & 0x00FFFFFF));
-  GE_CMD(TBW0, (((u32)game_screen_address & 0xFF000000) >> 8) | GBA_SCREEN_WIDTH);
+  GE_CMD(TBP0, ((u32)flip_address[0][0] & 0x00FFFFFF));
+  GE_CMD(TBW0, (((u32)flip_address[0][0] & 0xFF000000) >> 8) | GBA_SCREEN_WIDTH);
   // Set the texture size to 256 by 256 (2^8 by 2^8)
   GE_CMD(TSIZE0, (9 << 8) | 9);
   // Flush the texture cache
