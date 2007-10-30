@@ -32,6 +32,7 @@
 #define GET_R16(color) (color & 0x1f)
 #define GET_G16(color) ((color >> 5) & 0x1f)
 #define GET_B16(color) ((color >> 10)& 0x1f)
+#define COLOR32(red, green, blue) (0xff000000 | ((blue & 0xff) << 16) | ((green & 0xff) << 8) | (red & 0xff))
 
 #define PRINT_STRING_EXT_BG(str, fg_color, bg_color, x, y, dest_ptr, pitch, pad)                                       \
   fbm_printVRAM( dest_ptr, pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)              \
@@ -57,6 +58,7 @@
 #define COLOR_PROGRESS_BAR  COLOR16(15, 15, 15)
 #define COLOR_ERROR         COLOR16(31,  0,  0)
 #define COLOR_BG            COLOR16(2,  4,  10)
+#define COLOR_BG32          COLOR32(2*8,  4*8,  10*8)
 #define COLOR_ROM_INFO      COLOR16(22, 18, 26)
 #define COLOR_ACTIVE_ITEM   COLOR16(31, 31, 31)
 #define COLOR_INACTIVE_ITEM COLOR16(13, 20, 18)

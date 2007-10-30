@@ -24,6 +24,9 @@
 #define FONT_WIDTH  6
 #define FONT_HEIGHT 10
 
+#define FRAME_GAME 0
+#define FRAME_MENU 1
+
 #define NON_INTERLACE 0
 #define INTERLACE     1
 #define R4_3  0
@@ -32,8 +35,7 @@
 void update_scanline();
 void update_screen();
 void init_video();
-void video_resolution_large();
-void video_resolution_small();
+void video_resolution(u32 mode);
 void print_string(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y);
 void print_string_pad(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, u32 pad);
 void print_string_ext(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad);
@@ -94,18 +96,68 @@ typedef enum
 
 typedef struct
 {
-  float u;
-  float v;
-  float x;
-  float y;
-  float z;
-} VERTEX;
+  float u1;
+  float v1;
+  float x1;
+  float y1;
+  float z1;
+  float u2;
+  float v2;
+  float x2;
+  float y2;
+  float z2;
+} SPRITE;
 
 typedef struct
 {
-  VERTEX p1;
-  VERTEX p2;
-} SPRITE;
+  int u;
+  int displaymode;
+  int width;
+  int height;
+  int x;
+  int y;
+  int z;
+} VIDEO_OUT_PARAMETER;
+
+typedef struct
+{
+  int x;
+  int y;
+  int width;
+  int height;
+} VIEW_PORT;
+
+typedef struct
+{
+  u32 x;
+  u32 y;
+} TEXTURE_BIT;
+
+
+typedef struct
+{
+  u32 pitch;
+  u32 width;
+  u32 height;
+} TEXTURE_SIZE;
+
+typedef struct
+{
+  u32 width;
+  u32 height;
+} SCREEN_SIZE;
+
+typedef struct
+{
+  VIDEO_OUT_PARAMETER video_out;  /* pspDveMgrSetVideoOut のパラメータ */
+  int filter[2];                  /* MENU表示時のフィルタ */
+  TEXTURE_SIZE texture_size;      /* テクスチャサイズ */
+  TEXTURE_BIT texture_bit;        /* テクスチャの縦横のビット数 */
+  SCREEN_SIZE screen_size;        /* 表示バッファのサイズ */
+  VIEW_PORT view;                 /* 表示範囲 */
+  SPRITE screen_setting_1;        /* スプライトデータ 1 */
+  SPRITE screen_setting_2;        /* スプライトデータ 1 */
+} SCREEN_PARAMATER;
 
 extern u16 *screen_address;
 extern u32 screen_pitch;
@@ -116,7 +168,9 @@ extern u32 screen_height2;
 
 extern u32 current_scale;
 
-void set_gba_resolution_small(video_scale_type scale);
-void set_gba_resolution_large();
+void set_resolution_parameter_game(video_scale_type scale);
+void set_resolution_parameter_menu();
+
+
 
 #endif

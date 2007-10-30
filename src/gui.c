@@ -40,14 +40,16 @@
 #define PAGE_SCROLL_NUM 5
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
-#define GPSP_CONFIG_VER 0x00010000
-#define GPSP_CONFIG_HEADER "gpSP"
-#define GPSP_CONFIG_HEADER_SIZE 4
+// ヘッダーは4byteまで
+#define GPSP_CONFIG_HEADER     "gpSP"
+#define GPSP_CONFIG_HEADER_U32 0x50537067
+const u32 gpsp_config_ver = 0x00010000;
 GPSP_CONFIG_V10 gpsp_config;
 
-#define GAME_CONFIG_VER 0x00010000
-#define GAME_CONFIG_HEADER "gcfg"
-#define GAME_CONFIG_HEADER_SIZE 4
+// ヘッダーは4byteまで
+#define GAME_CONFIG_HEADER     "gcfg"
+#define GAME_CONFIG_HEADER_U32 0x67666367
+const u32 game_config_ver = 0x00010000;
 GAME_CONFIG_V10 game_config;
 
 #ifdef USER_MODE
@@ -812,9 +814,11 @@ s32 load_game_config_file()
   {
     // ヘッダーのチェック
     FILE_READ_VARIABLE(game_config_file, header);
-    if(strncmp((const char *)&header, GAME_CONFIG_HEADER, GAME_CONFIG_HEADER_SIZE) != 0)
+    if(header != GAME_CONFIG_HEADER_U32)
     {
       FILE_CLOSE(game_config_file);
+      // 読み込めなかった場合の初期値の設定
+      init_game_config();
       return -1;
     }
     FILE_READ_VARIABLE(game_config_file, ver);
@@ -850,9 +854,11 @@ s32 load_config_file()
   {
     // ヘッダーのチェック
     FILE_READ_VARIABLE(gpsp_config_file, header);
-    if(strncmp((const char *)&header, GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE) != 0)
+    if(header != GPSP_CONFIG_HEADER_U32)
     {
       FILE_CLOSE(gpsp_config_file);
+      // 読み込めなかった場合の初期値の設定
+      init_gpsp_config();
       return -1;
     }
     FILE_READ_VARIABLE(gpsp_config_file, ver);
@@ -1350,7 +1356,7 @@ u32 menu(u16 *original_screen)
 
   button_up_wait();
 
-  video_resolution_large();
+  video_resolution(FRAME_MENU);
 
   // MENU時は222MHz
   set_cpu_clock(10);
@@ -1504,7 +1510,7 @@ u32 menu(u16 *original_screen)
   button_up_wait();
 
 //  set_gba_resolution(gpsp_config.screen_scale);
-  video_resolution_small();
+  video_resolution(FRAME_GAME);
 
   set_cpu_clock(game_config.clock_speed_number);
 
@@ -1767,8 +1773,8 @@ static s32 save_game_config_file()
   FILE_OPEN(game_config_file, game_config_path, WRITE);
   if(FILE_CHECK_VALID(game_config_file))
   {
-    FILE_WRITE(game_config_file, (int *)GAME_CONFIG_HEADER, GAME_CONFIG_HEADER_SIZE);
-    FILE_WRITE(game_config_file, (int *)GAME_CONFIG_VER, sizeof(u32));
+    FILE_WRITE(game_config_file, (int *)GAME_CONFIG_HEADER, sizeof(u32));
+    FILE_WRITE_VARIABLE(game_config_file, game_config_ver);
     FILE_WRITE_VARIABLE(game_config_file, game_config);
     FILE_CLOSE(game_config_file);
     return 0;
@@ -1792,8 +1798,8 @@ static s32 save_config_file()
 
   if(FILE_CHECK_VALID(gpsp_config_file))
   {
-    FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_HEADER, GPSP_CONFIG_HEADER_SIZE);
-    FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_VER, sizeof(u32));
+    FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_HEADER, sizeof(u32));
+    FILE_WRITE_VARIABLE(gpsp_config_file, gpsp_config_ver);
     FILE_WRITE_VARIABLE(gpsp_config_file, gpsp_config);
     FILE_CLOSE(gpsp_config_file);
     return 0;

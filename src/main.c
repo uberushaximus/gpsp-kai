@@ -414,7 +414,7 @@ int user_main(SceSize argc, char *argv[])
   init_video();
   init_input();
 
-  video_resolution_large();
+  video_resolution(FRAME_MENU);
   clear_screen(COLOR_BG);
 
   // 初期設定用のプログレスバー
@@ -505,7 +505,7 @@ int user_main(SceSize argc, char *argv[])
     }
 
 //    set_gba_resolution(gpsp_config.screen_scale);
-    video_resolution_small();
+    video_resolution(FRAME_GAME);
 
     init_cpu();
     init_memory();
@@ -523,14 +523,14 @@ int user_main(SceSize argc, char *argv[])
     {
       if(load_gamepak(load_filename) == -1)
       {
-        video_resolution_large();
+        video_resolution(FRAME_MENU);
         printf("Failed to load gamepak %s, exiting.\n", load_filename);
         delay_us(5000000);
         quit();
       }
 
 //      set_gba_resolution(gpsp_config.screen_scale);
-      video_resolution_small();
+      video_resolution(FRAME_GAME);
 
       init_cpu();
       init_memory();
@@ -671,7 +671,7 @@ u32 update_gba()
           update_gbc_sound(cpu_ticks);
 
           //TODO
-          if(gpsp_config.screen_interlace == INTERLACE)
+          if(gpsp_config.screen_interlace == NON_INTERLACE)
           {
             synchronize();
           }
