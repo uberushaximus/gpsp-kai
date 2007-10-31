@@ -17,15 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-#ifndef VIDEO_SETTINGH
-#define VIDEO_SETTINGH
-
-#define GBA_SCREEN_WIDTH 240
-#define GBA_SCREEN_HEIGHT 160
-
-#define PSP_SCREEN_WIDTH 480
-#define PSP_SCREEN_HEIGHT 272
+#include "common.h"
 
 // VIDEO OUTの有効画素は674x450(GBAの2.85倍)?
 // インタレース時の有効画素は674x220?
@@ -39,8 +31,10 @@ const SCREEN_PARAMATER screen_paramater_psp_menu_init =
     { 9, 9 },
     { 480, 272 },
     { 0, 0, 480, 272 },
-    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH/2, PSP_SCREEN_HEIGHT, 0 },
+    { 0, 0+272, PSP_SCREEN_WIDTH/2, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT+272, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
+//    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
+//    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
@@ -693,5 +687,3 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
     { 0, 0, 240, 160+262, 0, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_SCREEN_WIDTH+240, GBA_SCREEN_HEIGHT+160+262, 0 },
   },
 };
-
-#endif

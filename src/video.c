@@ -20,7 +20,6 @@
  */
 
 #include "common.h"
-#include "video_setting.h"
 
 #define render_scanline_dest_normal         u16
 #define render_scanline_dest_alpha          u32
@@ -100,7 +99,7 @@ static u32 *ge_cmd = (u32 *)0x441FC000;
 static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
-static u32 video_draw_frame = FRAME_MENU;
+static u32 video_draw_frame = FRAME_GAME;
 
 // フレームバッファ [表示用]768*512*16bit(0xC0000/768kb) + [GBA]240*160*16bit*2(0x25800/150kb) + [MENU]480*272*16bit*2(0x7F800/510kb) 0x04000000~0x04165000 1428kb
 // かなり贅沢な使い方をしてます。GBA用とMENU用は共有できるかもしれない。
@@ -108,6 +107,7 @@ static u32 video_draw_frame = FRAME_MENU;
 #define MENU_BUFFER_SIZE (480*272*2)
 #define PSP_DISPLAY_BUFFER_SIZE (768 * 512 * 2)
 u16 *screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
+u32 screen_offset_address = PSP_DISPLAY_BUFFER_SIZE;
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
@@ -116,8 +116,14 @@ u32 screen_height2 = 160 / 2;
 
 static u32 flip_address[2][2] = 
 {
-  { 0x04000000+ PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
-  { 0x04000000+ PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
+  { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
+  { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
+};
+
+static u32 flip_offset_address[2][2] = 
+{
+  { PSP_DISPLAY_BUFFER_SIZE, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
+  { PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
 static const ScePspIMatrix4 dither_matrix =
@@ -3277,6 +3283,7 @@ SCREEN_PARAMATER *current_paramater;
 void init_video()
 {
   video_out_mode = 0;
+  video_draw_frame = FRAME_GAME;
 
   // パラメータの初期化
   load_video_setting();
@@ -3361,33 +3368,28 @@ u32 current_scale = scaled_aspect;
 
 void flip_screen()
 {
-  if(video_draw_frame == FRAME_GAME)
-  {
-    u32 *old_ge_cmd_ptr = ge_cmd_ptr;
-    sceKernelDcacheWritebackAll();
+  u32 *old_ge_cmd_ptr = ge_cmd_ptr;
+  sceKernelDcacheWritebackAll();
 
-    // Render the current screen
-    ge_cmd_ptr = ge_cmd + 2;
-    GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
-    GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) | screen_pitch);
-    GE_CMD(TSIZE0, (current_paramater->texture_bit.x << 8) | current_paramater->texture_bit.y);
-    ge_cmd_ptr = old_ge_cmd_ptr;
+  // Render the current screen
+  ge_cmd_ptr = ge_cmd + 2;
+  GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
+  GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) | screen_pitch);
+  GE_CMD(TSIZE0, (current_paramater->texture_bit.x << 8) | current_paramater->texture_bit.y);
+  ge_cmd_ptr = old_ge_cmd_ptr;
 
-    // Flip to the next screen
-    screen_flip ^= 1;
+  // Flip to the next screen
+  screen_flip ^= 1;
+  screen_address = (u16 *)flip_address[video_draw_frame][screen_flip];
+  screen_offset_address = flip_offset_address[video_draw_frame][screen_flip];
 
-    screen_address = (u16 *)flip_address[video_draw_frame][screen_flip];
-
-    sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
-  }
+  sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
 }
 
 void video_resolution(u32 frame)
 {
   if(video_draw_frame != frame)
   {
-    clear_screen(0x0000);
-
     video_out_mode = pspDveMgrCheckVideoOut();
 
     switch(((video_out_mode << 1) | frame))
@@ -3434,6 +3436,10 @@ void video_resolution(u32 frame)
     sceGuFinish();
 
     flip_screen();
+    clear_screen(0x0000);
+    flip_screen();
+    clear_screen(0x0000);
+
   }
 }
 
@@ -3445,13 +3451,25 @@ void clear_screen(u16 color)
   // GUコマンドの開始
   sceGuStart(GU_DIRECT, display_list);
   // 書込バッファの設定
-  sceGuDrawBufferList(GU_PSM_5551, (void*)(PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2), MENU_LINE_SIZE);
+  sceGuDrawBufferList(GU_PSM_5551, (void *)screen_offset_address, screen_pitch);
   // 書込範囲の設定
   sceGuScissor(0, 0, 480, 272);
   // クリアする色の設定 ※パレット設定にかかわらず32bitで指定する
   sceGuClearColor(color32);
   // 画面クリア
   sceGuClear(GU_COLOR_BUFFER_BIT);
+  // GUコマンドの終了
+  sceGuFinish();
+  // GUコマンドの実行
+  sceGuSync(0, 0);
+
+  sceDisplayWaitVblankStart();
+
+  sceGuStart(GU_DIRECT, display_list);
+  // 書込バッファの設定
+  sceGuDrawBufferList(GU_PSM_5551, (void *)0, FRAME_LINE_SIZE);
+  // 書込範囲の設定
+  sceGuScissor(0, 0, 480, 272);
   // GUコマンドの終了
   sceGuFinish();
   // GUコマンドの実行

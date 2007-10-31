@@ -24,6 +24,12 @@
 #define FONT_WIDTH  6
 #define FONT_HEIGHT 10
 
+#define GBA_SCREEN_WIDTH 240
+#define GBA_SCREEN_HEIGHT 160
+
+#define PSP_SCREEN_WIDTH 480
+#define PSP_SCREEN_HEIGHT 272
+
 #define FRAME_GAME 0
 #define FRAME_MENU 1
 
@@ -167,6 +173,15 @@ extern u32 screen_width2;
 extern u32 screen_height2;
 
 extern u32 current_scale;
+
+extern const SCREEN_PARAMATER screen_paramater_psp_game_init[];
+extern const SCREEN_PARAMATER screen_paramater_psp_menu_init;
+
+extern const SCREEN_PARAMATER screen_paramater_analog_game_init[];
+extern const SCREEN_PARAMATER screen_paramater_analog_menu_init[];
+
+extern const SCREEN_PARAMATER screen_paramater_digital_game_init[];
+extern const SCREEN_PARAMATER screen_paramater_digital_menu_init[];
 
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();

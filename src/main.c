@@ -416,6 +416,8 @@ int user_main(SceSize argc, char *argv[])
 
   video_resolution(FRAME_MENU);
   clear_screen(COLOR_BG);
+  flip_screen();
+  clear_screen(COLOR_BG);
 
   // 初期設定用のプログレスバー
   init_progress(8, "");

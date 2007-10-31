@@ -466,8 +466,6 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
 
     while(repeat)
     {
-      flip_screen();
-
       print_status(1);
       PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
       PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
@@ -513,6 +511,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
       }
 
       gui_action = get_gui_input();
+      flip_screen();
 
       switch(gui_action)
       {
@@ -733,6 +732,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
 
   chdir(main_path);
 
+  flip_screen();
   clear_screen(COLOR_BG);
   return return_value;
 }
@@ -1322,6 +1322,7 @@ u32 menu(u16 *original_screen)
 
     clear_screen(COLOR_BG);
     blit_to_screen(original_screen, 240, 160, 230, 40);
+    flip_screen();
 
     current_menu = new_menu;
 

@@ -14,7 +14,7 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 #PSP_EBOOT_PIC1  = ../image/pic1.png 
 
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
-OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o
+OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o video_setting.o
 OBJS           += pspDveManager.o homehook.o
 
 ifeq ($(ADHOC_MODE), 1)
@@ -98,7 +98,7 @@ UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
 
 main.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
 cpu.o						: ${COMMON_FILE} ${SRC_DIR}cpu.c
-video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c ${SRC_DIR}video_setting.h
+video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c 
 memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
 sound.o					: ${COMMON_FILE} ${SRC_DIR}sound.c
 input.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c
@@ -111,7 +111,8 @@ fbm_print.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}fbm_print.c
 bios.o					: ${COMMON_FILE} ${SRC_DIR}bios.c ${SRC_DIR}bios.h
 draw.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}draw.c ${SRC_DIR}draw.h
 pspDveManager.o  : ${SRC_DIR}pspDveManager.S
-homehook.o			:	${SRC_DIR}homehook.S
+homehook.o			: ${SRC_DIR}homehook.S
+video_setting.o		: ${COMMON_FILE} ${SRC_DIR}video_setting.c
 
 ifdef ADHOC_MODE
 adhoc.o					: ${COMMON_FILE} ${SRC_DIR}adhoc.c ${SRC_DIR}adhoc.h
