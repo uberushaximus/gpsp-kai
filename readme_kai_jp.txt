@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 06 svn rev.
+-UnOfficial gpSP kai 3.2 test 06 svn rev.346
 	メッセージファイルの変更
 		ロシア語用のメッセージ/フォントファイルのファイル名を変更
 		中国語/韓国語のメッセージ/フォントファイルを追加(翻訳はしていません。内容は英語と同じです)
