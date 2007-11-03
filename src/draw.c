@@ -280,8 +280,6 @@ void show_progress(char *text)
 #define SCROLLBAR_LEN (SCROLLBAR_EY - SCROLLBAR_SY)
 #define SCROLLBAR_COLOR1 COLOR16( 0, 2, 8)
 #define SCROLLBAR_COLOR2 COLOR16(15,15,15)
-u32 old_scrollbar_sy = 0;
-u32 old_scrollbar_ey = 0;
 
 void scrollbar(u32 all,u32 view,u32 now)
 {
@@ -298,15 +296,9 @@ void scrollbar(u32 all,u32 view,u32 now)
   else
     scrollbar_ey = SCROLLBAR_LEN;
 
-  if ((scrollbar_sy != old_scrollbar_sy) || (scrollbar_ey != old_scrollbar_ey))
-  {
     box(SCROLLBAR_SX - 1, SCROLLBAR_SY - 1, SCROLLBAR_EX + 1, SCROLLBAR_EY + 1, COLOR_BLACK);
     boxfill(SCROLLBAR_SX, SCROLLBAR_SY, SCROLLBAR_EX, SCROLLBAR_EY, SCROLLBAR_COLOR1);
     boxfill(SCROLLBAR_SX, SCROLLBAR_SY + scrollbar_sy, SCROLLBAR_EX, SCROLLBAR_SY + scrollbar_ey, SCROLLBAR_COLOR2);
-  }
-
-  old_scrollbar_sy = scrollbar_sy;
-  old_scrollbar_ey = scrollbar_ey;
 }
 
 /******************************************************************************

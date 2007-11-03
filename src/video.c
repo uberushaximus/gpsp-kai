@@ -30,7 +30,7 @@
 #define render_scanline_dest_copy_tile      u16
 #define render_scanline_dest_copy_bitmap    u16
 
-static u32 __attribute__((aligned(32))) display_list[32];
+static u32 __attribute__((aligned(32))) display_list[128];
 
 void render_scanline_text_base_normal(u32 layer, u32 start, u32 end, void *scanline);
 void render_scanline_text_transparent_normal(u32 layer, u32 start, u32 end, void *scanline);
@@ -3439,7 +3439,6 @@ void video_resolution(u32 frame)
     clear_screen(0x0000);
     flip_screen();
     clear_screen(0x0000);
-
   }
 }
 
@@ -3453,7 +3452,7 @@ void clear_screen(u16 color)
   // 書込バッファの設定
   sceGuDrawBufferList(GU_PSM_5551, (void *)screen_offset_address, screen_pitch);
   // 書込範囲の設定
-  sceGuScissor(0, 0, 480, 272);
+  sceGuScissor(0, 0, current_paramater->texture_size.width, current_paramater->texture_size.height);
   // クリアする色の設定 ※パレット設定にかかわらず32bitで指定する
   sceGuClearColor(color32);
   // 画面クリア
@@ -3463,13 +3462,11 @@ void clear_screen(u16 color)
   // GUコマンドの実行
   sceGuSync(0, 0);
 
-  sceDisplayWaitVblankStart();
-
   sceGuStart(GU_DIRECT, display_list);
   // 書込バッファの設定
   sceGuDrawBufferList(GU_PSM_5551, (void *)0, FRAME_LINE_SIZE);
   // 書込範囲の設定
-  sceGuScissor(0, 0, 480, 272);
+  sceGuScissor(current_paramater->view.x, current_paramater->view.y, current_paramater->view.width, current_paramater->view.height);
   // GUコマンドの終了
   sceGuFinish();
   // GUコマンドの実行

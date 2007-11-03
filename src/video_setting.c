@@ -31,10 +31,8 @@ const SCREEN_PARAMATER screen_paramater_psp_menu_init =
     { 9, 9 },
     { 480, 272 },
     { 0, 0, 480, 272 },
-    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH/2, PSP_SCREEN_HEIGHT, 0 },
-    { 0, 0+272, PSP_SCREEN_WIDTH/2, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT+272, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
-//    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
-//    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =

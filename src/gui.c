@@ -109,7 +109,7 @@ GAME_CONFIG_V10 game_config;
   NULL,                                                                       \
   cheat_format_str[number],                                                   \
   enable_disable_options,                                                     \
-  &(game_config_cheats_flag[number].cheat_active),                                 \
+  &(game_config.cheats_flag[number].cheat_active),                                 \
   2,                                                                          \
   msg[MSG_CHEAT_MENU_HELP_0],                                                 \
   (number) % 10,                                                              \
@@ -281,6 +281,7 @@ static void get_timestamp_string(char *buffer, u16 msg_id, u16 year, u16 mon, u1
 static void save_ss_bmp(u16 *image);
 void _flush_cache();
 void button_up_wait();
+void init_gpsp_config();
 
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 {
@@ -461,57 +462,13 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
     if(num_files == 0)
       current_column = 1;
 
-    clear_screen(COLOR_BG);
+  clear_screen(COLOR_BG);
+  flip_screen();
+  clear_screen(COLOR_BG);
   {
-
     while(repeat)
     {
-      print_status(1);
-      PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
-      PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
-
-      scrollbar(num_files, FILE_LIST_ROWS, current_file_scroll_value);
-
-      for(i = 0, current_file_number = i + current_file_scroll_value;
-       i < (FILE_LIST_ROWS - CURRENT_DIR_ROWS); i++, current_file_number++)
-      {
-        if(current_file_number < num_files)
-        {
-          if((current_file_number == current_file_selection) &&
-           (current_column == 0))
-          {
-            PRINT_STRING_BG(file_list[current_file_number], COLOR_ACTIVE_ITEM,
-             COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
-          }
-          else
-          {
-            PRINT_STRING_BG(file_list[current_file_number], COLOR_INACTIVE_ITEM,
-             COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
-          }
-        }
-      }
-
-      for(i = 0, current_dir_number = i + current_dir_scroll_value;
-       i < (FILE_LIST_ROWS - CURRENT_DIR_ROWS); i++, current_dir_number++)
-      {
-        if(current_dir_number < num_dirs)
-        {
-          if((current_dir_number == current_dir_selection) &&
-           (current_column == 1))
-          {
-            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_ACTIVE_ITEM,
-             COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
-          }
-          else
-          {
-            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_INACTIVE_ITEM,
-             COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
-          }
-        }
-      }
-
       gui_action = get_gui_input();
-      flip_screen();
 
       switch(gui_action)
       {
@@ -580,8 +537,8 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
                 current_dir_selection += PAGE_SCROLL_NUM;
                 if(current_dir_in_scroll >= (FILE_LIST_ROWS - CURRENT_DIR_ROWS - PAGE_SCROLL_NUM))
                 {
-                clear_screen(COLOR_BG);
-                current_dir_scroll_value += PAGE_SCROLL_NUM;
+                  clear_screen(COLOR_BG);
+                  current_dir_scroll_value += PAGE_SCROLL_NUM;
                 }
                 else
                 {
@@ -715,6 +672,51 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
           ;
           break;
       }
+      print_status(1);
+      PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
+      PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
+
+      for(i = 0, current_file_number = i + current_file_scroll_value;
+       i < (FILE_LIST_ROWS - CURRENT_DIR_ROWS); i++, current_file_number++)
+      {
+        if(current_file_number < num_files)
+        {
+          if((current_file_number == current_file_selection) &&
+           (current_column == 0))
+          {
+            PRINT_STRING_BG(file_list[current_file_number], COLOR_ACTIVE_ITEM,
+             COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
+          }
+          else
+          {
+            PRINT_STRING_BG(file_list[current_file_number], COLOR_INACTIVE_ITEM,
+             COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
+          }
+        }
+      }
+
+      for(i = 0, current_dir_number = i + current_dir_scroll_value;
+       i < (FILE_LIST_ROWS - CURRENT_DIR_ROWS); i++, current_dir_number++)
+      {
+        if(current_dir_number < num_dirs)
+        {
+          if((current_dir_number == current_dir_selection) &&
+           (current_column == 1))
+          {
+            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_ACTIVE_ITEM,
+             COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
+          }
+          else
+          {
+            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_INACTIVE_ITEM,
+             COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
+          }
+        }
+      }
+      scrollbar(num_files, FILE_LIST_ROWS, current_file_scroll_value);
+
+      flip_screen();
+      clear_screen(COLOR_BG);
     }
   }
     for(i = 0; i < num_files; i++)
@@ -732,8 +734,8 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
 
   chdir(main_path);
 
-  flip_screen();
   clear_screen(COLOR_BG);
+  flip_screen();
   return return_value;
 }
 
@@ -1079,12 +1081,10 @@ u32 menu(u16 *original_screen)
         }
         else
         {
-          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats_flag[i].cheat_name);
+          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config.cheats_flag[i].cheat_name);
         }
       }
       choose_menu(current_menu);
-//      return_value = 1;
-//      repeat = 0;
 
     }
     else
@@ -1322,7 +1322,6 @@ u32 menu(u16 *original_screen)
 
     clear_screen(COLOR_BG);
     blit_to_screen(original_screen, 240, 160, 230, 40);
-    flip_screen();
 
     current_menu = new_menu;
 
@@ -1345,7 +1344,7 @@ u32 menu(u16 *original_screen)
     for(i = 0; i<10; i++)
     {
       cheats_misc_options[i].display_string = cheat_format_str[(10 * menu_cheat_page) + i];
-      cheats_misc_options[i].current_option = &(game_config_cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
+      cheats_misc_options[i].current_option = &(game_config.cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
     }
   }
 
@@ -1358,6 +1357,8 @@ u32 menu(u16 *original_screen)
   button_up_wait();
 
   video_resolution(FRAME_MENU);
+
+  clear_screen(COLOR_BG);
 
   // MENU時は222MHz
   set_cpu_clock(10);
@@ -1380,7 +1381,7 @@ u32 menu(u16 *original_screen)
     }
     else
     {
-      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config_cheats_flag[i].cheat_name);
+      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config.cheats_flag[i].cheat_name);
     }
   }
 
@@ -1393,6 +1394,7 @@ u32 menu(u16 *original_screen)
   {
 
     print_status(0);
+    blit_to_screen(original_screen, 240, 160, 230, 40);
 
     display_option = current_menu->options;
 
@@ -1504,7 +1506,10 @@ u32 menu(u16 *original_screen)
         ;
         break;
     }  // end swith
+    if(current_menu->init_function)
+     current_menu->init_function();
     flip_screen();
+    clear_screen(COLOR_BG);
   }  // end while
 
 // menu終了時の処理

@@ -138,4 +138,3 @@ all:
 	rm ./PARAM.SFO
 	cp ./*.prx ../obj/
 	cp ./*.PBP ../obj/
-		

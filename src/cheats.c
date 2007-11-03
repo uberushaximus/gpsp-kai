@@ -28,10 +28,7 @@
  ******************************************************************************/
 #include "common.h"
 
-CHEAT_TYPE game_config_cheats_flag[MAX_CHEATS];
 u32 num_cheats;
-
-
 
 void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant);
 void process_cheat_gs1(CHEAT_TYPE *cheat);
@@ -136,25 +133,25 @@ void add_cheats(char *cheats_filename)
 
       if(current_cheat_variant != CHEAT_TYPE_INVALID)
       {
-        strncpy(game_config_cheats_flag[num_cheats].cheat_name, name_ptr, CHEAT_NAME_LENGTH - 1);
-        game_config_cheats_flag[num_cheats].cheat_name[CHEAT_NAME_LENGTH - 1] = 0;
-        cheat_name_length = strlen(game_config_cheats_flag[num_cheats].cheat_name);
+        strncpy(game_config.cheats_flag[num_cheats].cheat_name, name_ptr, CHEAT_NAME_LENGTH - 1);
+        game_config.cheats_flag[num_cheats].cheat_name[CHEAT_NAME_LENGTH - 1] = 0;
+        cheat_name_length = strlen(game_config.cheats_flag[num_cheats].cheat_name);
         if(cheat_name_length &&
-         ((game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\n') ||
-         (game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')))
+         ((game_config.cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\n') ||
+         (game_config.cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')))
         {
-          game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
+          game_config.cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
           cheat_name_length--;
         }
 
         if(cheat_name_length &&
-         game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')
+         game_config.cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] == '\r')
         {
-          game_config_cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
+          game_config.cheats_flag[num_cheats].cheat_name[cheat_name_length - 1] = 0;
         }
 
-        game_config_cheats_flag[num_cheats].cheat_variant = current_cheat_variant;
-        cheat_code_ptr = game_config_cheats_flag[num_cheats].cheat_codes;
+        game_config.cheats_flag[num_cheats].cheat_variant = current_cheat_variant;
+        cheat_code_ptr = game_config.cheats_flag[num_cheats].cheat_codes;
         num_cheat_lines = 0;
 
         while(fgets(current_line, 256, cheats_file))
@@ -174,7 +171,7 @@ void add_cheats(char *cheats_filename)
           num_cheat_lines++;
         }
 
-        game_config_cheats_flag[num_cheats].num_cheat_lines = num_cheat_lines;
+        game_config.cheats_flag[num_cheats].num_cheat_lines = num_cheat_lines;
 
         num_cheats++;
         if (num_cheats == MAX_CHEATS) break;
@@ -403,18 +400,18 @@ void process_cheats()
 
   for(i = 0; i < num_cheats; i++)
   {
-    if(game_config_cheats_flag[i].cheat_active == 1)
+    if(game_config.cheats_flag[i].cheat_active == 1)
     {
-      switch(game_config_cheats_flag[i].cheat_variant)
+      switch(game_config.cheats_flag[i].cheat_variant)
       {
         case CHEAT_TYPE_GAMESHARK_V1:
         case CHEAT_TYPE_DIRECT_V1:
-          process_cheat_gs1(game_config_cheats_flag + i);
+          process_cheat_gs1(game_config.cheats_flag + i);
           break;
 
         case CHEAT_TYPE_GAMESHARK_V3:
         case CHEAT_TYPE_DIRECT_V3:
-          process_cheat_gs3(game_config_cheats_flag + i);
+          process_cheat_gs3(game_config.cheats_flag + i);
           break;
 
         default:

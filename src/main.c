@@ -408,6 +408,8 @@ int user_main(SceSize argc, char *argv[])
   if(lang_num > MAX_LANG_NUM) lang_num = 1;
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
+  init_gpsp_config();
+
   init_main();
   init_sound();
 

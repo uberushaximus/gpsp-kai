@@ -76,6 +76,7 @@ u32 load_fontcfg(char *file_name);
 u32 load_msgcfg(char *file_name);
 u32 load_font();
 void get_savestate_filename_noshot(u32 slot, char *name_buffer);
+void init_gpsp_config();
 
 #endif
 

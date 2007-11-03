@@ -45,7 +45,6 @@ typedef struct
 
 // グローバル変数宣言
 
-extern CHEAT_TYPE game_config_cheats_flag[MAX_CHEATS];
 extern u32 num_cheats;
 
 // 関数宣言
