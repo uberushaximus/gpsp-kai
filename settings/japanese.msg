@@ -718,6 +718,14 @@
 #fullscreen 16:9
 !フルスクリーン 16:9
 
+# MSG_SCN_OPT1
+#option 1
+!オプション 1
+
+# MSG_SCN_OPT2
+#option 2
+!オプション 2
+
 # MSG_FS_AUTO
 #automatic
 !自動

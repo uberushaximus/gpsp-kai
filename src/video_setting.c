@@ -176,7 +176,7 @@ const SCREEN_PARAMATER screen_paramater_psp_game_init[] =
   },
 
   {
-    /* 本体出力 / GAME画面 / etc 1 */
+    /* 本体出力 / GAME画面 / option 1 */
     { 0, 0x000, 480, 272, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -188,7 +188,7 @@ const SCREEN_PARAMATER screen_paramater_psp_game_init[] =
   },
 
   {
-    /* 本体出力 / GAME画面 / etc 2 */
+    /* 本体出力 / GAME画面 / option 2 */
     { 0, 0x000, 480, 272, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -239,7 +239,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 4:3 / ノンインタレース / etc 1 */
+    /* アナログ出力 / GAME画面 / 4:3 / ノンインタレース / option 1 */
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -251,7 +251,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 4:3 / ノンインタレース / etc 2 */
+    /* アナログ出力 / GAME画面 / 4:3 / ノンインタレース / option 2 */
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -299,7 +299,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 4:3 / インタレース / etc 1 */
+    /* アナログ出力 / GAME画面 / 4:3 / インタレース / option 1 */
     { 2, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -311,7 +311,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 4:3 / インタレース / etc 2 */
+    /* アナログ出力 / GAME画面 / 4:3 / インタレース / option 2 */
     { 2, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -359,7 +359,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 16:9 / ノンインタレース / etc 1 */
+    /* アナログ出力 / GAME画面 / 16:9 / ノンインタレース / option 1 */
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -371,7 +371,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 16:9 / ノンインタレース / etc 2 */
+    /* アナログ出力 / GAME画面 / 16:9 / ノンインタレース / option 2 */
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -419,7 +419,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 16:9 / インタレース / etc 1 */
+    /* アナログ出力 / GAME画面 / 16:9 / インタレース / option 1 */
     { 2, 0x1D1, 720, 503, 1, 15, 0},
     { 0, 1},
     { 240, 240, 160},
@@ -431,7 +431,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 
   {
-    /* アナログ出力 / GAME画面 / 16:9 / インタレース / etc 2 */
+    /* アナログ出力 / GAME画面 / 16:9 / インタレース / option 2 */
     { 2, 0x1D1, 720, 503, 1, 15, 0},
     { 0, 1},
     { 240, 240, 160},
@@ -482,7 +482,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 4:3 / ノンインタレース / etc 1 */
+    /* デジタル出力 / GAME画面 / 4:3 / ノンインタレース / option 1 */
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -494,7 +494,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 4:3 / ノンインタレース / etc 2 */
+    /* デジタル出力 / GAME画面 / 4:3 / ノンインタレース / option 2 */
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -542,7 +542,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 4:3 / インタレース / etc 1 */
+    /* デジタル出力 / GAME画面 / 4:3 / インタレース / option 1 */
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -554,7 +554,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 4:3 / インタレース / etc 2 */
+    /* デジタル出力 / GAME画面 / 4:3 / インタレース / option 2 */
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -602,7 +602,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 16:9 / ノンインタレース / etc 1 */
+    /* デジタル出力 / GAME画面 / 16:9 / ノンインタレース / option 1 */
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -614,7 +614,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 16:9 / ノンインタレース / etc 2 */
+    /* デジタル出力 / GAME画面 / 16:9 / ノンインタレース / option 2 */
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
     { 240, 240, 160 },
@@ -662,7 +662,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 16:9 / インタレース / etc 1 */
+    /* デジタル出力 / GAME画面 / 16:9 / インタレース / option 1 */
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1},
     { 240, 240, 160},
@@ -674,7 +674,7 @@ const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
   },
 
   {
-    /* デジタル出力 / GAME画面 / 16:9 / インタレース / etc 2 */
+    /* デジタル出力 / GAME画面 / 16:9 / インタレース / option 2 */
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1},
     { 240, 240, 160},

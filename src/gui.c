@@ -1137,7 +1137,7 @@ u32 menu(u16 *original_screen)
 
   char *scale_options[] =
   {
-    msg[MSG_SCN_UNSCALED], msg[MSG_SCN_SCALED], msg[MSG_SCN_FULL]
+    msg[MSG_SCN_UNSCALED], msg[MSG_SCN_SCALED], msg[MSG_SCN_FULL], msg[MSG_SCN_OPT1], msg[MSG_SCN_OPT2]
   };
 
   char *frameskip_options[] = { msg[MSG_FS_AUTO], msg[MSG_FS_MANUAL], msg[MSG_FS_OFF] };
@@ -1188,7 +1188,7 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 3, msg[MSG_G_S_MENU_HELP_0], 2),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 2),
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 3),
 
@@ -1515,7 +1515,11 @@ u32 menu(u16 *original_screen)
 // menu終了時の処理
   button_up_wait();
 
-//  set_gba_resolution(gpsp_config.screen_scale);
+  clear_screen(0);
+  flip_screen();
+  clear_screen(0);
+  flip_screen();
+
   video_resolution(FRAME_GAME);
 
   set_cpu_clock(game_config.clock_speed_number);

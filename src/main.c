@@ -497,9 +497,6 @@ int user_main(SceSize argc, char *argv[])
   }
 #endif
 
-//  sceImposeSetHomePopup(0); 
-//  sceImposeHomeButton(1);
-
   if(argc > 1)
   {
     if(load_gamepak((char *)argv[1]) == -1)
@@ -508,7 +505,10 @@ int user_main(SceSize argc, char *argv[])
       exit(-1);
     }
 
-//    set_gba_resolution(gpsp_config.screen_scale);
+    clear_screen(0);
+    flip_screen();
+    clear_screen(0);
+    flip_screen();
     video_resolution(FRAME_GAME);
 
     init_cpu();
@@ -533,7 +533,10 @@ int user_main(SceSize argc, char *argv[])
         quit();
       }
 
-//      set_gba_resolution(gpsp_config.screen_scale);
+      clear_screen(0);
+      flip_screen();
+      clear_screen(0);
+      flip_screen();
       video_resolution(FRAME_GAME);
 
       init_cpu();
@@ -674,22 +677,14 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
 
-          //TODO
+          //TODO 調整必要
           if(gpsp_config.screen_interlace == NON_INTERLACE)
-          {
             synchronize();
-          }
           else
           {
             if(sync_flag == 0)
-            {
-              sync_flag = 1;
-            }
-            else
-            {
               synchronize();
-              sync_flag = 0;
-            }
+            sync_flag ^= 1;
           }
 
           update_screen();

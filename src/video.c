@@ -81,18 +81,15 @@ void render_scanline_bitmap(u16 *scanline, u32 dispcnt);
 void render_scanline_window_tile(u16 *scanline, u32 dispcnt);
 void render_scanline_window_bitmap(u16 *scanline, u32 dispcnt);
 
-void load_video_setting();
+void load_video_config();
 void set_resolution_parameter(video_scale_type scale);
 void set_video_out();
-
-// ヘッダーは4byteまで
-#define VIDEO_CONFIG_HEADER     "vcfg"
-#define VIDEO_CONFIG_HEADER_U32 0x0x67666376
-const u32 video_config_ver = 0x00010000;
 
 #define MENU_LINE_SIZE  512
 #define GBA_LINE_SIZE   240
 #define FRAME_LINE_SIZE 768
+
+#define GPSP_CONFIG_FILENAME "settings/video.cfg"
 
 static float *screen_vertex = (float *)0x441FC100;
 static u32 *ge_cmd = (u32 *)0x441FC000;
@@ -3286,7 +3283,7 @@ void init_video()
   video_draw_frame = FRAME_GAME;
 
   // パラメータの初期化
-  load_video_setting();
+  load_video_config();
 
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
@@ -3366,6 +3363,7 @@ void init_video()
 
 u32 current_scale = scaled_aspect;
 
+// TODO 高速化必要 1/60秒ごとに呼ばれる為
 void flip_screen()
 {
   u32 *old_ge_cmd_ptr = ge_cmd_ptr;
@@ -3514,12 +3512,78 @@ video_savestate_body(READ_MEM);
 void video_write_mem_savestate(FILE_TAG_TYPE savestate_file)
 video_savestate_body(WRITE_MEM);
 
-void load_video_setting()
+#define LOAD_PARAMATER_NUMBER (SCREEN_SCALE + 1 + (SCREEN_RATIO*SCREEN_INTERLACE*SCREEN_SCALE + SCREEN_RATIO*SCREEN_INTERLACE) * 2)
+
+void load_video_config()
 {
-  memcpy(&screen_paramater_psp_menu, &screen_paramater_psp_menu_init, sizeof(screen_paramater_psp_menu));
-  memcpy(screen_paramater_psp_game, screen_paramater_psp_game_init, sizeof(screen_paramater_psp_game));
-  memcpy(screen_paramater_analog_menu, screen_paramater_analog_menu_init, sizeof(screen_paramater_analog_menu));
-  memcpy(screen_paramater_analog_game, screen_paramater_analog_game_init, sizeof(screen_paramater_analog_game));
-  memcpy(screen_paramater_digital_menu, screen_paramater_digital_menu_init, sizeof(screen_paramater_digital_menu));
-  memcpy(screen_paramater_digital_game, screen_paramater_digital_game_init, sizeof(screen_paramater_digital_game));
+  FILE *video_file;
+  char current_line[256];
+  u32 i,loop;
+  int p[6][8];
+  float f[2][10];
+  SCREEN_PARAMATER paramater[LOAD_PARAMATER_NUMBER];
+
+  // 設定の初期化
+  memcpy(&paramater[0],  &screen_paramater_psp_menu_init,     sizeof(SCREEN_PARAMATER));
+  memcpy(&paramater[1],  &screen_paramater_analog_menu_init,  sizeof(SCREEN_PARAMATER)*2*2);
+  memcpy(&paramater[5],  &screen_paramater_digital_menu_init, sizeof(SCREEN_PARAMATER)*2*2);
+  memcpy(&paramater[9],  &screen_paramater_psp_game_init,     sizeof(SCREEN_PARAMATER)*5);
+  memcpy(&paramater[14], &screen_paramater_analog_game_init,  sizeof(SCREEN_PARAMATER)*2*2*5);
+  memcpy(&paramater[34], &screen_paramater_digital_game_init, sizeof(SCREEN_PARAMATER)*2*2*5);
+
+  // video configファイルのオープン
+  video_file = fopen(GPSP_CONFIG_FILENAME, "r");
+
+  if(video_file)
+  {
+    i = 0;
+    loop = 0;
+    while(fgets(current_line, 256, video_file))
+    {
+      if((current_line[0] !='#') && (current_line[0] !='\n'))
+      {
+        switch(i)
+        {
+          case 0:
+            sscanf(current_line, " %d, %i, %d, %d, %d, %d, %d, %d",
+                &p[i][0],&p[i][1],&p[i][2],&p[i][3],&p[i][4],&p[i][5],&p[i][6],&p[i][7]);
+            break;
+
+          case 1 ... 5:
+            sscanf(current_line, " %d, %d, %d, %d",
+                &p[i][0],&p[i][1],&p[i][2],&p[i][3]);
+            break;
+
+          case 6 ... 7:
+            sscanf(current_line, " %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
+                &f[i-6][0],&f[i-6][1],&f[i-6][2],&f[i-6][3],&f[i-6][4],&f[i-6][5],&f[i-6][6],&f[i-6][7],&f[i-6][8],&f[i-6][9]);
+            break;
+        }
+        i++;
+      }
+      if(i == 8)
+      {
+        // パラメータの保存
+        memcpy(&paramater[loop].video_out.u,         &p[0][0], sizeof(VIDEO_OUT_PARAMETER));
+        memcpy(&paramater[loop].filter[0],           &p[1][0], sizeof(int) * 2);
+        memcpy(&paramater[loop].texture_size.pitch,  &p[2][0], sizeof(TEXTURE_SIZE));
+        memcpy(&paramater[loop].texture_bit.x,       &p[3][0], sizeof(TEXTURE_BIT));
+        memcpy(&paramater[loop].screen_size.width,   &p[4][0], sizeof(SCREEN_SIZE));
+        memcpy(&paramater[loop].view.x,              &p[5][0], sizeof(VIEW_PORT));
+        memcpy(&paramater[loop].screen_setting_1.u1, &f[0][0], sizeof(SPRITE));
+        memcpy(&paramater[loop].screen_setting_2.u1, &f[1][0], sizeof(SPRITE));
+        i = 0;
+        loop++;
+      }
+      if(loop == LOAD_PARAMATER_NUMBER)
+        break;
+    }
+  }
+  // パラメータのセット
+  memcpy(&screen_paramater_psp_menu,     &paramater[0],  sizeof(SCREEN_PARAMATER));
+  memcpy(&screen_paramater_analog_menu,  &paramater[1],  sizeof(SCREEN_PARAMATER)*2*2);
+  memcpy(&screen_paramater_digital_menu, &paramater[5],  sizeof(SCREEN_PARAMATER)*2*2);
+  memcpy(&screen_paramater_psp_game,     &paramater[9],  sizeof(SCREEN_PARAMATER)*5);
+  memcpy(&screen_paramater_analog_game,  &paramater[14], sizeof(SCREEN_PARAMATER)*2*2*5);
+  memcpy(&screen_paramater_digital_game, &paramater[34], sizeof(SCREEN_PARAMATER)*2*2*5);
 }

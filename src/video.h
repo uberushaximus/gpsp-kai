@@ -92,6 +92,8 @@ typedef enum
   unscaled,
   scaled_aspect,
   fullscreen,
+  option1,
+  option2,
 } video_scale_type;
 
 typedef enum

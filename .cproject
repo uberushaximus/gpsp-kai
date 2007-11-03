@@ -68,6 +68,7 @@
 </tool>
 </toolChain>
 </folderInfo>
+<fileInfo id="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720.1087177703" name="video.cfg" rcbsApplicability="disable" resourcePath="settings/video.cfg" toolsToInvoke=""/>
 </configuration>
 </storageModule>
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
