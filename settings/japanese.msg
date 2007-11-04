@@ -932,3 +932,47 @@
 #interlace
 !interlace
 
+# MSG_INIT_END
+#Initialization end
+!èâä˙âªèIóπ
+
+# MSG_LOAD_STATE
+#Load State.
+!Load State.
+
+# MSG_LOAD_STATE_END
+#Load State End.
+!Load State End.
+
+# MSG_SAVE_STATE
+#Save State.
+!Save State.
+
+# MSG_SAVE_STATE_END
+#Save State End.
+!Save State End.
+
+# MSG_CHEAT_MENU_5
+#cheat page: %d
+!cheat page: %d
+
+# MSG_CHEAT_MENU_HELP_5
+#cheat page
+!cheat page
+
+# MSG_CHEAT_MENU_6
+#Enable HOME: %s
+!Enable HOME: %s
+
+# MSG_CHEAT_MENU_HELP_6
+#Enable HOME
+!Enable HOME
+
+# MSG_PAD_MENU_13,
+#Use dafault map : %s
+!Use dafault map : %s
+
+# MSG_PAD_MENU_HELP13,
+#Use dafault map
+!Use dafault map
+

@@ -3476,7 +3476,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
   if(yesno_dialog(buf) == 1)
     return 0;
 
-  init_progress(9, "Load State."); // TODO:メッセージファイル化
+  init_progress(9, msg[MSG_LOAD_STATE]);
 
   if (slot_num != MEM_STATE_NUM)
   {
@@ -3526,7 +3526,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
 
   oam_update = 1;
   gbc_sound_update = 1;
-  show_progress("Load State end."); // TODO:メッセージファイル化
+  show_progress(msg[MSG_LOAD_STATE_END]);
 
   // TODO:違うROMのstatesaveファイルを読み込むとフリーズする
   if(strcmp(current_gamepak_filename, gamepak_filename))
@@ -3603,7 +3603,7 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 
   u64 current_time;
   pspTime current_time_fix; // time関数が年月日を返さないので調整用
-  init_progress(9, "Save State."); // TODO:メッセージファイル化
+  init_progress(9, msg[MSG_SAVE_STATE]);
 
   FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
   update_progress();
@@ -3629,7 +3629,7 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   mem_save_flag = 1;
 
   update_progress();
-  show_progress("Save State end."); // TODO:メッセージファイル化
+  show_progress(msg[MSG_SAVE_STATE_END]);
   real_frame_count = 0;
   virtual_frame_count = 0;
   pause_sound(0);

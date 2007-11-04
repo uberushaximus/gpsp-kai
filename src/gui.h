@@ -36,6 +36,8 @@ typedef struct
   u32 enable_audio;
   u32 enable_analog;
   u32 analog_sensitivity_level;
+  u32 enable_home;
+  u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
 } GPSP_CONFIG_V10;
 
 typedef struct
@@ -48,6 +50,7 @@ typedef struct
   u32 update_backup_flag;
   CHEAT_TYPE cheats_flag[MAX_CHEATS];
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
+  u32 use_default_gamepad_map;
 } GAME_CONFIG_V10;
 
 /******************************************************************************
@@ -69,6 +72,9 @@ extern GAME_CONFIG_V10 game_config;
 s32 load_file(char **wildcards, char *result, char *default_dir_name);
 s32 load_game_config_file();
 s32 load_config_file();
+s32 save_game_config_file();
+s32 save_config_file();
+
 u32 menu(u16 *original_screen);
 
 u32 load_dircfg(char *file_name);

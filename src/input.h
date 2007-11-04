@@ -21,6 +21,8 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#define MAX_GAMEPAD_CONFIG_MAP 16
+
 typedef enum
 {
   BUTTON_L = 0x200,
@@ -88,6 +90,7 @@ void input_read_savestate(FILE_TAG_TYPE savestate_file);
 extern u32 sensorX;
 extern u32 sensorY;
 extern u32 sensorR;
+extern u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
 
 #endif
 

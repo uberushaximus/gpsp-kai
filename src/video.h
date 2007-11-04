@@ -165,7 +165,7 @@ typedef struct
   VIEW_PORT view;                 /* 表示範囲 */
   SPRITE screen_setting_1;        /* スプライトデータ 1 */
   SPRITE screen_setting_2;        /* スプライトデータ 1 */
-} SCREEN_PARAMATER;
+} SCREEN_PARAMETER;
 
 extern u16 *screen_address;
 extern u32 screen_pitch;
@@ -173,17 +173,18 @@ extern u32 screen_width;
 extern u32 screen_height;
 extern u32 screen_width2;
 extern u32 screen_height2;
+extern u32 video_out_mode;
 
 extern u32 current_scale;
 
-extern const SCREEN_PARAMATER screen_paramater_psp_game_init[];
-extern const SCREEN_PARAMATER screen_paramater_psp_menu_init;
+extern const SCREEN_PARAMETER screen_parameter_psp_game_init[];
+extern const SCREEN_PARAMETER screen_parameter_psp_menu_init;
 
-extern const SCREEN_PARAMATER screen_paramater_analog_game_init[];
-extern const SCREEN_PARAMATER screen_paramater_analog_menu_init[];
+extern const SCREEN_PARAMETER screen_parameter_analog_game_init[];
+extern const SCREEN_PARAMETER screen_parameter_analog_menu_init[];
 
-extern const SCREEN_PARAMATER screen_paramater_digital_game_init[];
-extern const SCREEN_PARAMATER screen_paramater_digital_menu_init[];
+extern const SCREEN_PARAMETER screen_parameter_digital_game_init[];
+extern const SCREEN_PARAMETER screen_parameter_digital_menu_init[];
 
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();

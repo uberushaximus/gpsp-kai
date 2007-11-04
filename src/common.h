@@ -55,6 +55,7 @@
 #include <pspkernel.h>
 #include <psputility.h>
 #include <kubridge.h>
+#include <pspimpose_driver.h>
 
 #ifdef ADHOC_MODE
 #include <pspnet.h>

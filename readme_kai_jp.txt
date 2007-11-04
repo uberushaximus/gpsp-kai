@@ -1,6 +1,18 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 06 svn rev.
+	メッセージファイルの変更
+	MENUのチート/その他の設定にHOMEボタンの有効/無効を追加
+	MENUのグラフィック/サウンドの設定にTV出力時のratio/interlaceの設定を追加
+	gpsp.cfgにHOMEボタンの設定値を追加
+	gpsp.cfgにキーマップの設定値を追加
+	(サイズが36byte->104byteになっていますが、自動で更新されます)
+	PSP本体のメニュー画面にフィルタがかからないように、video.cfgを更新
+	キーマップをデフォルトかゲーム固有に切り替えられるようにした
+	終了時にgame cfgが保存されていなかったのを修正
+	フィルタの設定が反映されなかったのを修正
+
 -UnOfficial gpSP kai 3.2 test 06 svn rev.346
 	メッセージファイルの変更
 		ロシア語用のメッセージ/フォントファイルのファイル名を変更

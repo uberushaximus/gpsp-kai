@@ -262,8 +262,8 @@ int CallbackThread(SceSize args, void *argp)
   int id;
 
   // 終了周りのコールバック
-//  id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
-//  sceKernelRegisterExitCallback(id);
+  id = sceKernelCreateCallback("Exit Callback", (void *)exit_callback, NULL);
+  sceKernelRegisterExitCallback(id);
 
   // 電源周りのコールバック
   id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL); 
@@ -289,8 +289,10 @@ int SetupCallbacks()
 
 void quit()
 {
-//  if(!gpsp_config.update_backup_flag)
-    update_backup_force();
+  save_game_config_file();
+  save_config_file();
+
+  update_backup_force();
 
   sound_exit();
   fbm_freeall();
@@ -412,6 +414,7 @@ int user_main(SceSize argc, char *argv[])
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
   init_gpsp_config();
+  init_game_config();
 
   init_main();
   init_sound();
@@ -474,6 +477,8 @@ int user_main(SceSize argc, char *argv[])
   load_config_file();
   update_progress();
 
+  sceImposeSetHomePopup(gpsp_config.enable_home);
+
   // ROMファイル名の初期化
   gamepak_filename[0] = 0;
 
@@ -496,7 +501,7 @@ int user_main(SceSize argc, char *argv[])
   }
   update_progress();
 
-  show_progress("Initialization end"); // TODO:メッセージファイル化
+  show_progress(msg[MSG_INIT_END]);
 
 #ifdef ADHOC_MODE
   // WLANのスイッチがONならばadhoc接続のテスト
@@ -688,7 +693,7 @@ u32 update_gba()
           update_gbc_sound(cpu_ticks);
 
           //TODO 調整必要
-          if(gpsp_config.screen_interlace == NON_INTERLACE)
+          if((gpsp_config.screen_interlace == NON_INTERLACE)||(video_out_mode == 0))
             synchronize();
           else
           {

@@ -22,12 +22,12 @@
 // VIDEO OUTの有効画素は674x450(GBAの2.85倍)?
 // インタレース時の有効画素は674x220?
 
-const SCREEN_PARAMATER screen_paramater_psp_menu_init =
+const SCREEN_PARAMETER screen_parameter_psp_menu_init =
 {
     /* 本体出力 / MENU画面 */
     { 0, 0x000, 480, 272, 1, 15, 0 },
-    { 0, 1 },
-    { 480, 480, 271 },
+    { 0, 0 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 480, 272 },
     { 0, 0, 480, 272 },
@@ -35,13 +35,13 @@ const SCREEN_PARAMATER screen_paramater_psp_menu_init =
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
+const SCREEN_PARAMETER screen_parameter_analog_menu_init[] =
 {
   {
     /* アナログ出力 / MENU画面 / 4:3 / ノンインタレース*/
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -53,7 +53,7 @@ const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
     /* アナログ出力 / MENU画面 / 4:3 / インタレース*/
     { 2, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -65,7 +65,7 @@ const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
     /* アナログ出力 / MENU画面 / 16:9 / ノンインタレース*/
     { 2, 0x1D2, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -77,7 +77,7 @@ const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
     /* アナログ出力 / MENU画面 / 16:9 / インタレース*/
     { 2, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -86,13 +86,13 @@ const SCREEN_PARAMATER screen_paramater_analog_menu_init[] =
   },
 };
 
-const SCREEN_PARAMATER screen_paramater_digital_menu_init[] =
+const SCREEN_PARAMETER screen_parameter_digital_menu_init[] =
 {
   {
     /* デジタル出力 / MENU画面 / 4:3 / ノンインタレース*/
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -103,7 +103,7 @@ const SCREEN_PARAMATER screen_paramater_digital_menu_init[] =
     /* デジタル出力 / MENU画面 / 4:3 / インタレース*/
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -115,7 +115,7 @@ const SCREEN_PARAMATER screen_paramater_digital_menu_init[] =
     /* デジタル出力 / MENU画面 / 16:9 / ノンインタレース*/
     { 0, 0x1D2, 720, 480, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -127,7 +127,7 @@ const SCREEN_PARAMATER screen_paramater_digital_menu_init[] =
     /* デジタル出力 / MENU画面 / 16:9 / インタレース*/
     { 0, 0x1D1, 720, 503, 1, 15, 0 },
     { 0, 1 },
-    { 480, 480, 271 },
+    { 480, 480, 272 },
     { 9, 9 },
     { 720, 503 },
     { 0, 0, 480, 272 },
@@ -137,7 +137,7 @@ const SCREEN_PARAMATER screen_paramater_digital_menu_init[] =
 };
 
 
-const SCREEN_PARAMATER screen_paramater_psp_game_init[] =
+const SCREEN_PARAMETER screen_parameter_psp_game_init[] =
 {
   {
     /* 本体出力 / GAME画面 / unscaled */
@@ -200,7 +200,7 @@ const SCREEN_PARAMATER screen_paramater_psp_game_init[] =
   },
 };
 
-const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
+const SCREEN_PARAMETER screen_parameter_analog_game_init[] =
 {
   {
     /* アナログ出力 / GAME画面 / 4:3 / ノンインタレース / unscaled */
@@ -443,7 +443,7 @@ const SCREEN_PARAMATER screen_paramater_analog_game_init[] =
   },
 };
 
-const SCREEN_PARAMATER screen_paramater_digital_game_init[] =
+const SCREEN_PARAMETER screen_parameter_digital_game_init[] =
 {
   {
     /* デジタル出力 / GAME画面 / 4:3 / ノンインタレース / unscaled */

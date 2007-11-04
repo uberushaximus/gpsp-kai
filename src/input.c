@@ -54,6 +54,8 @@ extern u32 psp_fps_debug;
 
 #define PSP_ALL_BUTTON_MASK 0x1FFFF
 
+u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
+
 u32 last_buttons = 0;
 u64 button_repeat_timestamp;
 
@@ -288,7 +290,7 @@ u32 update_input()
   for(i = 0; i < 16; i++)
   {
     if(non_repeat_buttons & button_psp_mask_to_config[i])
-      button_id = game_config.gamepad_config_map[i];
+      button_id = gamepad_config_map[i];
     // HOMEが押されたらMENUに移行
     if (buttons & PSP_CTRL_HOME) button_id = BUTTON_ID_MENU;
 
@@ -354,7 +356,7 @@ u32 update_input()
 
     if(buttons & button_psp_mask_to_config[i])
     {
-      button_id = game_config.gamepad_config_map[i];
+      button_id = gamepad_config_map[i];
       if(button_id < BUTTON_ID_MENU)
       {
         new_key |= button_id_to_gba_mask[button_id];
