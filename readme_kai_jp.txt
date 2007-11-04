@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 06 svn rev.
+-UnOfficial gpSP kai 3.2 test 07 svn rev.351
 	メッセージファイルの変更
 	MENUのチート/その他の設定にHOMEボタンの有効/無効を追加
 	MENUのグラフィック/サウンドの設定にTV出力時のratio/interlaceの設定を追加
