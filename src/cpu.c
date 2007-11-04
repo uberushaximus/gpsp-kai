@@ -3632,7 +3632,7 @@ u32 high_frequency_branch_targets = 0;
       thumb_add_noflags(imm, 7, reg[REG_SP], (imm * 4));                      \
       break;                                                                  \
                                                                               \
-    case 0xB0 ... 0xB3:                                                       \
+    case 0xB0:                                                                \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \

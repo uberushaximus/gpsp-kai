@@ -2251,7 +2251,7 @@ typedef struct
       thumb_load_sp(7);                                                       \
       break;                                                                  \
                                                                               \
-    case 0xB0 ... 0xB3:                                                       \
+    case 0xB0:                                                                \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \

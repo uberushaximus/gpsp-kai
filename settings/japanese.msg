@@ -168,6 +168,14 @@
 #Back
 !戻る
 
+# MSG_G_S_MENU_9
+#TV output ratio       : %s
+!TV output ratio       : %s
+
+# MSG_G_S_MENU_10
+#TV output interlace   : %s
+!TV output interlace   : %s
+
 # MSG_G_S_MENU_HELP_0
 #Determines how the GBA screen is resized in relation to the entire\n
 #screen. Select unscaled 3:2 for GBA resolution, scaled 3:2 for GBA\n
@@ -243,6 +251,26 @@
 # MSG_G_S_MENU_HELP_8
 #Return to the main menu.
 !メインメニューに戻る
+
+# MSG_G_S_MENU_HELP_9
+#TV output ratio
+#
+#
+#
+!TV output ratio
+!
+!
+!
+
+# MSG_G_S_MENU_HELP_10
+#TV output interlace
+#
+#
+#
+!TV output interlace
+!
+!
+!
 
 # MSG_STATE_MENU_DATE_FMT_0
 # for PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD
@@ -887,3 +915,20 @@
 !このBIOSは正規のものではありません。\n
 !様々な不具合が出る可能性があります。\n\n
 !正規のBIOSを使用してください。\n
+
+# MSG_R_4_3
+#ratio 4:3
+!ratio 4:3
+
+# MSG_R_16_9
+#ratio 16:9
+!ratio 16:9
+
+# MSG_I_NON
+#progressive
+!progressive
+
+# MSG_I_ON
+#interlace
+!interlace
+

@@ -364,6 +364,9 @@ int user_main(SceSize argc, char *argv[])
   char load_filename[MAX_FILE];
   char filename[MAX_FILE];
 
+  sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
+  pspDebugScreenInit();
+
   psp_model = get_model();
 
   // HOMEボタンを読取り可能にする
@@ -420,6 +423,7 @@ int user_main(SceSize argc, char *argv[])
   clear_screen(COLOR_BG);
   flip_screen();
   clear_screen(COLOR_BG);
+  flip_screen();
 
   // 初期設定用のプログレスバー
   init_progress(8, "");
@@ -427,6 +431,7 @@ int user_main(SceSize argc, char *argv[])
   // ディレクトリ設定の読込み
   if (load_dircfg("settings/dir.cfg") != 0)
   {
+    pspDebugScreenInit();
     error_msg("dir.cfg Error!!");
     quit();
   }
@@ -436,6 +441,7 @@ int user_main(SceSize argc, char *argv[])
   sprintf(filename,"settings/%s.fnt",lang[lang_num]);
   if (load_fontcfg(filename) != 0)
   {
+    pspDebugScreenInit();
     error_msg("font.cfg Error!!");
     quit();
   }
@@ -445,6 +451,7 @@ int user_main(SceSize argc, char *argv[])
   sprintf(filename,"settings/%s.msg",lang[lang_num]);
   if (load_msgcfg(filename) != 0)
   {
+    pspDebugScreenInit();
     error_msg("message.cfg Error!!");
     quit();
   }
@@ -453,6 +460,7 @@ int user_main(SceSize argc, char *argv[])
   // フォントの読込み
   if (load_font() != 0)
   {
+    pspDebugScreenInit();
     error_msg("font init Error!!");
     quit();
   }
@@ -475,6 +483,7 @@ int user_main(SceSize argc, char *argv[])
   {
     PRINT_STRING_BG(msg[MSG_ERR_BIOS_1], 0xFFFF, 0x0000, 0, 0);
     PRINT_STRING_BG(msg[MSG_ERR_BIOS_2], 0xFFFF, 0x0000, 0, 60);
+    flip_screen();
     error_msg("");
     quit();
   }
@@ -482,6 +491,7 @@ int user_main(SceSize argc, char *argv[])
   if(bios_ret == -2) // MD5が違う場合
   {
     PRINT_STRING_BG(msg[MSG_ERR_BIOS_MD5], 0xFFFF, 0x0000, 0, 0);
+    flip_screen();
     delay_us(5000000);
   }
   update_progress();

@@ -3281,9 +3281,14 @@ void init_video()
 {
   video_out_mode = 0;
   video_draw_frame = FRAME_GAME;
+  static fast_load = 0;
 
   // パラメータの初期化
-  load_video_config();
+  if(fast_load == 0)
+  {
+    load_video_config();
+    fast_load = 1;
+  }
 
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
 
@@ -3388,7 +3393,10 @@ void video_resolution(u32 frame)
 {
   if(video_draw_frame != frame)
   {
-    video_out_mode = pspDveMgrCheckVideoOut();
+    if(psp_model != psp_1000)
+      video_out_mode = pspDveMgrCheckVideoOut();
+    else
+      video_out_mode = 0;
 
     switch(((video_out_mode << 1) | frame))
     {
@@ -3412,8 +3420,9 @@ void video_resolution(u32 frame)
         break;
     }
 
-    pspDveMgrSetVideoOut(current_paramater->video_out.u, current_paramater->video_out.displaymode, current_paramater->video_out.width,
-        current_paramater->video_out.height, current_paramater->video_out.x, current_paramater->video_out.y, current_paramater->video_out.z);
+    if(psp_model != psp_1000)
+      pspDveMgrSetVideoOut(current_paramater->video_out.u, current_paramater->video_out.displaymode, current_paramater->video_out.width,
+          current_paramater->video_out.height, current_paramater->video_out.x, current_paramater->video_out.y, current_paramater->video_out.z);
 
     memcpy(screen_vertex, &current_paramater->screen_setting_1, sizeof(float) * 20);
 
@@ -3437,6 +3446,7 @@ void video_resolution(u32 frame)
     clear_screen(0x0000);
     flip_screen();
     clear_screen(0x0000);
+    flip_screen();
   }
 }
 

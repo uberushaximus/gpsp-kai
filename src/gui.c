@@ -1183,27 +1183,24 @@ u32 menu(u16 *original_screen)
     msg[MSG_PAD_MENU_CFG_21],
   };
 
+  char *ratio_options[] = { msg[MSG_R_4_3], msg[MSG_R_16_9] };
+  char *interlace_options[] = { msg[MSG_I_NON], msg[MSG_I_ON] };
+
   /*--------------------------------------------------------
      グラフィック・サウンド オプション
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 2),
-
-    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 3),
-
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_9], ratio_options, &gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_10], interlace_options, &gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_2], frameskip_options, &game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
-
     NUMERIC_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_3], &game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
-
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
-
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
-
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
-
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
-
     SUBMENU_OPTION(NULL, msg[MSG_G_S_MENU_8], msg[MSG_G_S_MENU_HELP_8], 14)
   };
 
@@ -1570,8 +1567,11 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
             else
             {
               *DEFAULT_ROM_DIR = (char)NULL;
+              pspDebugScreenInit();
               printf("not open rom dir : %s\n",current_str);
-              delay_us(500000);
+              delay_us(500000*2);
+              init_video();
+              video_resolution(FRAME_MENU);
             }
             loop++;
             break;
@@ -1582,8 +1582,11 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
             else
             {
               *DEFAULT_SAVE_DIR = (char)NULL;
+              pspDebugScreenInit();
               printf("not open save dir : %s\n",current_str);
-              delay_us(500000);
+              delay_us(500000*2);
+              init_video();
+              video_resolution(FRAME_MENU);
             }
             loop++;
             break;
@@ -1594,8 +1597,11 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
             else
             {
               *DEFAULT_CFG_DIR = (char)NULL;
+              pspDebugScreenInit();
               printf("not open cfg dir : %s\n",current_str);
-              delay_us(500000);
+              delay_us(500000*2);
+              init_video();
+              video_resolution(FRAME_MENU);
             }
             loop++;
             break;
@@ -1606,8 +1612,11 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
             else
             {
               *DEFAULT_SS_DIR = (char)NULL;
+              pspDebugScreenInit();
               printf("not open screen shot dir : %s\n",current_str);
-              delay_us(500000);
+              delay_us(500000*2);
+              init_video();
+              video_resolution(FRAME_MENU);
             }
             loop++;
             break;
@@ -1618,8 +1627,11 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
             else
             {
               *DEFAULT_CHEAT_DIR = (char)NULL;
+              pspDebugScreenInit();
               printf("not open cheat dir : %s\n",current_str);
-              delay_us(500000);
+              delay_us(500000*2);
+              init_video();
+              video_resolution(FRAME_MENU);
             }
             loop++;
             break;
