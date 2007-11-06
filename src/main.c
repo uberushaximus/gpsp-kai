@@ -25,15 +25,10 @@
  ******************************************************************************/
 #include "common.h"
 
-#ifdef USER_MODE
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(256);
-#else
-PSP_MODULE_INFO("gpSP", PSP_MODULE_KERNEL, VERSION_MAJOR, VERSION_MINOR);
-PSP_MAIN_THREAD_ATTR(0);
-#endif
+PSP_MAIN_THREAD_STACK_SIZE_KB(300);
 
 /******************************************************************************
  * 変数の定義
@@ -234,25 +229,21 @@ SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *commo
     // サスペンド時の処理
     power_flag = 1;
 
-#ifdef M64_MODE
     // 新型PSPの場合、増設メモリの一部をメインメモリに待避
     if(psp_model == psp_2000_new)
     {
       memcpy(gamepak_rom_resume,(void *)(PSP2K_MEM_TOP + 0x1c00000), 0x400000);
     }
-#endif
   }
   else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
   {
     power_flag = 0;
 
-#ifdef M64_MODE
     // 新型PSPの場合、メインメモリから増設メモリへ内容を復旧
     if(psp_model == psp_2000_new)
     {
       memcpy((void *)(PSP2K_MEM_TOP + 0x1c00000),gamepak_rom_resume, 0x400000);
     }
-#endif
   }
   return 0;
 }
@@ -300,68 +291,10 @@ void quit()
   fclose(dbg_file);
 
   set_cpu_clock(222);
-#ifdef USER_MODE
   sceKernelExitGame();
-#else
-  sceKernelExitThread(0);
-#endif
 }
 
-#ifndef USER_MODE
-void psp_exception_handler(PspDebugRegBlock *regs)
-{
-  pspDebugScreenInit();
-
-  pspDebugScreenSetBackColor(0x00FF0000);
-  pspDebugScreenSetTextColor(0xFFFFFFFF);
-  pspDebugScreenClear();
-
-  pspDebugScreenPrintf("I regret to inform you your psp has just crashed\n\n");
-  pspDebugScreenPrintf("Exception Details:\n");
-  pspDebugDumpException(regs);
-  pspDebugScreenPrintf("\nThe offending routine may be identified with:\n\n"
-    "\tpsp-addr2line -e target.elf -f -C 0x%x 0x%x 0x%x\n", (int)regs->epc, (int)regs->badvaddr, (int)regs->r[31]);
-}
-
-//  XBMから呼び出されるmain
-//    本来のmainであるuser_mainのスレッドを作成し、user_mainを呼び出す
-#endif
-
-#ifndef USER_MODE
 int main(int argc, char *argv[])
-{
-  SceUID main_thread;
-
-  // カレントパスの取得
-  getcwd(main_path, 512);
-
-  // デバッグ用スクリーンの初期化
-  pspDebugScreenInit();
-
-  pspDebugInstallErrorHandler(psp_exception_handler);
-
-#ifdef ADHOC_MODE
-  // adhoc用モジュールのロード
-  if (pspSdkLoadAdhocModules() != 0)
-    error_msg("not load adhoc modules!!\n");
-#endif
-
-  main_thread = sceKernelCreateThread("User Mode Thread", (SceKernelThreadEntry)user_main, 0x11, 384 * 1024, PSP_THREAD_ATTR_USER, NULL);
-
-  sceKernelStartThread(main_thread, 0, 0);
-
-  sceKernelWaitThreadEnd(main_thread, NULL);
-
-  sceKernelExitGame();
-  return 0;
-}
-#endif
-
-#ifdef USER_MODE
-int main(int argc, char *argv[])
-#else
-int user_main(SceSize argc, char *argv[])
-#endif
 {
   char load_filename[MAX_FILE];
   char filename[MAX_FILE];
@@ -378,8 +311,8 @@ int user_main(SceSize argc, char *argv[])
     quit();
   }
 
-  // PSP-2000なら、外部出力用のモジュールを読込む
-  if(psp_model != psp_1000)
+  // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む
+  if(psp_model == psp_2000_new)
   {
     if(pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
       error_msg("Error in load/start TV OUT module.\n");
@@ -395,9 +328,7 @@ int user_main(SceSize argc, char *argv[])
   // デバッグ出力ファイルのオープン
   dbg_file = fopen(DBG_FILE_NAME, "awb");
 
-#ifdef USER_MODE
   getcwd(main_path, 512);
-#endif
 
 #ifdef ADHOC_MODE
   // adhoc用モジュールのロード
@@ -413,7 +344,8 @@ int user_main(SceSize argc, char *argv[])
   if(lang_num > MAX_LANG_NUM) lang_num = 1;
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
-  init_gpsp_config();
+  // 設定ファイルの読込み
+  load_config_file();
   init_game_config();
 
   init_main();
@@ -423,13 +355,15 @@ int user_main(SceSize argc, char *argv[])
   init_input();
 
   video_resolution(FRAME_MENU);
+  video_resolution(FRAME_GAME);
+  video_resolution(FRAME_MENU);
   clear_screen(COLOR_BG);
   flip_screen();
   clear_screen(COLOR_BG);
   flip_screen();
 
   // 初期設定用のプログレスバー
-  init_progress(8, "");
+  init_progress(7, "");
 
   // ディレクトリ設定の読込み
   if (load_dircfg("settings/dir.cfg") != 0)
@@ -471,10 +405,6 @@ int user_main(SceSize argc, char *argv[])
 
   // ROMバッファの初期化
   init_gamepak_buffer();
-  update_progress();
-
-  // 設定ファイルの読込み
-  load_config_file();
   update_progress();
 
   sceImposeSetHomePopup(gpsp_config.enable_home);

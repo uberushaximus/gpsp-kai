@@ -27,10 +27,6 @@ TARGET          = UO_gpSP_kai
 PSP_FW_VERSION=300
 VERSION_MODE = user
 
-ifeq ($(M64_MODE), 1)
-VERSION_MODE += 64M
-endif
-
 ifeq ($(TEST_MODE), 1)
 VERSION_RELEASE = test
 endif
@@ -49,12 +45,6 @@ CFLAGS          +=  -funsigned-char -ffast-math -fforce-addr -fmerge-all-constan
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
 CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
-
-CFLAGS          += -DUSER_MODE
-
-ifeq ($(M64_MODE), 1)
-CFLAGS          += -DM64_MODE
-endif
 
 ifeq ($(TEST_MODE), 1)
 CFLAGS          += -DTEST_MODE

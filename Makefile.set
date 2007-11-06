@@ -6,14 +6,9 @@
 
 VERSION_MAJOR = 3
 VERSION_MINOR = 2
-VERSION_BUILD = 07
+VERSION_BUILD = 8
+
 # コンパイル条件の設定
-
-USER_MODE = 1
-
-# 拡張メモリの使用のON/OFF
-M64_MODE = 1
-
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定
 TEST_MODE = 1
 

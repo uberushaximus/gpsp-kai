@@ -61,6 +61,12 @@ void debug_screen_printl(const char *format, ...);
 void debug_screen_newline(u32 count);
 void debug_screen_update();
 
+#ifdef VIDEO_CONFIG
+
+void video_config();
+
+#endif
+
 extern u32 frame_speed;
 
 extern s32 affine_reference_x[2];
@@ -180,11 +186,11 @@ extern u32 current_scale;
 extern const SCREEN_PARAMETER screen_parameter_psp_game_init[];
 extern const SCREEN_PARAMETER screen_parameter_psp_menu_init;
 
-extern const SCREEN_PARAMETER screen_parameter_analog_game_init[];
-extern const SCREEN_PARAMETER screen_parameter_analog_menu_init[];
+extern const SCREEN_PARAMETER screen_parameter_composite_game_init[];
+extern const SCREEN_PARAMETER screen_parameter_composite_menu_init[];
 
-extern const SCREEN_PARAMETER screen_parameter_digital_game_init[];
-extern const SCREEN_PARAMETER screen_parameter_digital_menu_init[];
+extern const SCREEN_PARAMETER screen_parameter_component_game_init[];
+extern const SCREEN_PARAMETER screen_parameter_component_menu_init[];
 
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();

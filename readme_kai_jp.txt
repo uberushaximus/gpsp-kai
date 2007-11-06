@@ -1,10 +1,19 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 08 svn rev.
+	メニューへの切り替えを多少高速化
+	起動時のTV画面への切り替えミスを修正
+	キーマップの読込/保存ミスを修正
+	TV出力のパラメータを全面的に調整
+	screen_flip()をほんの少し高速化
+	kernelモードでのビルド設定をすべて削除
+
 -UnOfficial gpSP kai 3.2 test 07 svn rev.351
 	メッセージファイルの変更
 	MENUのチート/その他の設定にHOMEボタンの有効/無効を追加
 	MENUのグラフィック/サウンドの設定にTV出力時のratio/interlaceの設定を追加
+	画面比率は内部的には何も行っていません、対応したパラメータを読み込むだけです
 	gpsp.cfgにHOMEボタンの設定値を追加
 	gpsp.cfgにキーマップの設定値を追加
 	(サイズが36byte->104byteになっていますが、自動で更新されます)
@@ -12,6 +21,7 @@
 	キーマップをデフォルトかゲーム固有に切り替えられるようにした
 	終了時にgame cfgが保存されていなかったのを修正
 	フィルタの設定が反映されなかったのを修正
+	PSP-2000のCFW3.60に対応していなかったので、修正した
 
 -UnOfficial gpSP kai 3.2 test 06 svn rev.346
 	メッセージファイルの変更

@@ -52,12 +52,6 @@ GPSP_CONFIG_V10 gpsp_config;
 const u32 game_config_ver = 0x00010000;
 GAME_CONFIG_V10 game_config;
 
-#ifdef USER_MODE
-#define VER_MODE "user"
-#else
-#define VER_MODE "kernel"
-#endif
-
 #ifdef TEST_MODE
 #define VER_RELEASE "test"
 #else
@@ -832,6 +826,8 @@ s32 load_game_config_file()
       case 0x10000: /* 1.0 */
         FILE_READ_VARIABLE(game_config_file, game_config);
         if(game_config.use_default_gamepad_map == 0)
+          memcpy(gamepad_config_map, game_config.gamepad_config_map, sizeof(game_config.gamepad_config_map));
+        else
           memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
         break;
     }
@@ -1211,6 +1207,10 @@ u32 menu(u16 *original_screen)
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
+
+#ifdef VIDEO_CONFIG
+    ACTION_OPTION(video_config, NULL, "video_config", "video_config", 13),
+#endif
 
     SUBMENU_OPTION(NULL, msg[MSG_G_S_MENU_8], msg[MSG_G_S_MENU_HELP_8], 15)
   };
@@ -2010,8 +2010,8 @@ static void print_status(u32 mode)
   sprintf(print_buffer_1, msg[MSG_MENU_BATTERY], scePowerGetBatteryLifePercent(), scePowerGetBatteryLifeTime());
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 0);
 
-  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %s %02d",
-      (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_MODE, VER_RELEASE, VERSION_BUILD);
+  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %02d",
+      (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_RELEASE, VERSION_BUILD);
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 10);
 
   if (mode == 0)

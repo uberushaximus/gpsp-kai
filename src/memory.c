@@ -3275,11 +3275,9 @@ void init_gamepak_buffer()
 {
   gamepak_rom = NULL;
 
-#ifdef M64_MODE
   // 増加メモリ対応の判別
   if (psp_model != psp_2000_new)
   {
-#endif
     // 対応していない場合
     // Try to initialize 16MB
     gamepak_ram_buffer_size = 16 * 1024 * 1024;
@@ -3297,7 +3295,6 @@ void init_gamepak_buffer()
         gamepak_rom = malloc(gamepak_ram_buffer_size);
       }
     }
-#ifdef M64_MODE
   }
   else
   {
@@ -3306,7 +3303,6 @@ void init_gamepak_buffer()
     gamepak_rom = (u8 *)PSP2K_MEM_TOP;
     gamepak_rom_resume = malloc(4 * 1024 * 1024);
   }
-#endif
   // Here's assuming we'll have enough memory left over for this,
   // and that the above succeeded (if not we're in trouble all around)
   gamepak_ram_pages = gamepak_ram_buffer_size / (32 * 1024);

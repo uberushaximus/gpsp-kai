@@ -100,24 +100,24 @@ static u32 video_draw_frame = FRAME_GAME;
 
 // フレームバッファ [表示用]768*512*16bit(0xC0000/768kb) + [GBA]240*160*16bit*2(0x25800/150kb) + [MENU]480*272*16bit*2(0x7F800/510kb) 0x04000000~0x04165000 1428kb
 // かなり贅沢な使い方をしてます。GBA用とMENU用は共有できるかもしれない。
-#define GBA_BUFFER_SIZE (240*160*2)
-#define MENU_BUFFER_SIZE (480*272*2)
+#define GBA_BUFFER_SIZE (240*161*2)  /* インタレース用に1ライン多く確保 */
+#define MENU_BUFFER_SIZE (480*273*2) /* インタレース用に1ライン多く確保 */
 #define PSP_DISPLAY_BUFFER_SIZE (768 * 512 * 2)
 u16 *screen_address = (u16 *)(0x04000000 + PSP_DISPLAY_BUFFER_SIZE);
-u32 screen_offset_address = PSP_DISPLAY_BUFFER_SIZE;
+u16 *screen_offset_address = (u16 *)PSP_DISPLAY_BUFFER_SIZE;
 u32 screen_pitch = 240;
 u32 screen_width = 240;
 u32 screen_height = 160;
 u32 screen_width2 = 240 / 2;
 u32 screen_height2 = 160 / 2;
 
-static u32 flip_address[2][2] = 
+static const u32 flip_address[2][2] = 
 {
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
-static u32 flip_offset_address[2][2] = 
+static const u32 flip_offset_address[2][2] = 
 {
   { PSP_DISPLAY_BUFFER_SIZE, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
@@ -3269,11 +3269,11 @@ void update_screen()
 SCREEN_PARAMETER screen_parameter_psp_game[SCREEN_SCALE];
 SCREEN_PARAMETER screen_parameter_psp_menu;
 
-SCREEN_PARAMETER screen_parameter_analog_game[SCREEN_RATIO][SCREEN_INTERLACE][SCREEN_SCALE];
-SCREEN_PARAMETER screen_parameter_analog_menu[SCREEN_RATIO][SCREEN_INTERLACE];
+SCREEN_PARAMETER screen_parameter_composite_game[SCREEN_RATIO][SCREEN_INTERLACE][SCREEN_SCALE];
+SCREEN_PARAMETER screen_parameter_composite_menu[SCREEN_RATIO][SCREEN_INTERLACE];
 
-SCREEN_PARAMETER screen_parameter_digital_game[SCREEN_RATIO][SCREEN_INTERLACE][SCREEN_SCALE];
-SCREEN_PARAMETER screen_parameter_digital_menu[SCREEN_RATIO][SCREEN_INTERLACE];
+SCREEN_PARAMETER screen_parameter_component_game[SCREEN_RATIO][SCREEN_INTERLACE][SCREEN_SCALE];
+SCREEN_PARAMETER screen_parameter_component_menu[SCREEN_RATIO][SCREEN_INTERLACE];
 
 SCREEN_PARAMETER *current_parameter;
 
@@ -3368,11 +3368,31 @@ void init_video()
 
 u32 current_scale = scaled_aspect;
 
-// TODO 高速化必要 1/60秒ごとに呼ばれる為
+u32 TBP0_temp[2];
+u32 TBW0_temp[2];
+u32 TSIZE0_temp;
+u32 flip_address_temp[2];
+u32 flip_offset_address_temp[2];
+
 void flip_screen()
 {
   u32 *old_ge_cmd_ptr = ge_cmd_ptr;
   sceKernelDcacheWritebackAll();
+
+//  // Render the current screen
+//  ge_cmd_ptr = ge_cmd + 2;
+//  *ge_cmd_ptr = TBP0_temp[screen_flip];
+//  ge_cmd_ptr++;
+//  *ge_cmd_ptr = TBW0_temp[screen_flip];
+//  ge_cmd_ptr++;
+//  *ge_cmd_ptr = TSIZE0_temp;
+//  ge_cmd_ptr++;
+//  ge_cmd_ptr = old_ge_cmd_ptr;
+//
+//  // Flip to the next screen
+//  screen_flip ^= 1;
+//  screen_address = (u16 *)flip_address_temp[screen_flip];
+//  screen_offset_address = (u16 *)flip_offset_address_temp[screen_flip];
 
   // Render the current screen
   ge_cmd_ptr = ge_cmd + 2;
@@ -3384,7 +3404,8 @@ void flip_screen()
   // Flip to the next screen
   screen_flip ^= 1;
   screen_address = (u16 *)flip_address[video_draw_frame][screen_flip];
-  screen_offset_address = flip_offset_address[video_draw_frame][screen_flip];
+  screen_offset_address = (u16 *)flip_offset_address[video_draw_frame][screen_flip];
+
 
   sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
 }
@@ -3392,7 +3413,8 @@ void flip_screen()
 void video_resolution(u32 frame)
 {
   static u32 first_load = 0;
-  
+  static SCREEN_PARAMETER *old_parameter = NULL;
+
   if(first_load == 0)
     first_load = 1;
   else
@@ -3406,7 +3428,7 @@ void video_resolution(u32 frame)
 
   if(video_draw_frame != frame)
   {
-    if(psp_model != psp_1000)
+    if(psp_model == psp_2000_new)
       video_out_mode = pspDveMgrCheckVideoOut();
     else
       video_out_mode = 0;
@@ -3420,22 +3442,25 @@ void video_resolution(u32 frame)
         current_parameter = &screen_parameter_psp_menu;
         break;
       case ((ANALOG_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_analog_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_composite_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
         break;
       case ((ANALOG_OUT << 1) | FRAME_MENU):
-        current_parameter = &screen_parameter_analog_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
+        current_parameter = &screen_parameter_composite_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_digital_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_component_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_MENU):
-        current_parameter = &screen_parameter_digital_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
+        current_parameter = &screen_parameter_component_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
         break;
     }
 
-    if(psp_model != psp_1000)
+    if((psp_model == psp_2000_new)&&(old_parameter != current_parameter))
+    {
       pspDveMgrSetVideoOut(current_parameter->video_out.u, current_parameter->video_out.displaymode, current_parameter->video_out.width,
           current_parameter->video_out.height, current_parameter->video_out.x, current_parameter->video_out.y, current_parameter->video_out.z);
+      old_parameter = current_parameter;
+    }
 
     memcpy(screen_vertex, &current_parameter->screen_setting_1, sizeof(float) * 20);
 
@@ -3447,6 +3472,16 @@ void video_resolution(u32 frame)
     screen_height = current_parameter->texture_size.height;
     screen_width2 = screen_width / 2;
     screen_height2 = screen_height / 2;
+
+    flip_address_temp[0] = flip_address[frame][0];
+    flip_address_temp[1] = flip_address[frame][1];
+    flip_offset_address_temp[0] = flip_offset_address[frame][0];
+    flip_offset_address_temp[1] = flip_offset_address[frame][1];
+    TBP0_temp[0] = ((GE_CMD_TBP0) << 24) | (flip_address_temp[0] & 0x00FFFFFF);
+    TBP0_temp[1] = ((GE_CMD_TBP0) << 24) | (flip_address_temp[1] & 0x00FFFFFF);
+    TBW0_temp[0] = ((GE_CMD_TBW0) << 24) | (((flip_address_temp[0] & 0xFF000000) >> 8) | screen_pitch);
+    TBW0_temp[1] = ((GE_CMD_TBW0) << 24) | (((flip_address_temp[1] & 0xFF000000) >> 8) | screen_pitch);
+    TSIZE0_temp  = ((GE_CMD_TSIZE0) << 24) | ((current_parameter->texture_bit.x << 8) | current_parameter->texture_bit.y);
 
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(current_parameter->screen_size.width, current_parameter->screen_size.height, (void*)0, FRAME_LINE_SIZE);
@@ -3550,11 +3585,11 @@ void load_video_config()
 
   // 設定の初期化
   memcpy(&parameter[0],  &screen_parameter_psp_menu_init,     sizeof(SCREEN_PARAMETER));
-  memcpy(&parameter[1],  &screen_parameter_analog_menu_init,  sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&parameter[5],  &screen_parameter_digital_menu_init, sizeof(SCREEN_PARAMETER)*2*2);
+  memcpy(&parameter[1],  &screen_parameter_composite_menu_init,  sizeof(SCREEN_PARAMETER)*2*2);
+  memcpy(&parameter[5],  &screen_parameter_component_menu_init, sizeof(SCREEN_PARAMETER)*2*2);
   memcpy(&parameter[9],  &screen_parameter_psp_game_init,     sizeof(SCREEN_PARAMETER)*5);
-  memcpy(&parameter[14], &screen_parameter_analog_game_init,  sizeof(SCREEN_PARAMETER)*2*2*5);
-  memcpy(&parameter[34], &screen_parameter_digital_game_init, sizeof(SCREEN_PARAMETER)*2*2*5);
+  memcpy(&parameter[14], &screen_parameter_composite_game_init,  sizeof(SCREEN_PARAMETER)*2*2*5);
+  memcpy(&parameter[34], &screen_parameter_component_game_init, sizeof(SCREEN_PARAMETER)*2*2*5);
 
   // video configファイルのオープン
   video_file = fopen(GPSP_CONFIG_FILENAME, "r");
@@ -3606,9 +3641,76 @@ void load_video_config()
   }
   // パラメータのセット
   memcpy(&screen_parameter_psp_menu,     &parameter[0],  sizeof(SCREEN_PARAMETER));
-  memcpy(&screen_parameter_analog_menu,  &parameter[1],  sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&screen_parameter_digital_menu, &parameter[5],  sizeof(SCREEN_PARAMETER)*2*2);
+  memcpy(&screen_parameter_composite_menu,  &parameter[1],  sizeof(SCREEN_PARAMETER)*2*2);
+  memcpy(&screen_parameter_component_menu, &parameter[5],  sizeof(SCREEN_PARAMETER)*2*2);
   memcpy(&screen_parameter_psp_game,     &parameter[9],  sizeof(SCREEN_PARAMETER)*5);
-  memcpy(&screen_parameter_analog_game,  &parameter[14], sizeof(SCREEN_PARAMETER)*2*2*5);
-  memcpy(&screen_parameter_digital_game, &parameter[34], sizeof(SCREEN_PARAMETER)*2*2*5);
+  memcpy(&screen_parameter_composite_game,  &parameter[14], sizeof(SCREEN_PARAMETER)*2*2*5);
+  memcpy(&screen_parameter_component_game, &parameter[34], sizeof(SCREEN_PARAMETER)*2*2*5);
 }
+
+#ifdef VIDEO_CONFIG
+
+void get_parameter(float *parameter);
+void set_parameter(float *parameter);
+
+static char *setting_mode;
+
+void video_config()
+{
+  u32 repeat = 1;
+  u32 old_filter;
+  u32 mode = FRAME_MENU;
+  gui_action_type gui_action;
+
+  float parameter[2][10];
+
+  // フィルターをOFFにする
+  old_filter = current_parameter->filter[gpsp_config.screen_filter];
+  current_parameter->filter[gpsp_config.screen_filter] = 0;
+  video_resolution(FRAME_MENU);
+  box(0,0,479,271,COLOR_WHITE);
+  get_parameter(parameter);
+
+  while(repeat)
+  {
+    gui_action = get_gui_input();
+    switch(gui_action)
+    {
+      case CURSOR_EXIT:
+        repeat = 0;
+        break;
+
+      default:
+        break;
+    }
+    flip_screen();
+  }
+  video_resolution(FRAME_MENU);
+}
+
+void view_parameter()
+{
+  // GAME画面も考慮して38文字x14文字で納める
+  //
+  // MODE: MENU
+  // SP1 U1:000 V1:000 X1:000 Y1:000
+  //     U2:000 V2:000 X2:000 Y2:000
+  //
+  // SP2 U1:000 V1:000 X1:000 Y1:000
+  //     U2:000 V2:000 X2:000 Y2:000
+
+  PRINT_STRING_BG("", COLOR_HELP_TEXT, COLOR_BG, 100, 0);
+  
+}
+
+void get_parameter(float *parameter)
+{
+  memcpy(parameter, &current_parameter->screen_setting_1, sizeof(float) * 20);
+}
+
+void set_parameter(float *parameter)
+{
+  memcpy(screen_vertex, parameter, sizeof(float) * 20);
+}
+
+#endif // ifdef VIDEO_CONFIG
