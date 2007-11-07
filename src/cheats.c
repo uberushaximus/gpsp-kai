@@ -30,11 +30,11 @@
 
 u32 num_cheats;
 
-void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant);
-void process_cheat_gs1(CHEAT_TYPE *cheat);
-void process_cheat_gs3(CHEAT_TYPE *cheat);
+static void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant);
+static void process_cheat_gs1(CHEAT_TYPE *cheat);
+static void process_cheat_gs3(CHEAT_TYPE *cheat);
 
-void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant)
+static void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENUM cheat_variant)
 {
   u32 i;
   u32 address = *address_ptr;
@@ -182,7 +182,7 @@ void add_cheats(char *cheats_filename)
   }
 }
 
-void process_cheat_gs1(CHEAT_TYPE *cheat)
+static void process_cheat_gs1(CHEAT_TYPE *cheat)
 {
   u32 cheat_opcode;
   u32 *code_ptr = cheat->cheat_codes;
@@ -269,7 +269,7 @@ void process_cheat_gs1(CHEAT_TYPE *cheat)
 
 // These are especially incomplete.
 
-void process_cheat_gs3(CHEAT_TYPE *cheat)
+static void process_cheat_gs3(CHEAT_TYPE *cheat)
 {
   u32 cheat_opcode;
   u32 *code_ptr = cheat->cheat_codes;

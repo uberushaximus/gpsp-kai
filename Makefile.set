@@ -12,9 +12,6 @@ VERSION_BUILD = 8
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定
 TEST_MODE = 1
 
-# CコアによるCPUエミュレーションのON/OFF
-C_CORE_MODE = 0
-
 # WLANのON/OFF
 ADHOC_MODE = 1
 

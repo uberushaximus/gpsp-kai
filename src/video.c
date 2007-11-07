@@ -96,7 +96,7 @@ static u32 *ge_cmd = (u32 *)0x441FC000;
 static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
-static u32 video_draw_frame = FRAME_GAME;
+u32 video_draw_frame = FRAME_GAME;
 
 // フレームバッファ [表示用]768*512*16bit(0xC0000/768kb) + [GBA]240*160*16bit*2(0x25800/150kb) + [MENU]480*272*16bit*2(0x7F800/510kb) 0x04000000~0x04165000 1428kb
 // かなり贅沢な使い方をしてます。GBA用とMENU用は共有できるかもしれない。
@@ -111,19 +111,19 @@ u32 screen_height = 160;
 u32 screen_width2 = 240 / 2;
 u32 screen_height2 = 160 / 2;
 
-static const u32 flip_address[2][2] = 
+u32 flip_address[2][2] = 
 {
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
-static const u32 flip_offset_address[2][2] = 
+u32 flip_offset_address[2][2] = 
 {
   { PSP_DISPLAY_BUFFER_SIZE, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
-static const ScePspIMatrix4 dither_matrix =
+ScePspIMatrix4 dither_matrix =
 {
   // Bayer dither
   {  0,  8,  2, 10 },
@@ -3379,33 +3379,20 @@ void flip_screen()
   u32 *old_ge_cmd_ptr = ge_cmd_ptr;
   sceKernelDcacheWritebackAll();
 
-//  // Render the current screen
-//  ge_cmd_ptr = ge_cmd + 2;
-//  *ge_cmd_ptr = TBP0_temp[screen_flip];
-//  ge_cmd_ptr++;
-//  *ge_cmd_ptr = TBW0_temp[screen_flip];
-//  ge_cmd_ptr++;
-//  *ge_cmd_ptr = TSIZE0_temp;
-//  ge_cmd_ptr++;
-//  ge_cmd_ptr = old_ge_cmd_ptr;
-//
-//  // Flip to the next screen
-//  screen_flip ^= 1;
-//  screen_address = (u16 *)flip_address_temp[screen_flip];
-//  screen_offset_address = (u16 *)flip_offset_address_temp[screen_flip];
-
   // Render the current screen
   ge_cmd_ptr = ge_cmd + 2;
-  GE_CMD(TBP0, ((u32)screen_address & 0x00FFFFFF));
-  GE_CMD(TBW0, (((u32)screen_address & 0xFF000000) >> 8) | screen_pitch);
-  GE_CMD(TSIZE0, (current_parameter->texture_bit.x << 8) | current_parameter->texture_bit.y);
+  *ge_cmd_ptr = TBP0_temp[screen_flip];
+  ge_cmd_ptr++;
+  *ge_cmd_ptr = TBW0_temp[screen_flip];
+  ge_cmd_ptr++;
+  *ge_cmd_ptr = TSIZE0_temp;
+  ge_cmd_ptr++;
   ge_cmd_ptr = old_ge_cmd_ptr;
 
   // Flip to the next screen
   screen_flip ^= 1;
-  screen_address = (u16 *)flip_address[video_draw_frame][screen_flip];
-  screen_offset_address = (u16 *)flip_offset_address[video_draw_frame][screen_flip];
-
+  screen_address = (u16 *)flip_address_temp[screen_flip];
+  screen_offset_address = (u16 *)flip_offset_address_temp[screen_flip];
 
   sceGeListEnQueue(ge_cmd, ge_cmd_ptr, gecbid, NULL);
 }

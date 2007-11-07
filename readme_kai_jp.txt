@@ -1,13 +1,15 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 08 svn rev.
+-UnOfficial gpSP kai 3.2 test 8 svn rev.
 	メニューへの切り替えを多少高速化
 	起動時のTV画面への切り替えミスを修正
 	キーマップの読込/保存ミスを修正
 	TV出力のパラメータを全面的に調整
 	screen_flip()をほんの少し高速化
 	kernelモードでのビルド設定をすべて削除
+	Cコアエミュレート部分を全て削除
+	cpu_threaded.cをcpu.cに統合
 
 -UnOfficial gpSP kai 3.2 test 07 svn rev.351
 	メッセージファイルの変更

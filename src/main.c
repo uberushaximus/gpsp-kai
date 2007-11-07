@@ -498,11 +498,7 @@ int main(int argc, char *argv[])
   virtual_frame_count = 0;
 
   // エミュレートの開始
-#ifdef C_CORE_MODE
-  execute_arm(execute_cycles);
-#else
   execute_arm_translate(execute_cycles);
-#endif
   return 0;
 }
 

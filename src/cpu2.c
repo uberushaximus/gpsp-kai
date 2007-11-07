@@ -25,6 +25,74 @@
 
 #include "common.h"
 
+const u8 bit_count[256] =
+{
+  0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+  1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+  1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+  1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+  2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+  3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+  3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+  4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+};
+
+const u32 psr_masks[16] =
+{
+  0x00000000, 0x000000FF, 0x0000FF00, 0x0000FFFF, 0x00FF0000,
+  0x00FF00FF, 0x00FFFF00, 0x00FFFFFF, 0xFF000000, 0xFF0000FF,
+  0xFF00FF00, 0xFF00FFFF, 0xFFFF0000, 0xFFFF00FF, 0xFFFFFF00,
+  0xFFFFFFFF
+};
+
+// When a mode change occurs from non-FIQ to non-FIQ retire the current
+// reg[13] and reg[14] into reg_mode[cpu_mode][5] and reg_mode[cpu_mode][6]
+// respectively and load into reg[13] and reg[14] reg_mode[new_mode][5] and
+// reg_mode[new_mode][6]. When swapping to/from FIQ retire/load reg[8]
+// through reg[14] to/from reg_mode[MODE_FIQ][0] through reg_mode[MODE_FIQ][6].
+
+u32 reg_mode[7][7];
+
+u32 cpu_modes[32] =
+{
+  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
+  MODE_INVALID, MODE_USER   , MODE_FIQ      , MODE_IRQ      , MODE_SUPERVISOR,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_ABORT    , MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,MODE_INVALID   , MODE_INVALID,
+  MODE_INVALID, MODE_USER
+};
+
+u32 cpu_modes_cpsr[7] = { 0x10, 0x11, 0x12, 0x13, 0x17, 0x1B, 0x1F };
+
+// When switching modes set spsr[new_mode] to cpsr. Modifying PC as the
+// target of a data proc instruction will set cpsr to spsr[cpu_mode].
+u32 spsr[6];
+
+// ARM/Thumb mode is stored in the flags directly, this is simpler than
+// shadowing it since it has a constant 1bit represenation.
+
+char *reg_names[16] =
+{
+  " r0", " r1", " r2", " r3", " r4", " r5", " r6", " r7",
+  " r8", " r9", "r10", " fp", " ip", " sp", " lr", " pc"
+};
+
+u32 instruction_count = 0;
+
+u32 output_field = 0;
+
+u32 last_instruction = 0;
+
 u8 rom_translation_cache[ROM_TRANSLATION_CACHE_SIZE];
 u8 *rom_translation_ptr = rom_translation_cache;
 
@@ -184,8 +252,8 @@ typedef struct
 #define thumb_decode_rlist()                                                  \
   u32 reg_list = opcode & 0xFF                                                \
 
-//#define thumb_decode_branch_cond()                                            \
-//  s32 offset = (s32)(opcode << 24) >> 24                                      \
+#define thumb_decode_branch_cond()                                            \
+  s32 offset = (s32)(opcode << 24) >> 24                                      \
 
 #define thumb_decode_swi()                                                    \
   u32 comment = opcode & 0xFF                                                 \
@@ -3507,6 +3575,43 @@ void dump_translation_cache()
   char print_buffer[256];
   sprintf(print_buffer, "RAM:%08X ROM:%08X BIOS:%08X", ram_translation_ptr - ram_translation_cache, rom_translation_ptr - rom_translation_cache, bios_translation_ptr - bios_translation_cache);
   PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
-
 }
+
+void init_cpu()
+{
+  u32 i;
+
+  for(i = 0; i < 16; i++)
+  {
+    reg[i] = 0;
+  }
+
+  reg[REG_SP] = 0x03007F00;
+  reg[REG_PC] = 0x08000000;
+  reg[REG_CPSR] = 0x0000001F;
+  reg[CPU_HALT_STATE] = CPU_ACTIVE;
+  reg[CPU_MODE] = MODE_USER;
+  reg[CHANGED_PC_STATUS] = 0;
+
+  reg_mode[MODE_USER][5] = 0x03007F00;
+  reg_mode[MODE_IRQ][5] = 0x03007FA0;
+  reg_mode[MODE_FIQ][5] = 0x03007FA0;
+  reg_mode[MODE_SUPERVISOR][5] = 0x03007FE0;
+}
+
+#define cpu_savestate_body(type)                                              \
+{                                                                             \
+  FILE_##type(savestate_file, reg, 0x100);                                    \
+  FILE_##type##_ARRAY(savestate_file, spsr);                                  \
+  FILE_##type##_ARRAY(savestate_file, reg_mode);                              \
+}                                                                             \
+
+void cpu_read_savestate(FILE_TAG_TYPE savestate_file)
+cpu_savestate_body(READ);
+
+void cpu_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+cpu_savestate_body(READ_MEM);
+
+void cpu_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+cpu_savestate_body(WRITE_MEM);
 

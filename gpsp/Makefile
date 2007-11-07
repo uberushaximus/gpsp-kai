@@ -54,10 +54,6 @@ ifeq ($(ADHOC_MODE), 1)
 CFLAGS          += -DADHOC_MODE
 endif
 
-ifeq ($(C_CORE_MODE), 1)
-CFLAGS          += -DC_CORE_MODE
-endif
-
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 

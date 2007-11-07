@@ -253,10 +253,12 @@
 
 #define sound_savestate_body(type)                                          \
 {                                                                           \
+  u32 temp_sound_read_offset = sound_read_offset;                           \
+  u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                 \
   FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
-  FILE_##type##_VARIABLE(savestate_file, sound_read_offset);                \
+  FILE_##type##_VARIABLE(savestate_file, temp_sound_read_offset);           \
   FILE_##type##_VARIABLE(savestate_file, sound_last_cpu_ticks);             \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_buffer_index);           \
+  FILE_##type##_VARIABLE(savestate_file, temp_gbc_sound_buffer_index);      \
   FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
   FILE_##type##_VARIABLE(savestate_file, gbc_sound_partial_ticks);          \
   FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_left);     \

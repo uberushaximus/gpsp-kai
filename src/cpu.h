@@ -108,7 +108,6 @@ typedef enum
 
 extern debug_state current_debug_state;
 extern u32 instruction_count;
-extern u32 last_instruction;
 
 void execute_arm(u32 cycles);
 
@@ -165,7 +164,6 @@ extern u32 translation_gate_targets;
 extern u32 translation_gate_target_pc[MAX_TRANSLATION_GATES];
 
 extern u32 in_interrupt;
-extern const u8 bit_count[256];
 
 extern u32 bios_mode;
 
@@ -182,28 +180,9 @@ extern u32 reg_mode[7][7];
 extern u32 spsr[6];
 
 extern u32 cpu_modes[32];
-extern const u32 psr_masks[16];
 
 extern u32 breakpoint_value;
 
-extern u32 memory_region_access_read_u8[16];
-extern u32 memory_region_access_read_s8[16];
-extern u32 memory_region_access_read_u16[16];
-extern u32 memory_region_access_read_s16[16];
-extern u32 memory_region_access_read_u32[16];
-extern u32 memory_region_access_write_u8[16];
-extern u32 memory_region_access_write_u16[16];
-extern u32 memory_region_access_write_u32[16];
-extern u32 memory_reads_u8;
-extern u32 memory_reads_s8;
-extern u32 memory_reads_u16;
-extern u32 memory_reads_s16;
-extern u32 memory_reads_u32;
-extern u32 memory_writes_u8;
-extern u32 memory_writes_u16;
-extern u32 memory_writes_u32;
-
 void init_cpu();
-void move_reg();
 
 #endif

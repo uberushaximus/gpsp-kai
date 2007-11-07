@@ -36,10 +36,8 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <fastmath.h>
 
 #include <zlib.h>
@@ -70,7 +68,7 @@
  * マクロ等の定義
  ******************************************************************************/
 
-typedef s32 FILE_TAG_TYPE;
+typedef SceUID FILE_TAG_TYPE;
 typedef u32 FIXED16_16;    // 整数部16bit 実数部16bit の固定小数点
 typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 
@@ -168,7 +166,7 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
   ((value) & 0xFFFF)                                                          \
 
 #define FIXED_DIV(numerator, denominator, bits)                               \
-  ((((numerator) * (1 << (bits))) + ((denominator) / 2)) / (denominator))     \
+  ((((numerator) * (1 << (bits))) + ((denominator) >> 1)) / (denominator))     \
 
 #define ADDRESS8(base, offset)                                                \
   *((u8 *)((u8 *)(base) + (offset)))                                          \
