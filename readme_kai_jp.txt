@@ -10,6 +10,7 @@
 	kernelモードでのビルド設定をすべて削除
 	Cコアエミュレート部分を全て削除
 	cpu_threaded.cをcpu.cに統合
+	savestate関係のマクロを整理
 
 -UnOfficial gpSP kai 3.2 test 07 svn rev.351
 	メッセージファイルの変更

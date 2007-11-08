@@ -47,7 +47,7 @@ typedef enum
   CPU_ACTIVE,
   CPU_HALT,
   CPU_STOP
-} cpu_halt_type;
+} CPU_HALT_TYPE;
 
 typedef enum
 {
@@ -66,7 +66,7 @@ typedef enum
   IRQ_DMA3 = 0x0800,
   IRQ_KEYPAD = 0x1000,
   IRQ_GAMEPAK = 0x2000,
-} irq_type;
+} IRQ_TYPE;
 
 typedef enum
 {
@@ -88,28 +88,10 @@ typedef enum
 
 typedef enum
 {
-  STEP,
-  PC_BREAKPOINT,
-  VCOUNT_BREAKPOINT,
-  Z_BREAKPOINT,
-  COUNTDOWN_BREAKPOINT,
-  COUNTDOWN_BREAKPOINT_B,
-  COUNTDOWN_BREAKPOINT_C,
-  STEP_RUN,
-  RUN
-} debug_state;
-
-typedef enum
-{
   TRANSLATION_REGION_RAM,
   TRANSLATION_REGION_ROM,
   TRANSLATION_REGION_BIOS
-} translation_region_type;
-
-extern debug_state current_debug_state;
-extern u32 instruction_count;
-
-void execute_arm(u32 cycles);
+} TRANSLATION_REGION_TYPE;
 
 u32 execute_load_u8(u32 address);
 u32 execute_load_u16(u32 address);
@@ -122,9 +104,8 @@ void execute_store_u32(u32 address, u32 source);
 void execute_arm_translate(u32 cycles);
 
 void init_translater();
-void cpu_read_mem_savestate(FILE_TAG_TYPE savestate_file);
-void cpu_write_mem_savestate(FILE_TAG_TYPE savestate_file);
-void cpu_read_savestate(FILE_TAG_TYPE savestate_file);
+void cpu_read_mem_savestate();
+void cpu_write_mem_savestate();
 
 void invalidate_all_cache();
 void invalidate_icache_region(u8* addr, u32 length);
@@ -132,9 +113,9 @@ void invalidate_icache_region(u8* addr, u32 length);
 u8 *block_lookup_address_arm(u32 pc);
 u8 *block_lookup_address_thumb(u32 pc);
 u8 *block_lookup_address_dual(u32 pc);
-s32 translate_block_arm(u32 pc, translation_region_type translation_region,
+s32 translate_block_arm(u32 pc, TRANSLATION_REGION_TYPE translation_region,
  u32 smc_enable);
-s32 translate_block_thumb(u32 pc, translation_region_type translation_region,
+s32 translate_block_thumb(u32 pc, TRANSLATION_REGION_TYPE translation_region,
  u32 smc_enable);
 
 #define ROM_TRANSLATION_CACHE_SIZE  (1024 * 512 * 4)  /* 2048 KB 0x20 0000 */
@@ -180,8 +161,6 @@ extern u32 reg_mode[7][7];
 extern u32 spsr[6];
 
 extern u32 cpu_modes[32];
-
-extern u32 breakpoint_value;
 
 void init_cpu();
 

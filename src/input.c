@@ -70,8 +70,8 @@ button_repeat_state_type button_repeat_state = BUTTON_NOT_HELD;
 u32 button_repeat = 0;
 gui_action_type cursor_repeat = CURSOR_NONE;
 
-u32 sensorX;
-u32 sensorY;
+u32 tilt_sensor_x;
+u32 tilt_sensor_y;
 u32 sensorR;
 
 #define BUTTON_REPEAT_START    200000
@@ -258,8 +258,8 @@ u32 update_input()
   u32 new_key = 0;
   u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
-  sensorX = 0x800;
-  sensorY = 0x800;
+  tilt_sensor_x = 0x800;
+  tilt_sensor_y = 0x800;
   sensorR = 0x650;
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
@@ -268,8 +268,8 @@ u32 update_input()
 
   if((gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
-    sensorX = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
-    sensorY = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
+    tilt_sensor_x = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
+    tilt_sensor_y = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
 //    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
     if(ctrl_data.Lx < analog_sensitivity)
       buttons |= PSP_CTRL_ANALOG_LEFT;
@@ -401,16 +401,13 @@ void init_input()
 // type = READ / WRITE_MEM
 #define input_savestate_body(type)                                            \
 {                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, key);                                \
+  FILE_##type##_VARIABLE(key);                                                \
 }                                                                             \
 
-void input_read_savestate(FILE_TAG_TYPE savestate_file)                   \
-input_savestate_body(READ);
-
-void input_read_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
+void input_read_mem_savestate()
 input_savestate_body(READ_MEM);
 
-void input_write_mem_savestate(FILE_TAG_TYPE savestate_file)                   \
+void input_write_mem_savestate()
 input_savestate_body(WRITE_MEM);
 
 // 以降OSK用のコード

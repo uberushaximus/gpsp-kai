@@ -109,13 +109,13 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_SEEK(filename_tag, offset, type)                               \
   sceIoLseek(filename_tag, offset, PSP_##type)                              \
 
-#define FILE_READ_MEM(filename_tag, buffer, size)                           \
+#define FILE_READ_MEM(buffer, size)                                         \
 {                                                                           \
   memcpy(buffer, write_mem_ptr, size);                                      \
   write_mem_ptr += size;                                                    \
 }                                                                           \
 
-#define FILE_WRITE_MEM(filename_tag, buffer, size)                          \
+#define FILE_WRITE_MEM(buffer, size)                                        \
 {                                                                           \
   memcpy(write_mem_ptr, buffer, size);                                      \
   write_mem_ptr += size;                                                    \
@@ -129,11 +129,11 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE_VARIABLE(filename_tag, variable)                         \
   FILE_WRITE(filename_tag, &variable, sizeof(variable))                     \
 
-#define FILE_READ_MEM_VARIABLE(filename_tag, variable)                      \
-  FILE_READ_MEM(filename_tag, &variable, sizeof(variable))                  \
+#define FILE_READ_MEM_VARIABLE(variable)                                    \
+  FILE_READ_MEM(&variable, sizeof(variable))                                \
 
-#define FILE_WRITE_MEM_VARIABLE(filename_tag, variable)                     \
-  FILE_WRITE_MEM(filename_tag, &variable, sizeof(variable))                 \
+#define FILE_WRITE_MEM_VARIABLE(variable)                                   \
+  FILE_WRITE_MEM(&variable, sizeof(variable))                               \
 
 // These must be statically declared arrays (ie, global or on the stack,
 // not dynamically allocated on the heap)
@@ -144,38 +144,38 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE_ARRAY(filename_tag, array)                               \
   FILE_WRITE(filename_tag, array, sizeof(array))                            \
 
-#define FILE_READ_MEM_ARRAY(filename_tag, array)                           \
-  FILE_READ_MEM(filename_tag, array, sizeof(array))                        \
+#define FILE_READ_MEM_ARRAY(array)                                          \
+  FILE_READ_MEM(array, sizeof(array))                                       \
 
-#define FILE_WRITE_MEM_ARRAY(filename_tag, array)                           \
-  FILE_WRITE_MEM(filename_tag, array, sizeof(array))                        \
+#define FILE_WRITE_MEM_ARRAY(array)                                         \
+  FILE_WRITE_MEM(array, sizeof(array))                                      \
 
-#define FLOAT_TO_FP16_16(value)                                               \
-  (FIXED16_16)((value) * 65536.0)                                             \
+#define FLOAT_TO_FP16_16(value)                                             \
+  (FIXED16_16)((value) * 65536.0)                                           \
 
-#define FP16_16_TO_FLOAT(value)                                               \
-  (float)((value) / 65536.0)                                                  \
+#define FP16_16_TO_FLOAT(value)                                             \
+  (float)((value) / 65536.0)                                                \
 
-#define U32_TO_FP16_16(value)                                                 \
-  ((value) << 16)                                                             \
+#define U32_TO_FP16_16(value)                                               \
+  ((value) << 16)                                                           \
 
-#define FP16_16_TO_U32(value)                                                 \
-  ((value) >> 16)                                                             \
+#define FP16_16_TO_U32(value)                                               \
+  ((value) >> 16)                                                           \
 
-#define FP16_16_FRACTIONAL_PART(value)                                        \
-  ((value) & 0xFFFF)                                                          \
+#define FP16_16_FRACTIONAL_PART(value)                                      \
+  ((value) & 0xFFFF)                                                        \
 
-#define FIXED_DIV(numerator, denominator, bits)                               \
-  ((((numerator) * (1 << (bits))) + ((denominator) >> 1)) / (denominator))     \
+#define FIXED_DIV(numerator, denominator, bits)                             \
+  ((((numerator) * (1 << (bits))) + ((denominator) >> 1)) / (denominator))  \
 
-#define ADDRESS8(base, offset)                                                \
-  *((u8 *)((u8 *)(base) + (offset)))                                          \
+#define ADDRESS8(base, offset)                                              \
+  *((u8 *)((u8 *)(base) + (offset)))                                        \
 
-#define ADDRESS16(base, offset)                                               \
-  *((u16 *)((u8 *)(base) + (offset)))                                         \
+#define ADDRESS16(base, offset)                                             \
+  *((u16 *)((u8 *)(base) + (offset)))                                       \
 
-#define ADDRESS32(base, offset)                                               \
-  *((u32 *)((u8 *)(base) + (offset)))                                         \
+#define ADDRESS32(base, offset)                                             \
+  *((u32 *)((u8 *)(base) + (offset)))                                       \
 
 #define printf pspDebugScreenPrintf
 

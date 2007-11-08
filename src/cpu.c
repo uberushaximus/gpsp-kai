@@ -63,13 +63,14 @@ u32 reg_mode[7][7];
 
 u32 cpu_modes[32] =
 {
-  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_INVALID  , MODE_INVALID,
-  MODE_INVALID, MODE_USER   , MODE_FIQ      , MODE_IRQ      , MODE_SUPERVISOR,
-  MODE_INVALID, MODE_INVALID, MODE_INVALID  , MODE_ABORT    , MODE_INVALID,
-  MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,MODE_INVALID   , MODE_INVALID,
-  MODE_INVALID, MODE_USER
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_INVALID,
+  MODE_USER   , MODE_FIQ    , MODE_IRQ    , MODE_SUPERVISOR,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_ABORT,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_UNDEFINED,
+  MODE_INVALID, MODE_INVALID, MODE_INVALID, MODE_USER
 };
 
 u32 cpu_modes_cpsr[7] = { 0x10, 0x11, 0x12, 0x13, 0x17, 0x1B, 0x1F };
@@ -86,8 +87,6 @@ char *reg_names[16] =
   " r0", " r1", " r2", " r3", " r4", " r5", " r6", " r7",
   " r8", " r9", "r10", " fp", " ip", " sp", " lr", " pc"
 };
-
-u32 instruction_count = 0;
 
 u32 output_field = 0;
 
@@ -134,12 +133,6 @@ typedef struct
   u32 branch_target;
   u8 *branch_source;
 } block_exit_type;
-
-#ifdef OLD_COUNT
-#include "mips_emit.h"
-#else
-#include "mips_emit_new_count.h"
-#endif
 
 #define arm_decode_data_proc_reg()                                            \
   u32 rn = (opcode >> 16) & 0x0F;                                             \
@@ -260,6 +253,12 @@ typedef struct
 
 #define thumb_decode_branch()                                                 \
   u32 offset = opcode & 0x07FF                                                \
+
+#ifdef OLD_COUNT
+#include "mips_emit.h"
+#else
+#include "mips_emit_new_count.h"
+#endif
 
 #define check_pc_region(pc)                                                   \
   new_pc_region = (pc >> 15);                                                 \
@@ -2042,49 +2041,49 @@ typedef struct
     case 0x48:                                                                \
       /* LDR r0, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 0, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x49:                                                                \
       /* LDR r1, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 1, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4A:                                                                \
       /* LDR r2, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 2, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4B:                                                                \
       /* LDR r3, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 3, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4C:                                                                \
       /* LDR r4, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 4, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4D:                                                                \
       /* LDR r5, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 5, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4E:                                                                \
       /* LDR r6, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 6, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x4F:                                                                \
       /* LDR r7, [pc + imm] */                                                \
       thumb_access_memory(load, imm, 7, 0, 0, pc_relative,                    \
-       (pc & ~2) + (imm * 4) + 4, u32);                                       \
+       (pc & ~2) + (imm << 2) + 4, u32);                                      \
       break;                                                                  \
                                                                               \
     case 0x50 ... 0x51:                                                       \
@@ -2129,13 +2128,13 @@ typedef struct
                                                                               \
     case 0x60 ... 0x67:                                                       \
       /* STR rd, [rb + imm] */                                                \
-      thumb_access_memory(store, mem_imm, rd, rb, 0, reg_imm, (imm * 4),      \
+      thumb_access_memory(store, mem_imm, rd, rb, 0, reg_imm, (imm << 2),     \
        u32);                                                                  \
       break;                                                                  \
                                                                               \
     case 0x68 ... 0x6F:                                                       \
       /* LDR rd, [rb + imm] */                                                \
-      thumb_access_memory(load, mem_imm, rd, rb, 0, reg_imm, (imm * 4), u32); \
+      thumb_access_memory(load, mem_imm, rd, rb, 0, reg_imm, (imm << 2), u32);\
       break;                                                                  \
                                                                               \
     case 0x70 ... 0x77:                                                       \
@@ -2151,12 +2150,12 @@ typedef struct
     case 0x80 ... 0x87:                                                       \
       /* STRH rd, [rb + imm] */                                               \
       thumb_access_memory(store, mem_imm, rd, rb, 0, reg_imm,                 \
-       (imm * 2), u16);                                                       \
+       (imm << 1), u16);                                                      \
       break;                                                                  \
                                                                               \
     case 0x88 ... 0x8F:                                                       \
       /* LDRH rd, [rb + imm] */                                               \
-      thumb_access_memory(load, mem_imm, rd, rb, 0, reg_imm, (imm * 2), u16); \
+      thumb_access_memory(load, mem_imm, rd, rb, 0, reg_imm, (imm << 1), u16);\
       break;                                                                  \
                                                                               \
     case 0x90:                                                                \
@@ -2323,12 +2322,12 @@ typedef struct
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
         /* ADD sp, -imm */                                                    \
-        thumb_adjust_sp(-(imm * 4));                                          \
+        thumb_adjust_sp(-(imm << 2));                                         \
       }                                                                       \
       else                                                                    \
       {                                                                       \
         /* ADD sp, +imm */                                                    \
-        thumb_adjust_sp((imm * 4));                                           \
+        thumb_adjust_sp((imm << 2));                                          \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -2660,7 +2659,7 @@ typedef struct
       else                                                                    \
       {                                                                       \
         /* TST rd, rs */                                                      \
-        thumb_flag_modifies_all/*zn*/();                                             \
+        thumb_flag_modifies_zn();                                             \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -2704,7 +2703,7 @@ u32 bios_block_tag_top = 0x0101;
 // ARM or Thumb mode.
 
 #define block_lookup_address_pc_arm()                                         \
-  pc &= ~0x03
+  pc &= ~0x03                                                                 \
 
 #define block_lookup_address_pc_thumb()                                       \
   pc &= ~0x01                                                                 \
@@ -2714,7 +2713,7 @@ u32 bios_block_tag_top = 0x0101;
                                                                               \
   if(thumb)                                                                   \
   {                                                                           \
-    pc--;                                                                     \
+    pc &= ~0x01;                                                              \
     reg[REG_CPSR] |= 0x20;                                                    \
   }                                                                           \
   else                                                                        \
@@ -2813,7 +2812,6 @@ u32 translation_flush_count = 0;
   u8 *block_address;                                                          \
                                                                               \
   /* Starting at the beginning, we allow for one translation cache flush. */  \
-  /* 一番最初に呼ばれたときにtranslation_flush_countを0にする */              \
   if(translation_recursion_level == 0)                                        \
     translation_flush_count = 0;                                              \
   /* modeにあわせてPCの位置を調整 */                                          \
@@ -2830,17 +2828,13 @@ u32 translation_flush_count = 0;
       break;                                                                  \
                                                                               \
     case 0x2:                                                                 \
-      location = (u16 *)(ewram + (pc & 0x7FFF) + ((pc & 0x38000) * 2));       \
+      location = (u16 *)(ewram + (pc & 0x7FFF) + ((pc & 0x38000) << 1));      \
       block_lookup_translate(type, ram, 1);                                   \
-      if(translation_recursion_level == 0)                                    \
-        bios_region_read_protect();                                           \
       break;                                                                  \
                                                                               \
     case 0x3:                                                                 \
       location = (u16 *)(iwram + (pc & 0x7FFF));                              \
       block_lookup_translate(type, ram, 1);                                   \
-      if(translation_recursion_level == 0)                                    \
-        bios_region_read_protect();                                           \
       break;                                                                  \
                                                                               \
     case 0x8 ... 0xD:                                                         \
@@ -2891,8 +2885,6 @@ u32 translation_flush_count = 0;
         if(translation_recursion_level == 0)                                  \
           translate_invalidate_dcache();                                      \
       }                                                                       \
-      if(translation_recursion_level == 0)                                    \
-        bios_region_read_protect();                                           \
       break;                                                                  \
     }                                                                         \
                                                                               \
@@ -2907,12 +2899,15 @@ u32 translation_flush_count = 0;
       if(translation_recursion_level == 0)                                    \
       {                                                                       \
         char buffer[256];                                                     \
-        sprintf(buffer, "bad jump %x (%x) (%x)\n", (int)pc, (int)reg[REG_PC], \
-         (int)last_instruction);                                              \
-        printf(buffer);                                                       \
+        video_resolution(FRAME_MENU);                                         \
+        sprintf(buffer, "bad jump %x (%x)\n", (int)pc, (int)reg[REG_PC]);     \
+        PRINT_STRING_BG(buffer, COLOR_WHITE, COLOR_BLACK, 0, 10);             \
+        flip_screen();                                                        \
+        error_msg("");                                                        \
         quit();                                                               \
       }                                                                       \
       block_address = (u8 *)(-1);                                             \
+      break;                                                                  \
   }                                                                           \
                                                                               \
   return block_address;                                                       \
@@ -2962,7 +2957,7 @@ block_lookup_address_body(dual);
   block_end_pc += 4                                                           \
 
 #define arm_branch_target()                                                   \
-  branch_target = (block_end_pc + 4 + (((s32)(opcode & 0xFFFFFF) << 8) >> 6)) \
+  branch_target = (block_end_pc + 4 + ((s32)(opcode << 8) >> 6))              \
 
 // Contiguous conditional block flags modification - it will set 0x20 in the
 // condition's bits if this instruction modifies flags. Taken from the CPU
@@ -3068,23 +3063,23 @@ block_lookup_address_body(dual);
   block_end_pc += 2                                                           \
 
 #define thumb_branch_target()                                                 \
-  if(opcode < 0xE000)                                                         \
+  if(opcode < 0xDF00)                                                         \
   {                                                                           \
-    branch_target = block_end_pc + 2 + ((s8)(opcode & 0xFF) * 2);             \
+    branch_target = block_end_pc + 2 + ((s32)(opcode << 24) >> 23);           \
   }                                                                           \
   else                                                                        \
                                                                               \
-  if(opcode < 0xF800)                                                         \
+  if(opcode < 0xE800)                                                         \
   {                                                                           \
-    branch_target = block_end_pc + 2 + ((s32)((opcode & 0x7FF) << 21) >> 20); \
+    branch_target = block_end_pc + 2 + ((s32)(opcode << 21) >> 20);           \
   }                                                                           \
   else                                                                        \
   {                                                                           \
     if((last_opcode >= 0xF000) && (last_opcode < 0xF800))                     \
     {                                                                         \
       branch_target =                                                         \
-       (block_end_pc + ((s32)((last_opcode & 0x07FF) << 21) >> 9) +           \
-       ((opcode & 0x07FF) * 2));                                              \
+       (block_end_pc + ((s32)(last_opcode << 21) >> 9) +                      \
+       ((opcode & 0x07FF) << 1));                                             \
     }                                                                         \
     else                                                                      \
     {                                                                         \
@@ -3264,7 +3259,7 @@ block_exit_type block_exits[MAX_EXITS];
   pc &= ~0x01                                                                 \
 
 #define translate_block_builder(type)                                         \
-s32 translate_block_##type(u32 pc, translation_region_type                    \
+s32 translate_block_##type(u32 pc, TRANSLATION_REGION_TYPE                    \
  translation_region, u32 smc_enable)                                          \
 {                                                                             \
   u32 opcode = 0;                                                             \
@@ -3497,7 +3492,7 @@ void flush_translation_cache_ram()
   {
     iwram_code_min &= 0x7FFF;
     iwram_code_max &= 0x7FFF;
-    memset(iwram + iwram_code_min, 0, iwram_code_max - iwram_code_min);
+    memset(iwram + iwram_code_min, 0, iwram_code_max - iwram_code_min + 1);
   }
 
   if(ewram_code_min != 0xFFFFFFFF)
@@ -3520,16 +3515,16 @@ void flush_translation_cache_ram()
     {
       memset(ewram + (ewram_code_min_page * 0x10000) +
        ewram_code_min_offset, 0,
-       ewram_code_max_offset - ewram_code_min_offset);
+       ewram_code_max_offset - ewram_code_min_offset + 1);
     }
     else
     {
+      memset(ewram + (ewram_code_min_page * 0x10000) + ewram_code_min_offset, 0, 0x8000);
       for(i = ewram_code_min_page + 1; i < ewram_code_max_page; i++)
-      {
         memset(ewram + (i * 0x10000), 0, 0x8000);
-      }
 
-      memset(ewram, 0, ewram_code_max_offset);
+      memset(ewram + (ewram_code_max_page * 0x10000), 0, ewram_code_max_offset + 1);
+
     }
   }
 
@@ -3601,17 +3596,14 @@ void init_cpu()
 
 #define cpu_savestate_body(type)                                              \
 {                                                                             \
-  FILE_##type(savestate_file, reg, 0x100);                                    \
-  FILE_##type##_ARRAY(savestate_file, spsr);                                  \
-  FILE_##type##_ARRAY(savestate_file, reg_mode);                              \
+  FILE_##type(reg, 0x100);                                                    \
+  FILE_##type##_ARRAY(spsr);                                                  \
+  FILE_##type##_ARRAY(reg_mode);                                              \
 }                                                                             \
 
-void cpu_read_savestate(FILE_TAG_TYPE savestate_file)
-cpu_savestate_body(READ);
-
-void cpu_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+void cpu_read_mem_savestate()
 cpu_savestate_body(READ_MEM);
 
-void cpu_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+void cpu_write_mem_savestate()
 cpu_savestate_body(WRITE_MEM);
 

@@ -255,18 +255,18 @@
 {                                                                           \
   u32 temp_sound_read_offset = sound_read_offset;                           \
   u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                 \
-  FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
-  FILE_##type##_VARIABLE(savestate_file, temp_sound_read_offset);           \
-  FILE_##type##_VARIABLE(savestate_file, sound_last_cpu_ticks);             \
-  FILE_##type##_VARIABLE(savestate_file, temp_gbc_sound_buffer_index);      \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_partial_ticks);          \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_left);     \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_right);    \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume);          \
-  FILE_##type##_ARRAY(savestate_file, wave_samples);                        \
-  FILE_##type##_ARRAY(savestate_file, direct_sound_channel);                \
-  FILE_##type##_ARRAY(savestate_file, gbc_sound_channel);                   \
+  FILE_##type##_VARIABLE(sound_on);                                         \
+  FILE_##type##_VARIABLE(temp_sound_read_offset);                           \
+  FILE_##type##_VARIABLE(sound_last_cpu_ticks);                             \
+  FILE_##type##_VARIABLE(temp_gbc_sound_buffer_index);                      \
+  FILE_##type##_VARIABLE(gbc_sound_last_cpu_ticks);                         \
+  FILE_##type##_VARIABLE(gbc_sound_partial_ticks);                          \
+  FILE_##type##_VARIABLE(gbc_sound_master_volume_left);                     \
+  FILE_##type##_VARIABLE(gbc_sound_master_volume_right);                    \
+  FILE_##type##_VARIABLE(gbc_sound_master_volume);                          \
+  FILE_##type##_ARRAY(wave_samples);                                        \
+  FILE_##type##_ARRAY(direct_sound_channel);                                \
+  FILE_##type##_ARRAY(gbc_sound_channel);                                   \
 }                                                                           \
 
 #define CHECK_BUFFER()                                                      \
@@ -631,14 +631,11 @@ void sound_exit()
     audio_thread_exit_flag = 1;
   }
 
-void sound_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+void sound_read_mem_savestate()
   sound_savestate_body(READ_MEM);
 
-void sound_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+void sound_write_mem_savestate()
   sound_savestate_body(WRITE_MEM);
-
-void sound_read_savestate(FILE_TAG_TYPE savestate_file)
-  sound_savestate_body(READ);
 
 /******************************************************************************
  * ローカル関数の定義

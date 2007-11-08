@@ -144,7 +144,7 @@ MODEL_TYPE psp_model;
         timer[timer_number + 1].count--;                                      \
         /* レジスタに書込 */                                                  \
         io_registers[REG_TM0D + (timer_number + 1) * 2] =                     \
-        0x10000 - (timer[timer_number + 1].count);                           \
+        0x10000 - (timer[timer_number + 1].count);                            \
       }                                                                       \
                                                                               \
       if(timer_number < 2)                                                    \
@@ -160,7 +160,7 @@ MODEL_TYPE psp_model;
       timer[timer_number].count +=                                            \
         (timer[timer_number].reload << timer[timer_number].prescale);         \
       io_registers[REG_TM##timer_number##D] =                                 \
-      0x10000 - (timer[timer_number].count >> timer[timer_number].prescale); \
+      0x10000 - (timer[timer_number].count >> timer[timer_number].prescale);  \
     }                                                                         \
   }                                                                           \
 
@@ -517,7 +517,7 @@ u32 sync_flag = 0;
 
 u32 update_gba()
 {
-  irq_type irq_raised = IRQ_NONE;
+  IRQ_TYPE irq_raised = IRQ_NONE;
 
   do {
     cpu_ticks += execute_cycles;
@@ -867,19 +867,16 @@ void change_ext(char *src, char *buffer, char *extension)
 // type = READ / WRITE_MEM
 #define MAIN_SAVESTATE_BODY(type)                                             \
 {                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, cpu_ticks);                          \
-  FILE_##type##_VARIABLE(savestate_file, execute_cycles);                     \
-  FILE_##type##_VARIABLE(savestate_file, video_count);                        \
-  FILE_##type##_ARRAY(savestate_file, timer);                                 \
+  FILE_##type##_VARIABLE(cpu_ticks);                                          \
+  FILE_##type##_VARIABLE(execute_cycles);                                     \
+  FILE_##type##_VARIABLE(video_count);                                        \
+  FILE_##type##_ARRAY(timer);                                                 \
 }                                                                             \
 
-void main_read_savestate(FILE_TAG_TYPE savestate_file)
-MAIN_SAVESTATE_BODY(READ);
-
-void main_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+void main_read_mem_savestate()
 MAIN_SAVESTATE_BODY(READ_MEM);
 
-void main_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+void main_write_mem_savestate()
 MAIN_SAVESTATE_BODY(WRITE_MEM);
 
 void error_msg(char *text)
@@ -932,7 +929,7 @@ void set_cpu_mode(CPU_MODE_TYPE new_mode)
   }
 }
 
-void raise_interrupt(irq_type irq_raised)
+void raise_interrupt(IRQ_TYPE irq_raised)
 {
   // The specific IRQ must be enabled in IE, master IRQ enable must be on,
   // and it must be on in the flags.
@@ -948,6 +945,7 @@ void raise_interrupt(irq_type irq_raised)
     spsr[MODE_IRQ] = reg[REG_CPSR];
     reg[REG_CPSR] = 0xD2;
     reg[REG_PC] = 0x00000018;
+    bios_region_read_allow();
     set_cpu_mode(MODE_IRQ);
     reg[CPU_HALT_STATE] = CPU_ACTIVE;
     reg[CHANGED_PC_STATUS] = 1;

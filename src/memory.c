@@ -46,9 +46,8 @@ typedef enum
 
 // 関数宣言
 
-void memory_read_mem_savestate(FILE_TAG_TYPE savestate_file);
-void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file);
-void memory_read_savestate(FILE_TAG_TYPE savestate_file);
+void memory_read_mem_savestate();
+void memory_write_mem_savestate();
 u8 read_backup(u32 address);
 void write_eeprom(u32 address, u32 value);
 u32 read_eeprom();
@@ -265,16 +264,16 @@ u8 read_backup(u32 address)
     switch(address & 0x8f00)
     {
       case 0x8200:
-        value = sensorX & 255;
+        value = tilt_sensor_x & 255;
         break;
       case 0x8300:
-        value = (sensorX >> 8) | 0x80;
+        value = (tilt_sensor_x >> 8) | 0x80;
         break;
       case 0x8400:
-        value = sensorY & 255;
+        value = tilt_sensor_y & 255;
         break;
       case 0x8500:
-        value = sensorY >> 8;
+        value = tilt_sensor_y >> 8;
         break;
     }
     return value;
@@ -456,26 +455,26 @@ void write_eeprom(u32 address, u32 value)
   value = ADDRESS##type(map, address & 0x7FFF)                                \
 
 #define read_open8()                                                          \
-  if(!(reg[REG_CPSR] & 0x20))                                                 \
-    value = read_memory8(reg[REG_PC] + 4 + (address & 0x03));                 \
+  if(reg[REG_CPSR] & 0x20)                                                    \
+    value = read_memory8(reg[REG_PC] + 2 + (address & 0x01));                 \
   else                                                                        \
-    value = read_memory8(reg[REG_PC] + 2 + (address & 0x01))                  \
+    value = read_memory8(reg[REG_PC] + 4 + (address & 0x03))                  \
 
 #define read_open16()                                                         \
-  if(!(reg[REG_CPSR] & 0x20))                                                 \
-    value = read_memory16(reg[REG_PC] + 4 + (address & 0x02));                \
+  if(reg[REG_CPSR] & 0x20)                                                    \
+    value = read_memory16(reg[REG_PC] + 2);                                   \
   else                                                                        \
-    value = read_memory16(reg[REG_PC] + 2)                                    \
+    value = read_memory16(reg[REG_PC] + 4 + (address & 0x02))                 \
 
 #define read_open32()                                                         \
-  if(!(reg[REG_CPSR] & 0x20))                                                 \
-  {                                                                           \
-    value = read_memory32(reg[REG_PC] + 4);                                   \
-  }                                                                           \
-  else                                                                        \
+  if(reg[REG_CPSR] & 0x20)                                                    \
   {                                                                           \
     u32 current_instruction = read_memory16(reg[REG_PC] + 2);                 \
     value = current_instruction | (current_instruction << 16);                \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    value = read_memory32(reg[REG_PC] + 4);                                   \
   }                                                                           \
 
 u32 read_eeprom()
@@ -523,14 +522,23 @@ u32 read_eeprom()
     case 0x00:                                                                \
       /* BIOS */                                                              \
       if(reg[REG_PC] >= 0x4000)                                               \
-        value = ADDRESS##type(&bios_read_protect, address & 0x03);            \
+      {                                                                       \
+        if(address < 0x4000)                                                  \
+        {                                                                     \
+          value = ADDRESS##type(&bios_read_protect, address & 0x03);          \
+        }                                                                     \
+        else                                                                  \
+        {                                                                     \
+          read_open##type();                                                  \
+        }                                                                     \
+      }                                                                       \
       else                                                                    \
         value = ADDRESS##type(bios_rom, address & 0x3FFF);                    \
       break;                                                                  \
                                                                               \
     case 0x02:                                                                \
       /* external work RAM */                                                 \
-      address = (address & 0x7FFF) + ((address & 0x38000) * 2) + 0x8000;      \
+      address = (address & 0x7FFF) + ((address & 0x38000) << 1) + 0x8000;     \
       value = ADDRESS##type(ewram, address);                                  \
       break;                                                                  \
                                                                               \
@@ -541,7 +549,14 @@ u32 read_eeprom()
                                                                               \
     case 0x04:                                                                \
       /* I/O registers */                                                     \
-      value = ADDRESS##type(io_registers, address & 0xFFF);                   \
+      if(address < 0x04000400)                                                \
+      {                                                                       \
+        value = ADDRESS##type(io_registers, address & 0x3FF);                 \
+      }                                                                       \
+      else                                                                    \
+      {                                                                       \
+        read_open##type();                                                    \
+      }                                                                       \
       break;                                                                  \
                                                                               \
     case 0x05:                                                                \
@@ -551,11 +566,14 @@ u32 read_eeprom()
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                  \
-        address -= 0x8000;                                                    \
-                                                                              \
-      value = ADDRESS##type(vram, address);                                   \
+      if(address & 0x10000)                                                   \
+      {                                                                       \
+        value = ADDRESS##type(vram, address & 0x17FFF);                       \
+      }                                                                       \
+      else                                                                    \
+      {                                                                       \
+        value = ADDRESS##type(vram, address & 0x1FFFF);                       \
+      }                                                                       \
       break;                                                                  \
                                                                               \
     case 0x07:                                                                \
@@ -565,13 +583,13 @@ u32 read_eeprom()
                                                                               \
     case 0x08 ... 0x0C:                                                       \
       /* gamepak ROM */                                                       \
-      if((address & 0x1FFFFFF) >= gamepak_size)                               \
+      if((address & 0x1FFFFFF) < gamepak_size)                                \
       {                                                                       \
-        value = 0;                                                            \
+        read_memory_gamepak(type);                                            \
       }                                                                       \
       else                                                                    \
       {                                                                       \
-        read_memory_gamepak(type);                                            \
+        value = 0;                                                            \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -590,6 +608,10 @@ u32 read_eeprom()
     case 0x0E:                                                                \
     case 0x0F:                                                                \
       read_backup##type();                                                    \
+      break;                                                                  \
+                                                                              \
+    case 0x20 ... 0xFF:                                                       \
+      value = 0;                                                              \
       break;                                                                  \
                                                                               \
     default:                                                                  \
@@ -3433,19 +3455,20 @@ void bios_region_read_protect()
   memory_map_read[0] = NULL;
 }
 
-// type = read / read_mem / write_mem
+// TODO:savestate_fileは必要ないので削除する
+// type = read_mem / write_mem
 #define savestate_block(type)                                                 \
-  cpu_##type##_savestate(savestate_file);                                     \
+  cpu_##type##_savestate();                                                   \
   update_progress();                                                          \
-  input_##type##_savestate(savestate_file);                                   \
+  input_##type##_savestate();                                                 \
   update_progress();                                                          \
-  main_##type##_savestate(savestate_file);                                    \
+  main_##type##_savestate();                                                  \
   update_progress();                                                          \
-  memory_##type##_savestate(savestate_file);                                  \
+  memory_##type##_savestate();                                                \
   update_progress();                                                          \
-  sound_##type##_savestate(savestate_file);                                   \
+  sound_##type##_savestate();                                                 \
   update_progress();                                                          \
-  video_##type##_savestate(savestate_file);                                   \
+  video_##type##_savestate();                                                 \
   update_progress();                                                          \
 
 /*--------------------------------------------------------
@@ -3555,7 +3578,6 @@ u32 load_state(char *savestate_filename, u32 slot_num)
   {
     gbc_sound_channel[i].sample_data = square_pattern_duty[2];
   }
-  instruction_count = 0;
 
   reg[CHANGED_PC_STATUS] = 1;
 
@@ -3601,12 +3623,12 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   pspTime current_time_fix; // time関数が年月日を返さないので調整用
   init_progress(9, msg[MSG_SAVE_STATE]);
 
-  FILE_WRITE_MEM(savestate_file, screen_capture, 240 * 160 * 2);
+  FILE_WRITE_MEM(screen_capture, 240 * 160 * 2);
   update_progress();
 
   sceRtcGetCurrentClock(&current_time_fix, 0);
   sceRtcGetTick(&current_time_fix, &current_time);
-  FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
+  FILE_WRITE_MEM_VARIABLE(current_time);
   update_progress();
 
   savestate_block(write_mem);
@@ -3632,44 +3654,44 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   return 1;
 }
 
-#define memory_savestate_body(type)                                            \
+#define memory_savestate_body(type)                                           \
 {                                                                             \
   u32 i;                                                                      \
                                                                               \
-  FILE_##type##_VARIABLE(savestate_file, backup_type);                        \
-  FILE_##type##_VARIABLE(savestate_file, sram_size);                          \
-  FILE_##type##_VARIABLE(savestate_file, flash_mode);                         \
-  FILE_##type##_VARIABLE(savestate_file, flash_command_position);             \
-  FILE_##type##_VARIABLE(savestate_file, flash_bank_ptr);                     \
-  FILE_##type##_VARIABLE(savestate_file, flash_device_id);                    \
-  FILE_##type##_VARIABLE(savestate_file, flash_manufacturer_id);              \
-  FILE_##type##_VARIABLE(savestate_file, flash_size);                         \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_size);                        \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_mode);                        \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_address_length);              \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_address);                     \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_counter);                     \
-  FILE_##type##_VARIABLE(savestate_file, rtc_state);                          \
-  FILE_##type##_VARIABLE(savestate_file, rtc_write_mode);                     \
-  FILE_##type##_ARRAY(savestate_file, rtc_registers);                         \
-  FILE_##type##_VARIABLE(savestate_file, rtc_command);                        \
-  FILE_##type##_ARRAY(savestate_file, rtc_data);                              \
-  FILE_##type##_VARIABLE(savestate_file, rtc_status);                         \
-  FILE_##type##_VARIABLE(savestate_file, rtc_data_bytes);                     \
-  FILE_##type##_VARIABLE(savestate_file, rtc_bit_count);                      \
-  FILE_##type##_ARRAY(savestate_file, eeprom_buffer);                         \
-  FILE_##type##_ARRAY(savestate_file, gamepak_filename);                      \
-  FILE_##type##_ARRAY(savestate_file, dma);                                   \
+  FILE_##type##_VARIABLE(backup_type);                                        \
+  FILE_##type##_VARIABLE(sram_size);                                          \
+  FILE_##type##_VARIABLE(flash_mode);                                         \
+  FILE_##type##_VARIABLE(flash_command_position);                             \
+  FILE_##type##_VARIABLE(flash_bank_ptr);                                     \
+  FILE_##type##_VARIABLE(flash_device_id);                                    \
+  FILE_##type##_VARIABLE(flash_manufacturer_id);                              \
+  FILE_##type##_VARIABLE(flash_size);                                         \
+  FILE_##type##_VARIABLE(eeprom_size);                                        \
+  FILE_##type##_VARIABLE(eeprom_mode);                                        \
+  FILE_##type##_VARIABLE(eeprom_address_length);                              \
+  FILE_##type##_VARIABLE(eeprom_address);                                     \
+  FILE_##type##_VARIABLE(eeprom_counter);                                     \
+  FILE_##type##_VARIABLE(rtc_state);                                          \
+  FILE_##type##_VARIABLE(rtc_write_mode);                                     \
+  FILE_##type##_ARRAY(rtc_registers);                                         \
+  FILE_##type##_VARIABLE(rtc_command);                                        \
+  FILE_##type##_ARRAY(rtc_data);                                              \
+  FILE_##type##_VARIABLE(rtc_status);                                         \
+  FILE_##type##_VARIABLE(rtc_data_bytes);                                     \
+  FILE_##type##_VARIABLE(rtc_bit_count);                                      \
+  FILE_##type##_ARRAY(eeprom_buffer);                                         \
+  FILE_##type##_ARRAY(gamepak_filename);                                      \
+  FILE_##type##_ARRAY(dma);                                                   \
                                                                               \
-  FILE_##type(savestate_file, iwram + 0x8000, 0x8000);                        \
+  FILE_##type(iwram + 0x8000, 0x8000);                                        \
   for(i = 0; i < 8; i++)                                                      \
   {                                                                           \
-    FILE_##type(savestate_file, ewram + (i * 0x10000) + 0x8000, 0x8000);      \
+    FILE_##type(ewram + (i * 0x10000) + 0x8000, 0x8000);                      \
   }                                                                           \
-  FILE_##type(savestate_file, vram, 0x18000);                                 \
-  FILE_##type(savestate_file, oam_ram, 0x400);                                \
-  FILE_##type(savestate_file, palette_ram, 0x400);                            \
-  FILE_##type(savestate_file, io_registers, 0x8000);                          \
+  FILE_##type(vram, 0x18000);                                                 \
+  FILE_##type(oam_ram, 0x400);                                                \
+  FILE_##type(palette_ram, 0x400);                                            \
+  FILE_##type(io_registers, 0x8000);                                          \
                                                                               \
   /* This is a hack, for now. */                                              \
   if((flash_bank_ptr < gamepak_backup) ||                                     \
@@ -3679,11 +3701,8 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   }                                                                           \
 }                                                                             \
 
-void memory_read_savestate(FILE_TAG_TYPE savestate_file)
-memory_savestate_body(READ);
-
-void memory_read_mem_savestate(FILE_TAG_TYPE savestate_file)
+void memory_read_mem_savestate()
 memory_savestate_body(READ_MEM);
 
-void memory_write_mem_savestate(FILE_TAG_TYPE savestate_file)
+void memory_write_mem_savestate()
 memory_savestate_body(WRITE_MEM);

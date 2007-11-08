@@ -83,12 +83,11 @@ void init_input();
 u32 update_input();
 gui_action_type get_gui_input();
 gui_action_type get_gui_input_fs_hold(u32 button_id);
-void input_read_mem_savestate(FILE_TAG_TYPE savestate_file);
-void input_write_mem_savestate(FILE_TAG_TYPE savestate_file);
-void input_read_savestate(FILE_TAG_TYPE savestate_file);
+void input_read_mem_savestate();
+void input_write_mem_savestate();
 
-extern u32 sensorX;
-extern u32 sensorY;
+extern u32 tilt_sensor_x;
+extern u32 tilt_sensor_y;
 extern u32 sensorR;
 extern u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
 

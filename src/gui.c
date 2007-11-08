@@ -1306,7 +1306,6 @@ u32 menu(u16 *original_screen)
 
 
 
-
     SUBMENU_OPTION(NULL, msg[MSG_A_PAD_MENU_6], msg[MSG_A_PAD_MENU_HELP_2], 15)
   };
 
@@ -1916,8 +1915,8 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
     if (mem_save_flag == 1)
     {
       write_mem_ptr = savestate_write_buffer;
-      FILE_READ_MEM_ARRAY(savestate_file, snapshot_buffer);
-      FILE_READ_MEM_VARIABLE(savestate_file, savestate_time_flat);
+      FILE_READ_MEM_ARRAY(snapshot_buffer);
+      FILE_READ_MEM_VARIABLE(savestate_time_flat);
       valid_flag = 1;
     }
   }

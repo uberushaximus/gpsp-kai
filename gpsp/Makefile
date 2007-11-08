@@ -14,7 +14,7 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 #PSP_EBOOT_PIC1  = ../image/pic1.png 
 
 OBJS            = main.o cpu.o video.o memory.o sound.o input.o
-OBJS           += cpu_threaded.o gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o video_setting.o
+OBJS           += gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o video_setting.o
 OBJS           += pspDveManager.o homehook.o
 
 ifeq ($(ADHOC_MODE), 1)
@@ -88,7 +88,6 @@ video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c
 memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
 sound.o					: ${COMMON_FILE} ${SRC_DIR}sound.c
 input.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c
-cpu_threaded.o		: ${COMMON_FILE} ${SRC_DIR}cpu_threaded.c ${SRC_DIR}mips_emit.h ${SRC_DIR}bios.h
 gui.o						: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}gui.c
 zip.o						: ${COMMON_FILE} ${SRC_DIR}zip.c
 cheats.o				: ${COMMON_FILE} ${SRC_DIR}cheats.c
