@@ -11,6 +11,8 @@
 	Cコアエミュレート部分を全て削除
 	cpu_threaded.cをcpu.cに統合
 	savestate関係のマクロを整理
+	TV出力/ratio16:9/拡大表示時の設定を変更
+	※ratio16:9でのTV出力時は上下に黒枠を作るので、解像度はratio4:3に劣ります
 
 -UnOfficial gpSP kai 3.2 test 07 svn rev.351
 	メッセージファイルの変更

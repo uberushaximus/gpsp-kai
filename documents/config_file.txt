@@ -50,14 +50,12 @@ gpsp.cfg
 		2word			バージョン番号
 		3word			screen_scale
 		4word			screen_filter
-		5word			enable_audio
-		6word			audio_buffer_size_number
-		7word			update_backup_flag
+		5word			video_interlace
+		6word			video_ratio
+		7word			enable_audio
 		8word			enable_analog
 		9word			analog_sensitivity_level
 		10~25word	gamepad_config_map[16]
-		26word			video_interlace
-		27word			video_ratio
 
 	ヘッダ 
 		'gpSP'をASCIIコードで格納
@@ -80,22 +78,22 @@ gpsp.cfg
 		filter_nearest		フィルター無し
 		filter_bilinear		リニアフィルター
 
+	video_interlace
+		TV出力時のインタレースの設定値
+		enum値 VIDEO_INTERLACE_TYPEを格納
+		PROGRESSIVE		プログレッシブ モード
+		INTERLACE			インタレース モード
+
+	video_ratio
+		TV出力時の比率の設定値
+		enum値 VIDEO_RATIO_TYPEを格納
+		R4_3			4:3 モード
+		R16_9		16:9 モード
+
 	enable_audio
 		サウンドのon/off設定
 		0		サウンド 無し
 		1		サウンド 有り
-
-	audio_buffer_size_number
-		オーディオバッファのサイズ設定値
-		0(最小)～10(最大)
-		※実際は音の遅れをどこまで許容するかの設定値
-
-	update_backup_flag
-		メモリースティックへのバックアップファイルの更新設定値
-		0		終了時/新規ROMロード時に更新
-		1		常に更新かつ終了時/新規ROMロード時に更新
-		※常に更新の場合、頻繁にバックアップを更新するROMにて速度低下/ノイズの増加等の不具合を引き起こす
-		※強制電源断/フリーズ以外では問題ないので、終了時更新がお勧め
 
 	enable_analog
 		アナログパッドの有効/無効の切替
@@ -106,9 +104,6 @@ gpsp.cfg
 	gamepad_config_map[16]
 		キーコンフィグの設定
 
-	video_interlace
-
-	video_ratio
 	
 ROMファイル名.cfg
 	ROMファイルごとの設定ファイル
@@ -120,7 +115,10 @@ ROMファイル名.cfg
 		4word			frameskip_value
 		5word			random_skip
 		6word			clock_speed
-		7~36word		cheat_flag[30]
+		7word			audio_buffer_size_number
+		8word			update_backup_flag
+		9~38word		cheat_flag[30]
+		39~54word	gamepad_config_map[16]
 
 	ヘッダ 
 		'gcfg'をASCIIコードで格納
@@ -142,5 +140,20 @@ ROMファイル名.cfg
 	clock_speed
 		CPUのクロック値
 
+	audio_buffer_size_number
+		オーディオバッファのサイズ設定値
+		0(最小)～10(最大)
+		※実際は音の遅れをどこまで許容するかの設定値
+
+	update_backup_flag
+		メモリースティックへのバックアップファイルの更新設定値
+		0		終了時/新規ROMロード時に更新
+		1		常に更新かつ終了時/新規ROMロード時に更新
+		※常に更新の場合、頻繁にバックアップを更新するROMにて速度低下/ノイズの増加等の不具合を引き起こす
+		※強制電源断/フリーズ以外では問題ないので、終了時更新がお勧め
+
 	cheat_flag[30]
 		チートのON/OFFフラグ
+
+	gamepad_config_map[16]
+		キーコンフィグの設定

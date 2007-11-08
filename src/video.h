@@ -33,11 +33,6 @@
 #define FRAME_GAME 0
 #define FRAME_MENU 1
 
-#define NON_INTERLACE 0
-#define INTERLACE     1
-#define R4_3  0
-#define R16_9 1
-
 void update_scanline();
 void update_screen();
 void init_video();
@@ -106,6 +101,18 @@ typedef enum
   filter_nearest,
   filter_bilinear
 } video_filter_type;
+
+typedef enum
+{
+  PROGRESSIVE,
+  INTERLACE
+} VIDEO_INTERLACE_TYPE;
+
+typedef enum
+{
+  R4_3,
+  R16_9
+} VIDEO_RATIO_TYPE;
 
 typedef struct
 {

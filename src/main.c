@@ -619,7 +619,7 @@ u32 update_gba()
           update_gbc_sound(cpu_ticks);
 
           //TODO 調整必要
-          if((gpsp_config.screen_interlace == NON_INTERLACE)||(video_out_mode == 0))
+          if((gpsp_config.screen_interlace == PROGRESSIVE)||(video_out_mode == 0))
             synchronize();
           else
           {
