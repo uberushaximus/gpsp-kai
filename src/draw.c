@@ -54,7 +54,7 @@ u32 yesno_dialog(char *text);
  ******************************************************************************/
 static int progress_total;
 static int progress_current;
-static char progress_message[128];
+static char progress_message[256];
 
 /******************************************************************************
  * ローカル変数の定義
@@ -97,7 +97,7 @@ void hline(u32 sx, u32 ex, u32 y, u32 color)
 {
   u32 x;
   u32 width  = (ex - sx) + 1;
-  u16 *dst = VRAM_POS(sx, y);
+  volatile u16 *dst = VRAM_POS(sx, y);
 
   for (x = 0; x < width; x++)
     *dst++ = (u16)color;
@@ -110,7 +110,7 @@ void vline(u32 x, u32 sy, u32 ey, u32 color)
 {
   int y;
   int height = (ey - sy) + 1;
-  u16 *dst = VRAM_POS(x, sy);
+  volatile u16 *dst = VRAM_POS(x, sy);
 
   for (y = 0; y < height; y++)
   {
@@ -138,7 +138,7 @@ void boxfill(u32 sx, u32 sy, u32 ex, u32 ey, u32 color)
   u32 x, y;
   u32 width  = (ex - sx) + 1;
   u32 height = (ey - sy) + 1;
-  u16 *dst = (u16 *)(screen_address + (sx + sy * screen_pitch));
+  volatile u16 *dst = (u16 *)(screen_address + (sx + sy * screen_pitch));
 
   for (y = 0; y < height; y++)
   {
@@ -201,7 +201,7 @@ u32 yesno_dialog(char *text)
   while((gui_action != CURSOR_SELECT)  && (gui_action != CURSOR_EXIT))
   {
     gui_action = get_gui_input();
-    delay_us(15000); /* 0.0015s */
+    sceKernelDelayThread(15000); /* 0.0015s */
   }
   if (gui_action == CURSOR_SELECT)
     return 0;
@@ -273,32 +273,30 @@ void show_progress(char *text)
 /*--------------------------------------------------------
   スクロールバー表示(メニュー画面のみ対応)
 --------------------------------------------------------*/
-#define SCROLLBAR_SX   3
-#define SCROLLBAR_EX   6
-#define SCROLLBAR_SY  23
-#define SCROLLBAR_EY 256
-#define SCROLLBAR_LEN (SCROLLBAR_EY - SCROLLBAR_SY)
 #define SCROLLBAR_COLOR1 COLOR16( 0, 2, 8)
 #define SCROLLBAR_COLOR2 COLOR16(15,15,15)
 
-void scrollbar(u32 all,u32 view,u32 now)
+void scrollbar(u32 sx, u32 sy, u32 ex, u32 ey, u32 all,u32 view,u32 now)
 {
   u32 scrollbar_sy;
   u32 scrollbar_ey;
-  
+  u32 len;
+
+  len = ey - sy - 2;
+
   if ((all != 0) && (all > now))
-    scrollbar_sy = (u32)((float)SCROLLBAR_LEN * (float)now / (float)all);
+    scrollbar_sy = (u32)((float)len * (float)now / (float)all) +sy + 1;
   else
-    scrollbar_sy = 0;
+    scrollbar_sy = sy + 1;
 
   if ((all > (now + view)) && (all != 0))
-    scrollbar_ey = (u32)((float)SCROLLBAR_LEN * (float)(now + view) / (float)all );
+    scrollbar_ey = (u32)((float)len * (float)(now + view) / (float)all ) + sy + 1;
   else
-    scrollbar_ey = SCROLLBAR_LEN;
+    scrollbar_ey = len + sy + 1;
 
-    box(SCROLLBAR_SX - 1, SCROLLBAR_SY - 1, SCROLLBAR_EX + 1, SCROLLBAR_EY + 1, COLOR_BLACK);
-    boxfill(SCROLLBAR_SX, SCROLLBAR_SY, SCROLLBAR_EX, SCROLLBAR_EY, SCROLLBAR_COLOR1);
-    boxfill(SCROLLBAR_SX, SCROLLBAR_SY + scrollbar_sy, SCROLLBAR_EX, SCROLLBAR_SY + scrollbar_ey, SCROLLBAR_COLOR2);
+    box(sx, sy, ex, ey, COLOR_BLACK);
+    boxfill(sx + 1, sy + 1, ex - 1, ey - 1, SCROLLBAR_COLOR1);
+    boxfill(sx + 1, scrollbar_sy, ex - 1, scrollbar_ey, SCROLLBAR_COLOR2);
 }
 
 /******************************************************************************

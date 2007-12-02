@@ -46,10 +46,10 @@
 /******************************************************************************
  * グローバル関数の宣言
  ******************************************************************************/
-u32 pspSdkLoadAdhocModules(void);
+u32 load_adhoc_modules(void);
 
-u32 adhocInit(const char *matchingData);
-u32 adhocTerm(void);
+u32 adhoc_init(const char *matchingData);
+u32 adhoc_term(void);
 u32 adhocSelect(void);
 u32 adhocReconnect(char *ssid);
 

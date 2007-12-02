@@ -256,8 +256,8 @@ u32 SAVESTATE_SLOT = 0;
 /******************************************************************************
  * ローカル変数の定義
  ******************************************************************************/
-static char font8[MAX_PATH];
-static char font16[MAX_PATH];
+static char m_font[MAX_PATH];
+static char s_font[MAX_PATH];
 static u32 menu_cheat_page = 0;
 static u32 gamepad_config_line_to_button[] = { 8, 6, 7, 9, 1, 2, 3, 0, 4, 5, 11, 10 };
 
@@ -705,7 +705,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
           }
         }
       }
-      scrollbar(num_files, FILE_LIST_ROWS, current_file_scroll_value);
+      scrollbar(2, 22, 7, 257, num_files, FILE_LIST_ROWS, current_file_scroll_value);
 
       flip_screen();
       clear_screen(COLOR_BG);
@@ -760,17 +760,18 @@ void init_game_config()
   u32 i;
   game_config.frameskip_type = auto_frameskip;
   game_config.frameskip_value = 9;
-  game_config.random_skip = 0;
+  game_config.random_skip = NO;
   game_config.clock_speed_number = 9;
   game_config.audio_buffer_size_number = 2;
-  game_config.update_backup_flag = 0;
+  game_config.update_backup_flag = NO;
   for(i = 0; i < MAX_CHEATS; i++)
   {
-    game_config.cheats_flag[i].cheat_active = 0;
-    game_config.cheats_flag[i].cheat_name[0] = 0;
+    game_config.cheats_flag[i].cheat_active = NO;
+    game_config.cheats_flag[i].cheat_name[0] = '\0';
   }
   memcpy(game_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
-  game_config.use_default_gamepad_map = 1;
+  game_config.use_default_gamepad_map = YES;
+  game_config.allocate_sensor = NO;
 }
 
 /*--------------------------------------------------------
@@ -782,10 +783,10 @@ void init_gpsp_config()
   gpsp_config.screen_filter = filter_bilinear;
   gpsp_config.screen_ratio = R4_3;
   gpsp_config.screen_interlace = PROGRESSIVE;
-  gpsp_config.enable_audio = 1;
-  gpsp_config.enable_analog = 1;
+  gpsp_config.enable_audio = YES;
+  gpsp_config.enable_analog = YES;
   gpsp_config.analog_sensitivity_level = 4;
-  gpsp_config.enable_home = 0;
+  gpsp_config.enable_home = NO;
   memcpy(gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
   memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
 }
@@ -904,7 +905,7 @@ u32 menu(u16 *original_screen)
 //  SceCtrlData ctrl_data; /* TODO */
 
   auto void choose_menu();
-  auto void clear_help();
+//  auto void clear_help();
   auto void menu_exit();
   auto void menu_quit();
   auto void menu_load();
@@ -1078,7 +1079,7 @@ u32 menu(u16 *original_screen)
       add_cheats(load_filename);
       for(i = 0; i < MAX_CHEATS; i++)
       {
-        if(i >= num_cheats)
+        if(i >= g_num_cheats)
         {
           sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_NON_LOAD], i);
         }
@@ -1098,7 +1099,7 @@ u32 menu(u16 *original_screen)
 
   void menu_fix_gamepad_help()
   {
-    clear_help();
+//    clear_help();
     current_option->help_string =
      gamepad_help[gamepad_config_map[gamepad_config_line_to_button[current_option_num]]];
   }
@@ -1117,6 +1118,13 @@ u32 menu(u16 *original_screen)
   {
 
   }
+
+#ifdef ADHOC_MODE
+  void submenu_adhoc()
+  {
+
+  }
+#endif
 
   void submenu_analog()
   {
@@ -1301,7 +1309,7 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &gpsp_config.enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
     NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &gpsp_config.analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
-
+    STRING_SELECTION_OPTION(NULL, "tilt sensor : %s", yes_no_options, &game_config.allocate_sensor, 2, "tilt sensor", 9), /* TODO */
     STRING_SELECTION_OPTION(set_gamepad, msg[MSG_PAD_MENU_13], yes_no_options, &game_config.use_default_gamepad_map, 2, msg[MSG_PAD_MENU_HELP_13], 10),
 
 
@@ -1310,6 +1318,32 @@ u32 menu(u16 *original_screen)
   };
 
   MAKE_MENU(analog_config, submenu_analog, NULL);
+
+#ifdef ADHOC_MODE
+  /*--------------------------------------------------------
+     ADHOC オプション
+  --------------------------------------------------------*/
+  MENU_OPTION_TYPE adhoc_options[] =
+  {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    SUBMENU_OPTION(NULL, "exit", "exit", 15)
+  };
+
+  MAKE_MENU(adhoc, submenu_adhoc, NULL);
+#endif
 
   /*--------------------------------------------------------
      メイン オプション
@@ -1324,7 +1358,9 @@ u32 menu(u16 *original_screen)
 
     SUBMENU_OPTION(&gamepad_config_menu, msg[MSG_MAIN_MENU_4], msg[MSG_MAIN_MENU_HELP_4], 6),                                         /*  6行目 */
     SUBMENU_OPTION(&analog_config_menu, msg[MSG_MAIN_MENU_5], msg[MSG_MAIN_MENU_HELP_5], 7),                                          /*  7行目 */
-
+#ifdef ADHOC_MODE
+    SUBMENU_OPTION(&adhoc_menu, "adhoc", "adhoc", 8),                                                                                 /*  9行目 */
+#endif
     SUBMENU_OPTION(&cheats_misc_menu, msg[MSG_MAIN_MENU_6], msg[MSG_MAIN_MENU_HELP_6], 9),                                            /*  9行目 */
 
     ACTION_OPTION(menu_load, NULL, msg[MSG_MAIN_MENU_7], msg[MSG_MAIN_MENU_HELP_7], 11),                                              /* 11行目 */
@@ -1352,13 +1388,13 @@ u32 menu(u16 *original_screen)
      current_menu->init_function();
   }
 
-  void clear_help()
-  {
-    for(i = 0; i < 6; i++)
-    {
-      PRINT_STRING_PAD_BG(" ", COLOR_BG, COLOR_BG, 30, 210 + (i * 10), 90);
-    }
-  }
+//  void clear_help()
+//  {
+//    for(i = 0; i < 6; i++)
+//    {
+//      PRINT_STRING_BG(" ", COLOR_BG, COLOR_BG, 30, 210 + (i * 10));
+//    }
+//  }
 
   void reload_cheats_page()
   {
@@ -1407,7 +1443,7 @@ u32 menu(u16 *original_screen)
   {
     first_load = 1;
     memset(original_screen, 0x00, 240 * 160 * 2);
-    fbm_printVRAM( original_screen, 240, 60, 75, msg[MSG_NON_LOAD_GAME], 0xFFFF, 0x0000, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
+    PRINT_STRING_EXT_BG(msg[MSG_NON_LOAD_GAME], 0xFFFF, 0x0000, 60, 75, original_screen, 240);
   }
 
   choose_menu(&main_menu);
@@ -1415,7 +1451,7 @@ u32 menu(u16 *original_screen)
   
   for(i = 0; i < MAX_CHEATS; i++)
   {
-    if(i >= num_cheats)
+    if(i >= g_num_cheats)
     {
       sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_NON_LOAD], i);
     }
@@ -1459,13 +1495,13 @@ u32 menu(u16 *original_screen)
 
       if(display_option == current_option)
       {
-        PRINT_STRING_PAD_BG(line_buffer, COLOR_ACTIVE_ITEM, COLOR_BG, 10,
-         (display_option->line_number * 10) + 40, 36);
+        PRINT_STRING_BG(line_buffer, COLOR_ACTIVE_ITEM, COLOR_BG, 10,
+         (display_option->line_number * 10) + 40);
       }
       else
       {
-        PRINT_STRING_PAD_BG(line_buffer, COLOR_INACTIVE_ITEM, COLOR_BG, 10,
-         (display_option->line_number * 10) + 40, 36);
+        PRINT_STRING_BG(line_buffer, COLOR_INACTIVE_ITEM, COLOR_BG, 10,
+         (display_option->line_number * 10) + 40);
       }
     }
 
@@ -1480,7 +1516,7 @@ u32 menu(u16 *original_screen)
           current_menu->num_options;
 
         current_option = current_menu->options + current_option_num;
-        clear_help();
+//        clear_help();
         break;
 
       case CURSOR_UP:
@@ -1490,7 +1526,7 @@ u32 menu(u16 *original_screen)
           current_option_num = current_menu->num_options - 1;
 
         current_option = current_menu->options + current_option_num;
-        clear_help();
+//        clear_help();
         break;
 
       case CURSOR_RIGHT:
@@ -1612,7 +1648,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               *DEFAULT_ROM_DIR = (char)NULL;
               pspDebugScreenInit();
               printf("not open rom dir : %s\n",current_str);
-              delay_us(500000*2);
+              sceKernelDelayThread(500000*2);
               init_video();
               video_resolution(FRAME_MENU);
             }
@@ -1627,7 +1663,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               *DEFAULT_SAVE_DIR = (char)NULL;
               pspDebugScreenInit();
               printf("not open save dir : %s\n",current_str);
-              delay_us(500000*2);
+              sceKernelDelayThread(500000*2);
               init_video();
               video_resolution(FRAME_MENU);
             }
@@ -1642,7 +1678,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               *DEFAULT_CFG_DIR = (char)NULL;
               pspDebugScreenInit();
               printf("not open cfg dir : %s\n",current_str);
-              delay_us(500000*2);
+              sceKernelDelayThread(500000*2);
               init_video();
               video_resolution(FRAME_MENU);
             }
@@ -1657,7 +1693,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               *DEFAULT_SS_DIR = (char)NULL;
               pspDebugScreenInit();
               printf("not open screen shot dir : %s\n",current_str);
-              delay_us(500000*2);
+              sceKernelDelayThread(500000*2);
               init_video();
               video_resolution(FRAME_MENU);
             }
@@ -1672,7 +1708,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               *DEFAULT_CHEAT_DIR = (char)NULL;
               pspDebugScreenInit();
               printf("not open cheat dir : %s\n",current_str);
-              delay_us(500000*2);
+              sceKernelDelayThread(500000*2);
               init_video();
               video_resolution(FRAME_MENU);
             }
@@ -1707,6 +1743,9 @@ u32 load_fontcfg(char *file_name)  // TODO:スマートな実装に書き直す
 
   sprintf(msg_path, "%s/%s", main_path, file_name);
 
+  m_font[0] = '\0';
+  s_font[0] = '\0';
+
   msg_file = fopen(msg_path, "r");
 
   next_line = 0;
@@ -1720,11 +1759,11 @@ u32 load_fontcfg(char *file_name)  // TODO:スマートな実装に書き直す
         switch(loop)
         {
           case 0:
-            strcpy(font8, current_str);
+            strcpy(m_font, current_str);
             loop++;
             break;
           case 1:
-            strcpy(font16, current_str);
+            strcpy(s_font, current_str);
             loop++;
             break;
         }
@@ -1732,7 +1771,7 @@ u32 load_fontcfg(char *file_name)  // TODO:スマートな実装に書き直す
     }
     
     fclose(msg_file);
-    if (loop == 2)
+    if (loop > 0)
     {
       return 0;
     }
@@ -1801,9 +1840,12 @@ u32 load_msgcfg(char *file_name)
   return -1;
 }
 
+/*--------------------------------------------------------
+  フォントの読込
+--------------------------------------------------------*/
 u32 load_font()
 {
-    return fbm_init(font8,font16,1);
+    return fbm_init(m_font,s_font);
 }
 
 void get_savestate_filename_noshot(u32 slot, char *name_buffer)
@@ -1914,9 +1956,9 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
   {
     if (mem_save_flag == 1)
     {
-      write_mem_ptr = savestate_write_buffer;
-      FILE_READ_MEM_ARRAY(snapshot_buffer);
-      FILE_READ_MEM_VARIABLE(savestate_time_flat);
+      g_state_buffer_ptr = savestate_write_buffer;
+      FILE_READ_MEM_ARRAY(g_state_buffer_ptr, snapshot_buffer);
+      FILE_READ_MEM_VARIABLE(g_state_buffer_ptr, savestate_time_flat);
       valid_flag = 1;
     }
   }
@@ -1937,7 +1979,7 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
   else
   {
     memset(snapshot_buffer, 0, 240 * 160 * 2);
-    fbm_printVRAM( snapshot_buffer, 240, 15, 75, msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0);
+    PRINT_STRING_EXT_BG(msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, 15, 75, snapshot_buffer, 240);
     get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_NONE_0, 0, 0, 0, 0, 0, 0, 0, 0);
     PRINT_STRING_BG(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
   }

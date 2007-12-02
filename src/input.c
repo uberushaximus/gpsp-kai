@@ -87,7 +87,7 @@ gui_action_type get_gui_input()
   u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
 
-  delay_us(25000);
+  sceKernelDelayThread(25000);
 
   if (quit_flag == 1)
     quit();
@@ -154,7 +154,7 @@ gui_action_type get_gui_input()
 
   if(new_button != CURSOR_NONE)
   {
-    get_ticks_us(&button_repeat_timestamp);
+    sceRtcGetCurrentTick(&button_repeat_timestamp);
     button_repeat_state = BUTTON_HELD_INITIAL;
     button_repeat = new_buttons;
     cursor_repeat = new_button;
@@ -164,7 +164,7 @@ gui_action_type get_gui_input()
     if(ctrl_data.Buttons & button_repeat)
     {
       u64 new_ticks;
-      get_ticks_us(&new_ticks);
+      sceRtcGetCurrentTick(&new_ticks);
 
       if(button_repeat_state == BUTTON_HELD_INITIAL)
       {
@@ -258,9 +258,9 @@ u32 update_input()
   u32 new_key = 0;
   u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
-  tilt_sensor_x = 0x800;
-  tilt_sensor_y = 0x800;
-  sensorR = 0x650;
+//  tilt_sensor_x = 0x800;
+//  tilt_sensor_y = 0x800;
+//  sensorR = 0x650;
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
   ctrl_buttons = readHomeButton();
@@ -268,20 +268,26 @@ u32 update_input()
 
   if((gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
-    tilt_sensor_x = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
-    tilt_sensor_y = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
-//    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
-    if(ctrl_data.Lx < analog_sensitivity)
-      buttons |= PSP_CTRL_ANALOG_LEFT;
+    if(game_config.allocate_sensor == NO)
+    {
+      if(ctrl_data.Lx < analog_sensitivity)
+        buttons |= PSP_CTRL_ANALOG_LEFT;
 
-    if(ctrl_data.Lx > inv_analog_sensitivity)
-      buttons |= PSP_CTRL_ANALOG_RIGHT;
+      if(ctrl_data.Lx > inv_analog_sensitivity)
+        buttons |= PSP_CTRL_ANALOG_RIGHT;
 
-    if(ctrl_data.Ly < analog_sensitivity)
-      buttons |= PSP_CTRL_ANALOG_UP;
+      if(ctrl_data.Ly < analog_sensitivity)
+        buttons |= PSP_CTRL_ANALOG_UP;
 
-    if(ctrl_data.Ly > inv_analog_sensitivity)
-      buttons |= PSP_CTRL_ANALOG_DOWN;
+      if(ctrl_data.Ly > inv_analog_sensitivity)
+        buttons |= PSP_CTRL_ANALOG_DOWN;
+    }
+    else
+    {
+      tilt_sensor_x = ctrl_data.Lx * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1143(0xFFF) 幅 4096
+      tilt_sensor_y = ctrl_data.Ly * 16;    // センター 2048(0x800) 最小値 0(0x0) 最大値 1152(0xFFF) 幅 4096
+      //    sensorR = ctrl_data.Lx * 12.5;  // センター 1600(0x640) 最小値 0(0x0) 最大値 3200(0xC80) 幅 3200
+    }
   }
 
   non_repeat_buttons = (last_buttons ^ buttons) & buttons;
@@ -396,12 +402,14 @@ void init_input()
   sceCtrlSetSamplingCycle(0);
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
   initHomeButton(sceKernelDevkitVersion());
+  tilt_sensor_x = 0x800;
+  tilt_sensor_y = 0x800;
 }
 
 // type = READ / WRITE_MEM
 #define input_savestate_body(type)                                            \
 {                                                                             \
-  FILE_##type##_VARIABLE(key);                                                \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, key);                            \
 }                                                                             \
 
 void input_read_mem_savestate()

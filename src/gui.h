@@ -51,6 +51,7 @@ typedef struct
   CHEAT_TYPE cheats_flag[MAX_CHEATS];
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
   u32 use_default_gamepad_map;
+  u32 allocate_sensor;
 } GAME_CONFIG_V10;
 
 /******************************************************************************

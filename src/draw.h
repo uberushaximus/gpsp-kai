@@ -34,21 +34,18 @@
 #define GET_B16(color) ((color >> 10)& 0x1f)
 #define COLOR32(red, green, blue) (0xff000000 | ((blue & 0xff) << 16) | ((green & 0xff) << 8) | (red & 0xff))
 
-#define PRINT_STRING_EXT_BG(str, fg_color, bg_color, x, y, dest_ptr, pitch, pad)                                       \
-  fbm_printVRAM( dest_ptr, pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad)              \
+#define PRINT_STRING_EXT_BG(str, fg_color, bg_color, x, y, dest_ptr, pitch)                                            \
+  fbm_printVRAM( dest_ptr, pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL)                        \
 
 #define PRINT_STRING(str, fg_color, x, y)                                                                              \
-  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL, 100, 0)                          \
+  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL)                                  \
 
 #define PRINT_STRING_BG(str, fg_color, bg_color, x, y)                                                                 \
-  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, 0)   \
-
-#define PRINT_STRING_PAD_BG(str, fg_color, bg_color, x, y, pad)                                                        \
-  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL, 100, pad) \
+  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL)           \
 
 #define PRINT_STRING_SHADOW(str, fg_color, x, y)                                                                       \
-  fbm_printVRAM( screen_address, screen_pitch, x + 1, y + 1, str, 0, 0, FBM_FONT_FILL, 100, 0);                        \
-  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL, 100, 0)                          \
+  fbm_printVRAM( screen_address, screen_pitch, x + 1, y + 1, str, 0, 0, FBM_FONT_FILL);                                \
+  fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL)                                  \
 
 // 基本カラーの設定
 #define COLOR_WHITE         COLOR16(31, 31, 31)
@@ -86,7 +83,7 @@ extern void boxfill_alpha(u32 sx, u32 sy, u32 ex, u32 ey, u32 color, u32 alpha);
 extern void init_progress(u32 total, char *text);
 extern void update_progress(void);
 extern void show_progress(char *text);
-extern void scrollbar(u32 all,u32 view, u32 now);
+extern void scrollbar(u32 sx, u32 sy, u32 ex, u32 ey, u32 all,u32 view,u32 now);
 extern u32 yesno_dialog(char *text);
 
 #endif

@@ -38,12 +38,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <fastmath.h>
 
 #include <zlib.h>
 
 #include <pspctrl.h>
 #include <pspgu.h>
+#include <pspgum.h>
 #include <pspdisplay.h>
 #include <pspaudio.h>
 #include <pspaudiolib.h>
@@ -105,21 +107,20 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE(filename_tag, buffer, size)                              \
   sceIoWrite(filename_tag, buffer, size)                                    \
 
-// type = FILE_OPEN_READ / FILE_OPEN_WRITE
+#define FILE_READ_MEM(ptr, buffer, size)                                    \
+{                                                                           \
+  memcpy(buffer, ptr, size);                                                \
+  ptr += size;                                                              \
+}                                                                           \
+
+#define FILE_WRITE_MEM(ptr, buffer, size)                                   \
+{                                                                           \
+  memcpy(ptr, buffer, size);                                                \
+  ptr += size;                                                              \
+}                                                                           \
+
 #define FILE_SEEK(filename_tag, offset, type)                               \
   sceIoLseek(filename_tag, offset, PSP_##type)                              \
-
-#define FILE_READ_MEM(buffer, size)                                         \
-{                                                                           \
-  memcpy(buffer, write_mem_ptr, size);                                      \
-  write_mem_ptr += size;                                                    \
-}                                                                           \
-
-#define FILE_WRITE_MEM(buffer, size)                                        \
-{                                                                           \
-  memcpy(write_mem_ptr, buffer, size);                                      \
-  write_mem_ptr += size;                                                    \
-}                                                                           \
 
 // These must be variables, not constants.
 
@@ -129,11 +130,11 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE_VARIABLE(filename_tag, variable)                         \
   FILE_WRITE(filename_tag, &variable, sizeof(variable))                     \
 
-#define FILE_READ_MEM_VARIABLE(variable)                                    \
-  FILE_READ_MEM(&variable, sizeof(variable))                                \
+#define FILE_READ_MEM_VARIABLE(ptr, variable)                               \
+  FILE_READ_MEM(ptr, &variable, sizeof(variable))                           \
 
-#define FILE_WRITE_MEM_VARIABLE(variable)                                   \
-  FILE_WRITE_MEM(&variable, sizeof(variable))                               \
+#define FILE_WRITE_MEM_VARIABLE(ptr, variable)                              \
+  FILE_WRITE_MEM(ptr, &variable, sizeof(variable))                          \
 
 // These must be statically declared arrays (ie, global or on the stack,
 // not dynamically allocated on the heap)
@@ -144,11 +145,11 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE_ARRAY(filename_tag, array)                               \
   FILE_WRITE(filename_tag, array, sizeof(array))                            \
 
-#define FILE_READ_MEM_ARRAY(array)                                          \
-  FILE_READ_MEM(array, sizeof(array))                                       \
+#define FILE_READ_MEM_ARRAY(ptr, array)                                     \
+  FILE_READ_MEM(ptr, array, sizeof(array))                                  \
 
-#define FILE_WRITE_MEM_ARRAY(array)                                         \
-  FILE_WRITE_MEM(array, sizeof(array))                                      \
+#define FILE_WRITE_MEM_ARRAY(ptr, array)                                    \
+  FILE_WRITE_MEM(ptr, array, sizeof(array))                                 \
 
 #define FLOAT_TO_FP16_16(value)                                             \
   (FIXED16_16)((value) * 65536.0)                                           \
@@ -182,10 +183,19 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define USE_BIOS 0
 #define EMU_BIOS 1
 
+#define NO  0
+#define YES 1
+
 // デバッグ用の設定
 #define DBG_FILE_NAME "dbg_msg.txt"
-#define DBGOUT(...) fprintf(dbg_file, __VA_ARGS__)
-FILE *dbg_file;
+#define DBGOUT(...) fprintf(g_dbg_file, __VA_ARGS__)
+FILE *g_dbg_file;
+
+u64 dbg_time_1;
+u64 dbg_time_2;
+#define GET_TIME_1() sceRtcGetCurrentTick(&dbg_time_1);
+#define GET_TIME_2() sceRtcGetCurrentTick(&dbg_time_2);
+#define WRITE_TIME() DBGOUT("%d ms\n",(int)(dbg_time_2 - dbg_time_1));
 
 /******************************************************************************
  * ローカルなヘッダファイルの読込み

@@ -251,28 +251,28 @@
     wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
   }                                                                           \
 
-#define sound_savestate_body(type)                                          \
-{                                                                           \
-  u32 temp_sound_read_offset = sound_read_offset;                           \
-  u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                 \
-  FILE_##type##_VARIABLE(sound_on);                                         \
-  FILE_##type##_VARIABLE(temp_sound_read_offset);                           \
-  FILE_##type##_VARIABLE(sound_last_cpu_ticks);                             \
-  FILE_##type##_VARIABLE(temp_gbc_sound_buffer_index);                      \
-  FILE_##type##_VARIABLE(gbc_sound_last_cpu_ticks);                         \
-  FILE_##type##_VARIABLE(gbc_sound_partial_ticks);                          \
-  FILE_##type##_VARIABLE(gbc_sound_master_volume_left);                     \
-  FILE_##type##_VARIABLE(gbc_sound_master_volume_right);                    \
-  FILE_##type##_VARIABLE(gbc_sound_master_volume);                          \
-  FILE_##type##_ARRAY(wave_samples);                                        \
-  FILE_##type##_ARRAY(direct_sound_channel);                                \
-  FILE_##type##_ARRAY(gbc_sound_channel);                                   \
-}                                                                           \
+#define sound_savestate_body(type)                                            \
+{                                                                             \
+  u32 temp_sound_read_offset = sound_read_offset;                             \
+  u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                   \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_on);                       \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, temp_sound_read_offset);         \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_last_cpu_ticks);           \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, temp_gbc_sound_buffer_index);    \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_last_cpu_ticks);       \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_partial_ticks);        \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_left);   \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_right);  \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume);        \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, wave_samples);                      \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, direct_sound_channel);              \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, gbc_sound_channel);                 \
+}                                                                             \
 
-#define CHECK_BUFFER()                                                      \
-  ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)              \
+#define CHECK_BUFFER()                                                        \
+  ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)                \
 
-#define SET_AUDIO_BUFFER_SIZE()                                             \
+#define SET_AUDIO_BUFFER_SIZE()                                               \
     audio_buffer_size = SAMPLE_SIZE * (5 + game_config.audio_buffer_size_number) \
 
 /******************************************************************************

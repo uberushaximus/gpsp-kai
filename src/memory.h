@@ -160,7 +160,7 @@ extern u32 gbc_sound_update;
 extern DMA_TRANSFER_TYPE dma[4];
 
 extern u8 savestate_write_buffer[];
-extern u8 *write_mem_ptr;
+extern u8 *g_state_buffer_ptr;
 
 //#define USE_VRAM
 

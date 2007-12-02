@@ -3596,9 +3596,9 @@ void init_cpu()
 
 #define cpu_savestate_body(type)                                              \
 {                                                                             \
-  FILE_##type(reg, 0x100);                                                    \
-  FILE_##type##_ARRAY(spsr);                                                  \
-  FILE_##type##_ARRAY(reg_mode);                                              \
+  FILE_##type(g_state_buffer_ptr,reg, 0x100);                             \
+  FILE_##type##_ARRAY(g_state_buffer_ptr,spsr);                           \
+  FILE_##type##_ARRAY(g_state_buffer_ptr,reg_mode);                       \
 }                                                                             \
 
 void cpu_read_mem_savestate()

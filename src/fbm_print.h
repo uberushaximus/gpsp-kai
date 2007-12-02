@@ -38,9 +38,8 @@ typedef struct
 /////////////////////////////////////////////////////////////////////////////
 // Fbm Font Initialize
 // s_path: Single Byte Font (ex.ASCII), d_path: Double Byte Font (ex.SJIS),
-// mode: Font Read Mode (1=On Memory(fast), 0=Disk Access(slow))
 /////////////////////////////////////////////////////////////////////////////
-int fbm_init(char *s_path, char *d_path, int mode);
+int fbm_init(char *s_path, char *d_path);
 
 /////////////////////////////////////////////////////////////////////////////
 // Fbm Font Termination
@@ -62,7 +61,7 @@ int fbm_getwidth(char *str);
 // fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
 // rate: Mix Rate (0-100 or -1--101)
 /////////////////////////////////////////////////////////////////////////////
-int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 color, u32 back, u8 fill, int rate, u32 pad);
+int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 color, u32 back, u8 fill);
 
 /////////////////////////////////////////////////////////////////////////////
 // Print String Subroutine (Draw VRAM)
@@ -73,13 +72,6 @@ int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 colo
 // fill: Fill Mode Flag (ex.FBM_FONT_FILL | FBM_BACK_FILL),
 // rate: Mix Rate (0-100 or -1--101)
 /////////////////////////////////////////////////////////////////////////////
-void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill, int rate);
-
-/////////////////////////////////////////////////////////////////////////////
-// VRAM Color Mix
-// vr: VRAM Address, color: Mix Color, rate: Mix Rate (0-100)
-/////////////////////////////////////////////////////////////////////////////
-u32 fbm_colmix(void *vr, u32 color, int rate);
-u32 fbm_colmixrev(void *vr, u32 color, int rate);
+void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int height, int byteperline, u32 color, u32 back, u8 fill);
 
 #endif

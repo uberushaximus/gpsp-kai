@@ -28,7 +28,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(300);
+PSP_MAIN_THREAD_STACK_SIZE_KB(256);
 
 /******************************************************************************
  * 変数の定義
@@ -90,7 +90,7 @@ char *lang[12] =
 
 #define MAX_LANG_NUM 11
 
-int lang_num;
+int g_sysparam_lang;
 int date_format;
 
 u32 prescale_table[] = { 0, 6, 8, 10 };
@@ -288,7 +288,7 @@ void quit()
   sound_exit();
   fbm_freeall();
 
-  fclose(dbg_file);
+  fclose(g_dbg_file);
 
   set_cpu_clock(222);
   sceKernelExitGame();
@@ -326,22 +326,22 @@ int main(int argc, char *argv[])
   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
   // デバッグ出力ファイルのオープン
-  dbg_file = fopen(DBG_FILE_NAME, "awb");
+  g_dbg_file = fopen(DBG_FILE_NAME, "awb");
 
   getcwd(main_path, 512);
 
 #ifdef ADHOC_MODE
   // adhoc用モジュールのロード
-  if (pspSdkLoadAdhocModules() != 0)
+  if (load_adhoc_modules() != 0)
     error_msg("not load adhoc modules!!\n");
 #endif
 
   // Copy the directory path of the executable into main_path
   chdir(main_path);
 
-  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &lang_num);
+  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &g_sysparam_lang);
   // 言語が設定外の場合英語に設定
-  if(lang_num > MAX_LANG_NUM) lang_num = 1;
+  if(g_sysparam_lang > MAX_LANG_NUM) g_sysparam_lang = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
 
   // 設定ファイルの読込み
@@ -357,6 +357,7 @@ int main(int argc, char *argv[])
   video_resolution(FRAME_MENU);
   video_resolution(FRAME_GAME);
   video_resolution(FRAME_MENU);
+
   clear_screen(COLOR_BG);
   flip_screen();
   clear_screen(COLOR_BG);
@@ -375,7 +376,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // フォント設定の読込み
-  sprintf(filename,"settings/%s.fnt",lang[lang_num]);
+  sprintf(filename,"settings/%s.fnt",lang[g_sysparam_lang]);
   if (load_fontcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -385,7 +386,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // メッセージファイルの読込み
-  sprintf(filename,"settings/%s.msg",lang[lang_num]);
+  sprintf(filename,"settings/%s.msg",lang[g_sysparam_lang]);
   if (load_msgcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -427,20 +428,20 @@ int main(int argc, char *argv[])
   {
     PRINT_STRING_BG(msg[MSG_ERR_BIOS_MD5], 0xFFFF, 0x0000, 0, 0);
     flip_screen();
-    delay_us(5000000);
+    sceKernelDelayThread(5000000);
   }
   update_progress();
 
   show_progress(msg[MSG_INIT_END]);
 
-#ifdef ADHOC_MODE
-  // WLANのスイッチがONならばadhoc接続のテスト
-  if (sceWlanDevIsPowerOn() == 1)
-  {
-    adhocInit("adhoc test");
-    adhocTerm();
-  }
-#endif
+//#ifdef ADHOC_MODE
+//  // WLANのスイッチがONならばadhoc接続のテスト
+//  if (sceWlanDevIsPowerOn() == 1)
+//  {
+//    adhoc_init("adhoc test");
+//    adhoc_term();
+//  }
+//#endif
 
   if(argc > 1)
   {
@@ -474,7 +475,7 @@ int main(int argc, char *argv[])
       {
         video_resolution(FRAME_MENU);
         printf("Failed to load gamepak %s, exiting.\n", load_filename);
-        delay_us(5000000);
+        sceKernelDelayThread(5000000);
         quit();
       }
 
@@ -835,23 +836,11 @@ void reset_gba()
   reset_sound();
 }
 
-u32 file_length(char *filename, s32 dummy)
+u32 file_length(const char *filename)
 {
   SceIoStat stats;
   sceIoGetstat(filename, &stats);
   return stats.st_size;
-}
-
-void delay_us(u32 us_count)
-{
-  sceKernelDelayThread(us_count);
-}
-
-void get_ticks_us(u64 *tick_return)
-{
-  u64 ticks;
-  sceRtcGetCurrentTick(&ticks);
-  *tick_return = ticks;
 }
 
 void change_ext(char *src, char *buffer, char *extension)
@@ -867,10 +856,10 @@ void change_ext(char *src, char *buffer, char *extension)
 // type = READ / WRITE_MEM
 #define MAIN_SAVESTATE_BODY(type)                                             \
 {                                                                             \
-  FILE_##type##_VARIABLE(cpu_ticks);                                          \
-  FILE_##type##_VARIABLE(execute_cycles);                                     \
-  FILE_##type##_VARIABLE(video_count);                                        \
-  FILE_##type##_ARRAY(timer);                                                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, cpu_ticks);                      \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, execute_cycles);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, video_count);                    \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, timer);                             \
 }                                                                             \
 
 void main_read_mem_savestate()
@@ -888,7 +877,7 @@ void error_msg(char *text)
     while(gui_action == CURSOR_NONE)
     {
       gui_action = get_gui_input();
-      delay_us(15000); /* 0.0015s */
+      sceKernelDelayThread(15000); /* 0.0015s */
     }
 }
 

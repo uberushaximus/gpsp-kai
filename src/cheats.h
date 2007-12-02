@@ -45,7 +45,7 @@ typedef struct
 
 // グローバル変数宣言
 
-extern u32 num_cheats;
+extern u32 g_num_cheats;
 
 // 関数宣言
 

@@ -74,7 +74,8 @@ typedef enum
 {
   psp_1000,      /* PSP-1000 all CFW */
   psp_2000_old,  /* PSP-2000 CFW 3.60 */
-  psp_2000_new   /* PSP-2000 CFW 3.71 or higher */
+  psp_2000_new,  /* PSP-2000 CFW 3.71 or 3.71-2 */
+  psp_2000_new1  /* PSP-2000 CFW 3.71-3 or higher */
 } MODEL_TYPE;
 
 // TODO:タイマーカウンタ周りの処理は再検討
@@ -195,6 +196,7 @@ extern u32 num_skipped_frames;
 extern u64 frame_count_initial_timestamp;
 extern int date_format;
 extern MODEL_TYPE psp_model;
+extern int g_sysparam_lang;
 
 /******************************************************************************
  * グローバル関数の宣言
@@ -204,8 +206,6 @@ u32 update_gba();
 void reset_gba();
 void synchronize();
 void quit();
-void delay_us(u32 us_count);
-void get_ticks_us(u64 *tick_return);
 void game_name_ext(u8 *src, u8 *buffer, u8 *extension);
 void main_read_mem_savestate();
 void main_write_mem_savestate();
@@ -213,7 +213,7 @@ void error_msg(char *text);
 void set_cpu_mode(CPU_MODE_TYPE new_mode);
 void raise_interrupt(IRQ_TYPE irq_raised);
 void change_ext(char *src, char *buffer, char *extension);
-u32 file_length(char *filename, s32 dummy);
+u32 file_length(const char *filename);
 MODEL_TYPE get_model();
 
 #endif /* MAIN_H */

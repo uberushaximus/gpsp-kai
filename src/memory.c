@@ -24,7 +24,7 @@
 #define SAVESTATE_SIZE 506951
 #define SAVESTATE_SIZE_OLD 506947
 u8 savestate_write_buffer[SAVESTATE_SIZE];
-u8 *write_mem_ptr;
+u8 *g_state_buffer_ptr;
 
 typedef enum
 {
@@ -765,15 +765,15 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
   switch(address)
   {
     case 0x00:
-    {
-      u32 dispcnt = io_registers[REG_DISPCNT];
+      {
+        u32 dispcnt = io_registers[REG_DISPCNT];
 
-      if((value & 0x07) != (dispcnt & 0x07))
-        oam_update = 1;
+        if((value & 0x07) != (dispcnt & 0x07))
+          oam_update = 1;
 
-      ADDRESS8(io_registers, 0x00) = value;
+        ADDRESS8(io_registers, 0x00) = value;
+      }
       break;
-    }
 
     // DISPSTAT (lower byte)
     case 0x04:
@@ -2106,7 +2106,7 @@ u32 load_backup(char *name)
 
   if(FILE_CHECK_VALID(backup_file))
   {
-    u32 backup_size = file_length(backup_path, backup_file);
+    u32 backup_size = file_length(backup_path);
 
     FILE_READ(backup_file, gamepak_backup, backup_size);
     FILE_CLOSE(backup_file);
@@ -2412,7 +2412,7 @@ s32 load_gamepak_raw(char *name)
 
   if(FILE_CHECK_VALID(gamepak_file))
   {
-    u32 gamepak_size = file_length(name, gamepak_file);
+    u32 gamepak_size = file_length(name);
 
     // If it's a big file size keep it don't close it, we'll
     // probably want to load it later
@@ -3301,19 +3301,19 @@ void init_gamepak_buffer()
   if (psp_model != psp_2000_new)
   {
     // 対応していない場合
-    // Try to initialize 16MB
-    gamepak_ram_buffer_size = 16 * 1024 * 1024;
+    // Try to initialize 32MB
+    gamepak_ram_buffer_size = 32 * 1024 * 1024;
     gamepak_rom = malloc(gamepak_ram_buffer_size);
 
     if(gamepak_rom == NULL)
     {
       // Try 14MB, for PSP, then lower in 2MB increments
-      gamepak_ram_buffer_size = 14 * 1024 * 1024;
+      gamepak_ram_buffer_size = 31 * 1024 * 1024;
       gamepak_rom = malloc(gamepak_ram_buffer_size);
 
       while(gamepak_rom == NULL)
       {
-        gamepak_ram_buffer_size -= (2 * 1024 * 1024);
+        gamepak_ram_buffer_size -= (1 * 1024 * 1024);
         gamepak_rom = malloc(gamepak_ram_buffer_size);
       }
     }
@@ -3510,7 +3510,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
     FILE_OPEN(savestate_file, savestate_path, READ);
     if(FILE_CHECK_VALID(savestate_file))
     {
-      file_size = file_length(savestate_path, (s32)NULL);
+      file_size = file_length(savestate_path);
       if (file_size == SAVESTATE_SIZE)
         FILE_READ(savestate_file, savestate_write_buffer, sizeof(savestate_write_buffer));
       else
@@ -3527,9 +3527,9 @@ u32 load_state(char *savestate_filename, u32 slot_num)
       return 0;
 
   if (file_size == SAVESTATE_SIZE)
-    write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u64);
+    g_state_buffer_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u64);
   else
-    write_mem_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u32);
+    g_state_buffer_ptr = savestate_write_buffer + (240 * 160 * 2) + sizeof(u32);
 
   strcpy(current_gamepak_filename, gamepak_filename);
   update_progress();
@@ -3617,18 +3617,18 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
     strcpy(savestate_path, savestate_filename);
   }
 
-  write_mem_ptr = savestate_write_buffer;
+  g_state_buffer_ptr = savestate_write_buffer;
 
   u64 current_time;
   pspTime current_time_fix; // time関数が年月日を返さないので調整用
   init_progress(9, msg[MSG_SAVE_STATE]);
 
-  FILE_WRITE_MEM(screen_capture, 240 * 160 * 2);
+  FILE_WRITE_MEM(g_state_buffer_ptr, screen_capture, 240 * 160 * 2);
   update_progress();
 
   sceRtcGetCurrentClock(&current_time_fix, 0);
   sceRtcGetTick(&current_time_fix, &current_time);
-  FILE_WRITE_MEM_VARIABLE(current_time);
+  FILE_WRITE_MEM_VARIABLE(g_state_buffer_ptr, current_time);
   update_progress();
 
   savestate_block(write_mem);
@@ -3658,40 +3658,40 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
 {                                                                             \
   u32 i;                                                                      \
                                                                               \
-  FILE_##type##_VARIABLE(backup_type);                                        \
-  FILE_##type##_VARIABLE(sram_size);                                          \
-  FILE_##type##_VARIABLE(flash_mode);                                         \
-  FILE_##type##_VARIABLE(flash_command_position);                             \
-  FILE_##type##_VARIABLE(flash_bank_ptr);                                     \
-  FILE_##type##_VARIABLE(flash_device_id);                                    \
-  FILE_##type##_VARIABLE(flash_manufacturer_id);                              \
-  FILE_##type##_VARIABLE(flash_size);                                         \
-  FILE_##type##_VARIABLE(eeprom_size);                                        \
-  FILE_##type##_VARIABLE(eeprom_mode);                                        \
-  FILE_##type##_VARIABLE(eeprom_address_length);                              \
-  FILE_##type##_VARIABLE(eeprom_address);                                     \
-  FILE_##type##_VARIABLE(eeprom_counter);                                     \
-  FILE_##type##_VARIABLE(rtc_state);                                          \
-  FILE_##type##_VARIABLE(rtc_write_mode);                                     \
-  FILE_##type##_ARRAY(rtc_registers);                                         \
-  FILE_##type##_VARIABLE(rtc_command);                                        \
-  FILE_##type##_ARRAY(rtc_data);                                              \
-  FILE_##type##_VARIABLE(rtc_status);                                         \
-  FILE_##type##_VARIABLE(rtc_data_bytes);                                     \
-  FILE_##type##_VARIABLE(rtc_bit_count);                                      \
-  FILE_##type##_ARRAY(eeprom_buffer);                                         \
-  FILE_##type##_ARRAY(gamepak_filename);                                      \
-  FILE_##type##_ARRAY(dma);                                                   \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, backup_type);                \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sram_size);                  \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_mode);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_command_position);     \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_bank_ptr);             \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_device_id);            \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_manufacturer_id);      \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, flash_size);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, eeprom_size);                \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, eeprom_mode);                \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, eeprom_address_length);      \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, eeprom_address);             \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, eeprom_counter);             \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_state);                  \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_write_mode);             \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, rtc_registers);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_command);                \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, rtc_data);                      \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_status);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_data_bytes);             \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, rtc_bit_count);              \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, eeprom_buffer);                 \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, gamepak_filename);              \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, dma);                           \
                                                                               \
-  FILE_##type(iwram + 0x8000, 0x8000);                                        \
+  FILE_##type(g_state_buffer_ptr, iwram + 0x8000, 0x8000);                \
   for(i = 0; i < 8; i++)                                                      \
   {                                                                           \
-    FILE_##type(ewram + (i * 0x10000) + 0x8000, 0x8000);                      \
+    FILE_##type(g_state_buffer_ptr, ewram + (i * 0x10000) + 0x8000, 0x8000); \
   }                                                                           \
-  FILE_##type(vram, 0x18000);                                                 \
-  FILE_##type(oam_ram, 0x400);                                                \
-  FILE_##type(palette_ram, 0x400);                                            \
-  FILE_##type(io_registers, 0x8000);                                          \
+  FILE_##type(g_state_buffer_ptr, vram, 0x18000);                         \
+  FILE_##type(g_state_buffer_ptr, oam_ram, 0x400);                        \
+  FILE_##type(g_state_buffer_ptr, palette_ram, 0x400);                    \
+  FILE_##type(g_state_buffer_ptr, io_registers, 0x8000);                  \
                                                                               \
   /* This is a hack, for now. */                                              \
   if((flash_bank_ptr < gamepak_backup) ||                                     \
