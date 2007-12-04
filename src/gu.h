@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef VIDEO_H
-#define VIDEO_H
+#ifndef GU_H
+#define GU_H
 
 #define FONT_WIDTH  6
 #define FONT_HEIGHT 10
@@ -33,13 +33,9 @@
 #define FRAME_GAME 0
 #define FRAME_MENU 1
 
-void update_scanline();
 void update_screen();
 void init_video();
 void video_resolution(u32 mode);
-void print_string(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y);
-void print_string_pad(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, u32 pad);
-void print_string_ext(char *str, u16 fg_color, u16 bg_color, u32 x, u32 y, void *_dest_ptr, u32 pitch, u32 pad);
 void clear_screen(u16 color);
 void blit_to_screen(u16 *src, u32 w, u32 h, u32 x, u32 y);
 u16 *copy_screen();
@@ -54,38 +50,6 @@ void debug_screen_printf(const char *format, ...);
 void debug_screen_printl(const char *format, ...);
 void debug_screen_newline(u32 count);
 void debug_screen_update();
-
-#ifdef VIDEO_CONFIG
-
-void video_config();
-
-#endif
-
-extern u32 frame_speed;
-
-extern s32 affine_reference_x[2];
-extern s32 affine_reference_y[2];
-
-typedef void (* tile_render_function)(u32 layer_number, u32 start, u32 end,
- void *dest_ptr);
-typedef void (* bitmap_render_function)(u32 start, u32 end, void *dest_ptr);
-
-typedef struct
-{
-  tile_render_function normal_render_base;
-  tile_render_function normal_render_transparent;
-  tile_render_function alpha_render_base;
-  tile_render_function alpha_render_transparent;
-  tile_render_function color16_render_base;
-  tile_render_function color16_render_transparent;
-  tile_render_function color32_render_base;
-  tile_render_function color32_render_transparent;
-} tile_layer_render_struct;
-
-typedef struct
-{
-  bitmap_render_function normal_render;
-} bitmap_layer_render_struct;
 
 typedef enum
 {
@@ -200,7 +164,5 @@ extern const SCREEN_PARAMETER screen_parameter_component_menu_init[];
 
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();
-
-
 
 #endif

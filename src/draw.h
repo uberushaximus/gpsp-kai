@@ -47,6 +47,11 @@
   fbm_printVRAM( screen_address, screen_pitch, x + 1, y + 1, str, 0, 0, FBM_FONT_FILL);                                \
   fbm_printVRAM( screen_address, screen_pitch, x, y, str, fg_color, 0, FBM_FONT_FILL)                                  \
 
+#define PRINT_STRING_BG_SJIS(utf8, str, fg_color, bg_color, x, y)                                                      \
+  sjis_to_utf8(str, utf8);                                                                                             \
+  fbm_printVRAM( screen_address, screen_pitch, x, y, utf8, fg_color, bg_color, FBM_FONT_FILL | FBM_BACK_FILL)          \
+
+
 // 基本カラーの設定
 #define COLOR_WHITE         COLOR16(31, 31, 31)
 #define COLOR_BLACK         COLOR16( 0,  0,  0)

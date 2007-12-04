@@ -196,7 +196,7 @@ extern u32 num_skipped_frames;
 extern u64 frame_count_initial_timestamp;
 extern int date_format;
 extern MODEL_TYPE psp_model;
-extern int g_sysparam_lang;
+extern char *lang[12];
 
 /******************************************************************************
  * グローバル関数の宣言

@@ -45,7 +45,7 @@
 #define VRAM_POS(x, y)  (screen_address + (x + y * screen_pitch));
 
 /******************************************************************************
- * グローバル変数の宣言
+ * グローバル関数の宣言
  ******************************************************************************/
 u32 yesno_dialog(char *text);
 
@@ -55,6 +55,8 @@ u32 yesno_dialog(char *text);
 static int progress_total;
 static int progress_current;
 static char progress_message[256];
+static u32 __attribute__((aligned(32))) display_list[2048];
+static float *vertex = (float *)0x441FD000;
 
 /******************************************************************************
  * ローカル変数の定義
@@ -297,6 +299,50 @@ void scrollbar(u32 sx, u32 sy, u32 ex, u32 ey, u32 all,u32 view,u32 now)
     box(sx, sy, ex, ey, COLOR_BLACK);
     boxfill(sx + 1, sy + 1, ex - 1, ey - 1, SCROLLBAR_COLOR1);
     boxfill(sx + 1, scrollbar_sy, ex - 1, scrollbar_ey, SCROLLBAR_COLOR2);
+}
+
+/*------------------------------------------------------
+  VRAMへのテクスチャ転送(拡大縮小つき)
+------------------------------------------------------*/
+void bit_blt(u32 vram_adr,u32 pitch, u32 sx, u32 sy, u32 ex, u32 ey, u32 x_size, u32 y_size, u32 *data)
+{
+  struct Vertex *vertices;
+
+  sceGuStart(GU_DIRECT, display_list);
+  sceGuDrawBufferList(GU_PSM_5551, (void *) vram_adr, pitch);
+  sceGuScissor(0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
+  sceGuEnable(GU_BLEND);
+  sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
+  sceGuTexImage(0, 512, 512, BUF_WIDTH, tex_font);
+  sceGuTexFilter(GU_NEAREST, GU_NEAREST);
+
+  vertices = (struct Vertex *)sceGuGetMemory(2 * sizeof(struct Vertex));
+
+  if (vertices)
+  {
+    vertices[0].u = 0;
+    vertices[0].v = 0;
+    vertices[0].x = sx;
+    vertices[0].y = sy;
+
+#if (EMU_SYSTEM == MVS)
+    vertices[1].u = 208;
+    vertices[1].v = 14;
+    vertices[1].x = sx + 208;
+    vertices[1].y = sy + 14;
+#else
+    vertices[1].u = 232;
+    vertices[1].v = 14;
+    vertices[1].x = sx + 232;
+    vertices[1].y = sy + 14;
+#endif
+  }
+
+  sceGuDrawArray(GU_SPRITES, TEXTURE_FLAGS, 2, NULL, vertices);
+
+  sceGuDisable(GU_BLEND);
+  sceGuFinish();
+  sceGuSync(0, GU_SYNC_FINISH);
 }
 
 /******************************************************************************

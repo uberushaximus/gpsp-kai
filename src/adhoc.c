@@ -625,18 +625,18 @@ int adhocSelect(void)
   char title[32];
 
   sprintf(title, "AdHoc - %s", game_name);
-  msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
+//  msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
 
   while (1)
   {
     pad_update();
 
-    msg_set_text_color(0xffff);
+//    msg_set_text_color(0xffff);
 
     switch (currentState)
     {
     case PSP_LISTING:
-      Server = 0;
+      server = 0;
       if (update)
       {
         msg_screen_init(WP_LOGO, ICON_SYSTEM, title);

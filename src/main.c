@@ -90,7 +90,6 @@ char *lang[12] =
 
 #define MAX_LANG_NUM 11
 
-int g_sysparam_lang;
 int date_format;
 
 u32 prescale_table[] = { 0, 6, 8, 10 };
@@ -339,11 +338,6 @@ int main(int argc, char *argv[])
   // Copy the directory path of the executable into main_path
   chdir(main_path);
 
-  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &g_sysparam_lang);
-  // 言語が設定外の場合英語に設定
-  if(g_sysparam_lang > MAX_LANG_NUM) g_sysparam_lang = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
-  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT,&date_format);
-
   // 設定ファイルの読込み
   load_config_file();
   init_game_config();
@@ -376,7 +370,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // フォント設定の読込み
-  sprintf(filename,"settings/%s.fnt",lang[g_sysparam_lang]);
+  sprintf(filename,"settings/%s.fnt",lang[gpsp_config.language]);
   if (load_fontcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -386,7 +380,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // メッセージファイルの読込み
-  sprintf(filename,"settings/%s.msg",lang[g_sysparam_lang]);
+  sprintf(filename,"settings/%s.msg",lang[gpsp_config.language]);
   if (load_msgcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -463,7 +457,7 @@ int main(int argc, char *argv[])
   }
   else
   {
-    if(load_file(file_ext, load_filename, DEFAULT_ROM_DIR) == -1)
+    if(load_file(file_ext, load_filename, g_default_rom_dir) == -1)
     {
       u16 *screen_copy = copy_screen();
       menu(screen_copy);

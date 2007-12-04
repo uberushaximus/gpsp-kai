@@ -13,9 +13,9 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 #文字列が表示されないので保留
 #PSP_EBOOT_PIC1  = ../image/pic1.png 
 
-OBJS            = main.o cpu.o video.o memory.o sound.o input.o
+OBJS            = main.o cpu.o video.o memory.o sound.o input.o gu.o
 OBJS           += gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o video_setting.o
-OBJS           += pspDveManager.o homehook.o
+OBJS           += pspDveManager.o homehook.o unicode.o
 
 ifeq ($(ADHOC_MODE), 1)
 OBJS           += adhoc.o
@@ -57,7 +57,9 @@ endif
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
-LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge
+#LDFLAGS += -Wl,-Map gpSP.map
+
+LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge -lpspgum -lm
 
 ifdef ADHOC_MODE
 LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
@@ -71,12 +73,14 @@ COMMON_FILE       = ${SRC_DIR}common.h \
                                  ${SRC_DIR}cpu.h \
                                  ${SRC_DIR}memory.h \
                                  ${SRC_DIR}video.h \
+                                 ${SRC_DIR}gu.h \
                                  ${SRC_DIR}input.h \
                                  ${SRC_DIR}sound.h \
                                  ${SRC_DIR}main.h \
                                  ${SRC_DIR}gui.h \
                                  ${SRC_DIR}zip.h \
-                                 ${SRC_DIR}cheats.h
+                                 ${SRC_DIR}cheats.h \
+                                 ${SRC_DIR}unicode.h
 
 UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
                                  ${SRC_DIR}draw.h \
@@ -84,7 +88,8 @@ UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
 
 main.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
 cpu.o						: ${COMMON_FILE} ${SRC_DIR}cpu.c
-video.o					: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}video.c 
+video.o					: ${COMMON_FILE} ${SRC_DIR}video.c 
+gu.o						: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}gu.c 
 memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
 sound.o					: ${COMMON_FILE} ${SRC_DIR}sound.c
 input.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c
@@ -98,6 +103,7 @@ draw.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}draw.c ${SRC_DIR}draw.h
 pspDveManager.o  : ${SRC_DIR}pspDveManager.S
 homehook.o			: ${SRC_DIR}homehook.S
 video_setting.o		: ${COMMON_FILE} ${SRC_DIR}video_setting.c
+unicode.o				: ${COMMON_FILE} ${SRC_DIR}unicode.c
 
 ifdef ADHOC_MODE
 adhoc.o					: ${COMMON_FILE} ${SRC_DIR}adhoc.c ${SRC_DIR}adhoc.h

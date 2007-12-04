@@ -215,6 +215,8 @@ u64 dbg_time_2;
 #include "homehook.h"
 #include "dvemgr.h"
 #include "gui.h"
+#include "gu.h"
+#include "unicode.h"
 
 #ifdef ADHOC_MODE
 #include "adhoc.h"

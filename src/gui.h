@@ -38,6 +38,7 @@ typedef struct
   u32 analog_sensitivity_level;
   u32 enable_home;
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
+  u32 language;
 } GPSP_CONFIG_V10;
 
 typedef struct
@@ -58,7 +59,7 @@ typedef struct
  * グローバル変数の宣言
  ******************************************************************************/
 extern u32 SAVESTATE_SLOT;
-extern char DEFAULT_ROM_DIR[MAX_PATH];
+extern char g_default_rom_dir[MAX_PATH];
 extern char DEFAULT_SAVE_DIR[MAX_PATH];
 extern char DEFAULT_CFG_DIR[MAX_PATH];
 extern char DEFAULT_SS_DIR[MAX_PATH];

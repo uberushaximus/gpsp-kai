@@ -246,7 +246,7 @@ typedef struct _MENU_TYPE MENU_TYPE;
 /******************************************************************************
  * グローバル変数の定義
  ******************************************************************************/
-char DEFAULT_ROM_DIR[MAX_PATH];
+char g_default_rom_dir[MAX_PATH];
 char DEFAULT_SAVE_DIR[MAX_PATH];
 char DEFAULT_CFG_DIR[MAX_PATH];
 char DEFAULT_SS_DIR[MAX_PATH];
@@ -325,6 +325,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
   u32 repeat;
   u32 i;
   gui_action_type gui_action;
+  char utf8[2048];
 
   if (default_dir_name != NULL)
     chdir(default_dir_name);
@@ -665,7 +666,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
           break;
       }
       print_status(1);
-      PRINT_STRING_BG(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
+      PRINT_STRING_BG_SJIS(utf8, current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, (CURRENT_DIR_ROWS * 10));
       PRINT_STRING_BG(msg[MSG_RETURN_MENU], COLOR_HELP_TEXT, COLOR_BG, 20, 260);
 
       for(i = 0, current_file_number = i + current_file_scroll_value;
@@ -676,12 +677,12 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
           if((current_file_number == current_file_selection) &&
            (current_column == 0))
           {
-            PRINT_STRING_BG(file_list[current_file_number], COLOR_ACTIVE_ITEM,
+            PRINT_STRING_BG_SJIS(utf8, file_list[current_file_number], COLOR_ACTIVE_ITEM,
              COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
           }
           else
           {
-            PRINT_STRING_BG(file_list[current_file_number], COLOR_INACTIVE_ITEM,
+            PRINT_STRING_BG_SJIS(utf8, file_list[current_file_number], COLOR_INACTIVE_ITEM,
              COLOR_BG, FILE_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
           }
         }
@@ -695,12 +696,12 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
           if((current_dir_number == current_dir_selection) &&
            (current_column == 1))
           {
-            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_ACTIVE_ITEM,
+            PRINT_STRING_BG_SJIS(utf8, dir_list[current_dir_number], COLOR_ACTIVE_ITEM,
              COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
           }
           else
           {
-            PRINT_STRING_BG(dir_list[current_dir_number], COLOR_INACTIVE_ITEM,
+            PRINT_STRING_BG_SJIS(utf8, dir_list[current_dir_number], COLOR_INACTIVE_ITEM,
              COLOR_BG, DIR_LIST_POSITION, ((i + CURRENT_DIR_ROWS + 1) * 10));
           }
         }
@@ -789,6 +790,7 @@ void init_gpsp_config()
   gpsp_config.enable_home = NO;
   memcpy(gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
   memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+  gpsp_config.language = 1; /* English */
 }
 
 /*--------------------------------------------------------
@@ -974,7 +976,7 @@ u32 menu(u16 *original_screen)
 //    if(!gpsp_config.update_backup_flag)
       update_backup_force();
 
-    if(load_file(file_ext, load_filename, DEFAULT_ROM_DIR) != -1)
+    if(load_file(file_ext, load_filename, g_default_rom_dir) != -1)
     {
        if(load_gamepak(load_filename) == -1)
        {
@@ -1197,6 +1199,22 @@ u32 menu(u16 *original_screen)
   char *ratio_options[] = { msg[MSG_R_4_3], msg[MSG_R_16_9] };
   char *interlace_options[] = { msg[MSG_I_NON], msg[MSG_I_ON] };
 
+  char *language_options[] =
+  {
+    lang[0],
+    lang[1],
+    lang[2],
+    lang[3],
+    lang[4],
+    lang[5],
+    lang[6],
+    lang[7],
+    lang[8],
+    lang[9],
+    lang[10],
+    lang[11]
+  };
+
   /*--------------------------------------------------------
      グラフィック・サウンド オプション
   --------------------------------------------------------*/
@@ -1215,10 +1233,6 @@ u32 menu(u16 *original_screen)
     STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
 
     ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
-
-#ifdef VIDEO_CONFIG
-    ACTION_OPTION(video_config, NULL, "video_config", "video_config", 13),
-#endif
 
     SUBMENU_OPTION(NULL, msg[MSG_G_S_MENU_8], msg[MSG_G_S_MENU_HELP_8], 15)
   };
@@ -1242,7 +1256,7 @@ u32 menu(u16 *original_screen)
     CHEAT_OPTION((10 * menu_cheat_page) + 9),
     NUMERIC_SELECTION_OPTION(reload_cheats_page, msg[MSG_CHEAT_MENU_5], &menu_cheat_page, MAX_CHEATS_PAGE, msg[MSG_CHEAT_MENU_HELP_5], 10),
     ACTION_OPTION(menu_load_cheat_file, NULL, msg[MSG_CHEAT_MENU_1], msg[MSG_CHEAT_MENU_HELP_1], 11),
-
+    STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &gpsp_config.language, 12, "言語", 12), /* TODO */
     STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 13),
     STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 14),
     STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 15),
@@ -1642,10 +1656,10 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
         {
           case 0:
             if(opendir(current_str) != NULL)
-              strcpy(DEFAULT_ROM_DIR,current_str);
+              strcpy(g_default_rom_dir,current_str);
             else
             {
-              *DEFAULT_ROM_DIR = (char)NULL;
+              *g_default_rom_dir = (char)NULL;
               pspDebugScreenInit();
               printf("not open rom dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -2038,6 +2052,7 @@ static void print_status(u32 mode)
 {
   char print_buffer_1[256];
   char print_buffer_2[256];
+  char utf8[2048];
   pspTime current_time;
 
   sceRtcGetCurrentClockLocalTime(&current_time);
@@ -2051,14 +2066,14 @@ static void print_status(u32 mode)
   sprintf(print_buffer_1, msg[MSG_MENU_BATTERY], scePowerGetBatteryLifePercent(), scePowerGetBatteryLifeTime());
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 0);
 
-  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %02d",
+  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %.1f",
       (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_RELEASE, VERSION_BUILD);
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 10);
 
   if (mode == 0)
   {
     strncpy(print_buffer_1, gamepak_filename, 80);
-    PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 10);
+    PRINT_STRING_BG_SJIS(utf8, print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 10);
     sprintf(print_buffer_1, "%s  %s  %s  %0X", gamepak_title, gamepak_code, gamepak_maker, (unsigned int)gamepak_crc32);
     PRINT_STRING_BG(print_buffer_1, COLOR_ROM_INFO, COLOR_BG, 10, 20);
   }

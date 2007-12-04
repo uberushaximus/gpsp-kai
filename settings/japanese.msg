@@ -1,17 +1,17 @@
-# messege file
+×# messege file
 # Japanese
 
 # MSG_RETURN_MENU
 #Press X to return to the main menu.
-!�~�{�^���Ń��C�����j���[�ɖ߂�܂�
+!×ボタンでメインメニューに戻ります
 
 # MSG_MENU_DATE
 #TIME 
-!���� 
+!時刻 
 
 # MSG_MENU_BATTERY
 #battery LifePercent:%3d%% LifeTime:%3dmin.
-!�o�b�e���[ �c��:%3d%% �c����:%3d��
+!バッテリー 残量:%3d%% 残時間:%3d分
 
 # MSG_DATE_FMT_0
 # for PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD
@@ -30,143 +30,143 @@
 
 # MSG_MAIN_MENU_0
 #Graphics and Sound options
-!�O���t�B�b�N/�T�E���h�̐ݒ�
+!グラフィック/サウンドの設定
 
 # MSG_MAIN_MENU_1
 #Load state from slot: %d
-!���[�h�X�e�[�g �X���b�g: %d
+!ロードステート スロット: %d
 
 # MSG_MAIN_MENU_2
 #Save state to slot: %d
-!�Z�[�u�X�e�[�g �X���b�g: %d
+!セーブステート スロット: %d
 
 # MSG_MAIN_MENU_3
 #Savestate options
-!�X�e�[�g�Z�[�u�̐ݒ�
+!ステートセーブの設定
 
 # MSG_MAIN_MENU_4
 #Configure gamepad input
-!�L�[�̐ݒ�
+!キーの設定
 
 # MSG_MAIN_MENU_5
 #Configure analog input
-!�A�i���O�p�b�h�̐ݒ�
+!アナログパッドの設定
 
 # MSG_MAIN_MENU_6
 #Cheats and Miscellaneous options
-!�`�[�g/���̑��̐ݒ�
+!チート/その他の設定
 
 # MSG_MAIN_MENU_7
 #Load new game
-!�Q�[���̃��[�h
+!ゲームのロード
 
 # MSG_MAIN_MENU_8
 #Restart game
-!���Z�b�g
+!リセット
 
 # MSG_MAIN_MENU_9
 #Return to game
-!�Q�[���ɖ߂�
+!ゲームに戻る
 
 # MSG_MAIN_MENU_10
 #Exit gpSP
-!gpSP�̏I��
+!gpSPの終了
 
 # MSG_MAIN_MENU_HELP_0
 #Select to set display parameters and frameskip behavior,\n
 #audio on/off, audio buffer size, and audio filtering.
-!��ʁA�t���[���X�L�b�v�A�I�[�f�B�I�̐ݒ��ύX���܂��B\n
+!画面、フレームスキップ、オーディオの設定を変更します。\n
 !
 
 # MSG_MAIN_MENU_HELP_1
 #Select to load the game state from the current slot for this game,\n
 #if it exists (see the extended menu for more information)\n
 #Press left + right to change the current slot.
-!���݂̃X���b�g����X�e�[�g�����[�h���܂�\n
-!(�Q�[���X�e�[�g���ۑ�����Ă���ꍇ)(�ڍׂ͊g�����j���[�ɕ\��)\n
-!L+R�ŃX���b�g��ύX���܂�
+!現在のスロットからステートをロードします\n
+!(ゲームステートが保存されている場合)(詳細は拡張メニューに表示)\n
+!L+Rでスロットを変更します
 
 # MSG_MAIN_MENU_HELP_2
 #Select to save the game state to the current slot for this game.\n
 #See the extended menu for more information.\n
 #Press left + right to change the current slot.
-!���݂̃X���b�g�ɃX�e�[�g���Z�[�u���܂�\n
-!�ڍׂ͊g�����j���[�ɕ\��\n
-!L+R�ŃX���b�g��ύX���܂�
+!現在のスロットにステートをセーブします\n
+!詳細は拡張メニューに表示\n
+!L+Rでスロットを変更します
 
 # MSG_MAIN_MENU_HELP_3
 #Select to enter a menu for loading, saving, and viewing the\n
 #currently active savestate for this game (or to load a savestate\n
 #file from another game)
-!���̃Q�[���Ɋւ��Č��ݎg�p����Ă���Z�[�u�X�e�[�g�����[�h�A�Z�[�u�A���邽�߂Ƀ��j���[\n
-!�ɋL�^���邽�߂ɁA�I�т܂��B\n
-!(�܂��A�����ЂƂ̃Q�[������Z�[�u�X�e�[�g�t�@�C�������[�h���邽�߂�)
+!このゲームに関して現在使用されているセーブステートをロード、セーブ、見るためにメニュー\n
+!に記録するために、選びます。\n
+!(また、もうひとつのゲームからセーブステートファイルをロードするために)
 
 # MSG_MAIN_MENU_HELP_4
 #Select to change the in-game behavior of the PSP buttons and d-pad.
-!�\���L�[�y�у{�^���̐ݒ��ύX���܂�
+!十時キー及びボタンの設定を変更します
 
 # MSG_MAIN_MENU_HELP_5
 #Select to change the in-game behavior of the PSP analog nub.
-!�A�i���O�p�b�h�̐ݒ��ύX���܂�
+!アナログパッドの設定を変更します
 
 # MSG_MAIN_MENU_HELP_6
 #Select to manage cheats, set backup behavior, and set device clock\n
 #speed.
-!�`�[�g�A�o�b�N�A�b�v�̃^�C�~���O�APSP�̃N���b�N��ύX���܂�
+!チート、バックアップのタイミング、PSPのクロックを変更します
 !
 
 # MSG_MAIN_MENU_HELP_7
 #Select to load a new game (will exit a game if currently playing).
-!�ʂ̃Q�[�������[�h���܂�(�L�����Z�������ꍇ�͍��̃Q�[���𑱍s���܂�)
+!別のゲームをロードします(キャンセルした場合は今のゲームを続行します)
 
 # MSG_MAIN_MENU_HELP_8
 #Select to reset the GBA with the current game loaded.
-!���݃��[�h���Ă���Q�[�������Z�b�g���܂�
+!現在ロードしているゲームをリセットします
 
 # MSG_MAIN_MENU_HELP_9
 #Select to exit this menu and resume gameplay.
-!���j���[����ăQ�[���ɖ߂�܂�
+!メニューを閉じてゲームに戻ります
 
 # MSG_MAIN_MENU_HELP_10
 #Select to exit gpSP and return to the PSP XMB/loader.
-!gpSP���I������XMB/loader�ɖ߂�܂�
+!gpSPを終了してXMB/loaderに戻ります
 
 # MSG_G_S_MENU_0
 #Display scaling: %s
-!��ʕ\��: %s
+!画面表示: %s
 
 # MSG_G_S_MENU_1
 #Screen filtering: %s
-!��ʂ̃t�B���^�����O: %s
+!画面のフィルタリング: %s
 
 # MSG_G_S_MENU_2
 #Frameskip type: %s
-!�t���[���X�L�b�v�̎��: %s
+!フレームスキップの種類: %s
 
 # MSG_G_S_MENU_3
 #Frameskip value: %d
-!�t���[���X�L�b�v�̒l: %d
+!フレームスキップの値: %d
 
 # MSG_G_S_MENU_4
 #Framskip variation: %s
-!�t���[���X�L�b�v�̎��: %s
+!フレームスキップの種類: %s
 
 # MSG_G_S_MENU_5
 #Audio output: %s
-!�I�[�f�B�I�o��: %s
+!オーディオ出力: %s
 
 # MSG_G_S_MENU_6
 #Audio buffer: %s
-!�I�[�f�B�I �o�b�t�@: %s
+!オーディオ バッファ: %s
 
 # MSG_G_S_MENU_7
 #screen shot
-!�X�N���[�� �V���b�g
+!スクリーン ショット
 
 # MSG_G_S_MENU_8
 #Back
-!�߂�
+!戻る
 
 # MSG_G_S_MENU_9
 #TV output ratio       : %s
@@ -181,19 +181,19 @@
 #screen. Select unscaled 3:2 for GBA resolution, scaled 3:2 for GBA\n
 #aspect ratio scaled to fill the height of the PSP screen, and\n
 #fullscreen to fill the entire PSP screen.
-!�X�N���[�����ǂ̂悤�ɑS�̂̃X�N���[���Ɗ֘A���ă��T�C�Y����邩�����肵�܂��B\n
-!GBA�K�i�Ɠ����傫���F�g��Ȃ� 3:2\n
-!PSP�̉�ʂ̏c�̒�����GBA�̃A�X�y�N�g�䂪��v�F�g�� 3:2\n
-!PSP�S�̂Ɋg�債���傫���F�t���X�N���[��
+!スクリーンがどのように全体のスクリーンと関連してリサイズされるかを決定します。\n
+!GBA規格と同じ大きさ：拡大なし 3:2\n
+!PSPの画面の縦の長さとGBAのアスペクト比が一致：拡大 3:2\n
+!PSP全体に拡大した大きさ：フルスクリーン
 
 # MSG_G_S_MENU_HELP_1
 #Determines whether or not bilinear filtering should be used when\n
 #scaling the screen. Selecting this will produce a more even and\n
 #smooth image, at the cost of being blurry and having less vibrant\n
 #colors.
-!�X�N���[�����g�傷��Ƃ��A�t�B���^�����O���g�p���邩�ǂ��������肵�܂��B\n
-!�����I������ƁA���ϓ��Ŋ��炩�ȃC���[�W�����o���܂��B\n
-!�������A�ڂ₯���A���܂薾�邭�Ȃ��F�ɂȂ�܂��B\n
+!スクリーンを拡大するとき、フィルタリングを使用するかどうかを決定します。\n
+!これを選択すると、より均等で滑らかなイメージを作り出します。\n
+!しかし、ぼやけた、あまり明るくない色になります。\n
 !
 
 # MSG_G_S_MENU_HELP_2
@@ -202,20 +202,20 @@
 #Off: Do not skip any frames.\n
 #Auto: Skip up to N frames (see next option) as needed.\n
 #Manual: Always render only 1 out of N + 1 frames.
-!�ǂ̎�ނ̃t���[���X�L�b�v���g�p���邩�����肵�܂��B\n
-!�t���[���X�L�b�v���邱�Ƃő����̃Q�[���̑��x�����シ�邩������܂���B\n
-!�I�t : �t���[���X�L�b�v���g�p���܂���B\n
-!���� : �K�v�ɉ�����N�t���[��(���̃I�v�V����������)�X�L�b�v���܂��B\n
-!�蓮 : ����N+1�t���[������1�������t���[���X�L�b�v���܂��B
+!どの種類のフレームスキップを使用するかを決定します。\n
+!フレームスキップすることで多くのゲームの速度が向上するかもしれません。\n
+!オフ : フレームスキップを使用しません。\n
+!自動 : 必要に応じてNフレーム(次のオプションを見る)スキップします。\n
+!手動 : 毎回N+1フレームから1だけをフレームスキップします。
 
 # MSG_G_S_MENU_HELP_3
 #For auto frameskip, determines the maximum number of frames that\n
 #are allowed to be skipped consecutively.\n
 #For manual frameskip, determines the number of frames that will\n
 #always be skipped.
-!�����Ńt���[���X�L�b�v���邽�߂ɁA�A�����ăX�L�b�v���邱�Ƃ��ł���t���[���̍ő吔\n
-!�����肵�܂��B\n
-!�蓮�Ńt���[���X�L�b�v���邽�߂ɁA�����X�L�b�v�����t���[���̐������肵�܂��B\n
+!自動でフレームスキップするために、連続してスキップすることができるフレームの最大数\n
+!を決定します。\n
+!手動でフレームスキップするために、いつもスキップされるフレームの数を決定します。\n
 !
 
 # MSG_G_S_MENU_HELP_4
@@ -223,34 +223,34 @@
 #frameskip values may cause them to normally disappear. Change this\n
 #value to 'random' to avoid this. Do not use otherwise, as it tends to\n
 #make the image quality worse, especially in high motion games.
-!�Q�[���ɂ����镨�����ʂ̒l�̎蓮�̃t���[���X�L�b�v�Ŗ��ł���Ȃ�A�t���[���X�L�b�v��\n
-!�l�ɂ���Ă͂����͌����Ȃ��Ȃ邩������܂���B\n
-!���������邽�߂�'�����_��'�ɕς��Ă��������B �����łȂ���΁A�掿����舫������X��\n
-!������A���ɍ��������̃Q�[���ɂ͎g�p���Ȃ��ł��������B
+!ゲームにおける物が普通の値の手動のフレームスキップで明滅するなら、フレームスキップの\n
+!値によってはそれらは見えなくなるかもしれません。\n
+!これを避けるために'ランダム'に変えてください。 そうでなければ、画質をより悪くする傾向\n
+!がある、特に高い動きのゲームには使用しないでください。
 
 # MSG_G_S_MENU_HELP_5
 #Select 'no' to turn off all audio output. This will not result in a\n
 #significant change in performance.
-!���ׂẴI�[�f�B�I�o�͂��I�t�ɂ��邽�߂ɂ�'������'��I�����Ă��������B\n
-!����̓p�t�H�[�}���X�ɂ����Ă��܂�ω��������炳�Ȃ��ł��傤�B
+!すべてのオーディオ出力をオフにするためには'いいえ'を選択してください。\n
+!これはパフォーマンスにおいてあまり変化をもたらさないでしょう。
 
 # MSG_G_S_MENU_HELP_6
 #Set the size (in bytes) of the audio buffer. Larger values may result\n
 #in slightly better performance at the cost of latency; the lowest\n
 #value will give the most responsive audio.\n
 #This option requires gpSP to be restarted before it will take effect.
-!�I�[�f�B�I�o�b�t�@�̃T�C�Y(�o�C�g�ɂ��)��ݒ肵�܂��B\n
-!�傫���l�͂킸���Ƀp�t�H�[�}���X�����߂邩������܂��񂪁A���Ԃ������邩������܂���B\n
-!�ł��Ⴂ�l�ɂ���ƂƂĂ��ǂ����ɂȂ�ł��傤�B\n
-!���̃I�v�V�����́A�ݒ肪���f����邽�߂�gpSP���ċN������K�v������܂��B
+!オーディオバッファのサイズ(バイトによる)を設定します。\n
+!大きい値はわずかにパフォーマンスを高めるかもしれませんが、時間がかかるかもしれません。\n
+!最も低い値にするととても良い音になるでしょう。\n
+!このオプションは、設定が反映されるためにgpSPを再起動する必要があります。
 
 # MSG_G_S_MENU_HELP_7
 #screen shot
-!�X�N���[�� �V���b�g
+!スクリーン ショット
 
 # MSG_G_S_MENU_HELP_8
 #Return to the main menu.
-!���C�����j���[�ɖ߂�
+!メインメニューに戻る
 
 # MSG_G_S_MENU_HELP_9
 #TV output ratio
@@ -304,131 +304,131 @@
 
 # MSG_STATE_MENU_STATE_NONE
 #No savestate exists for this slot.
-!���̃X���b�g�ɃX�e�[�g�f�[�^�͂���܂���
+!このスロットにステートデータはありません
 
 # MSG_STATE_MENU_TITLE
 #Savestate options:
-!�Z�[�u�X�e�[�g�̐ݒ�:
+!セーブステートの設定:
 
 # MSG_STATE_MENU_0
 #Load savestate from current slot
-!���݂̃X���b�g����X�e�[�g�����[�h
+!現在のスロットからステートをロード
 
 # MSG_STATE_MENU_1
 #Save savestate to current slot
-!���݂̃X���b�g�ɃX�e�[�g���Z�[�u
+!現在のスロットにステートをセーブ
 
 # MSG_STATE_MENU_2
 #Load savestate from file
-!�t�@�C������X�e�[�g�����[�h
+!ファイルからステートをロード
 
 # MSG_STATE_MENU_3
 #Current savestate slot: %d
-!���݂̃X�e�[�g�̃X���b�g: %d
+!現在のステートのスロット: %d
 
 # MSG_STATE_MENU_4
 #Back
-!�߂�
+!戻る
 
 # MSG_STATE_MENU_HELP_0
 #Select to load the game state from the current slot for this game.\n
 #Press left + right to change the current slot.
-!���݂̃X���b�g����X�e�[�g�����[�h\n
-!L+R�Ō��݂̃X���b�g��ύX
+!現在のスロットからステートをロード\n
+!L+Rで現在のスロットを変更
 
 # MSG_STATE_MENU_HELP_1
 #Select to save the game state to the current slot for this game.\n
 #Press left + right to change the current slot.
-!���݂̃X���b�g�փX�e�[�g���Z�[�u\n
-!L+R�Ō��݂̃X���b�g��ύX
+!現在のスロットへステートをセーブ\n
+!L+Rで現在のスロットを変更
 
 # MSG_STATE_MENU_HELP_2
 #Restore gameplay from a savestate file.\n
 #Note: The same file used to save the state must be present.\n
-!�Z�[�u�X�e�[�g����Q�[���v���C�𕜌����Ă��������B\n
-!����:�X�e�[�g�Z�[�u����̂Ɏg�p����铯���t�@�C���͑��݂��Ă��Ȃ���΂Ȃ�܂���B\n
+!セーブステートからゲームプレイを復元してください。\n
+!注意:ステートセーブするのに使用される同じファイルは存在していなければなりません。\n
 
 # MSG_STATE_MENU_HELP_3
 #Change the current savestate slot.\n
-!�X�e�[�g�X���b�g�̕ύX\n
+!ステートスロットの変更\n
 
 # MSG_STATE_MENU_HELP_4
 #Return to the main menu.
-!���C�����j���[�ɖ߂�
+!メインメニューに戻る
 
 # MSG_PAD_MENU_0
 #D-pad up     : %s
-!���@�@�@�@�@ : %s
+!↑　　　　　 : %s
 
 # MSG_PAD_MENU_1
 #D-pad down   : %s
-!���@�@�@�@�@ : %s
+!↓　　　　　 : %s
 
 # MSG_PAD_MENU_2
 #D-pad left   : %s
-!���@�@�@�@�@ : %s
+!←　　　　　 : %s
 
 # MSG_PAD_MENU_3
 #D-pad right  : %s
-!���@�@�@�@�@ : %s
+!→　　　　　 : %s
 
 # MSG_PAD_MENU_4
 #Circle       : %s
-!���@�@�@�@�@ : %s
+!○　　　　　 : %s
 
 # MSG_PAD_MENU_5
 #Cross        : %s
-!�~�@�@�@�@�@ : %s
+!×　　　　　 : %s
 
 # MSG_PAD_MENU_6
 #Square       : %s
-!���@�@�@�@�@ : %s
+!□　　　　　 : %s
 
 # MSG_PAD_MENU_7
 #Triangle     : %s
-!���@�@�@�@�@ : %s
+!△　　　　　 : %s
 
 # MSG_PAD_MENU_8
 #Left Trigger : %s
-!���g���K�[�@ : %s
+!左トリガー　 : %s
 
 # MSG_PAD_MENU_9
 #Right Trigger: %s
-!�E�g���K�[�@ : %s
+!右トリガー　 : %s
 
 # MSG_PAD_MENU_10
 #Start        : %s
-!�X�^�[�g�@�@ : %s
+!スタート　　 : %s
 
 # MSG_PAD_MENU_11
 #Select       : %s
-!�Z���N�g�@�@ : %s
+!セレクト　　 : %s
 
 # MSG_PAD_MENU_12
 #Back
-!�߂�
+!戻る
 
 # MSG_PAD_MENU_HELP_0
 #Return to the main menu.
-!���C�����j���[�ɖ߂�.
+!メインメニューに戻る.
 
-#PAD�̐ݒ� �R���t�B�O
+#PADの設定 コンフィグ
 
 # MSG_PAD_MENU_CFG_0
 #UP
-!��
+!↑
 
 # MSG_PAD_MENU_CFG_1
 #DOWN
-!��
+!↓
 
 # MSG_PAD_MENU_CFG_2
 #LEFT
-!��
+!←
 
 # MSG_PAD_MENU_CFG_3
 #RIGHT
-!��
+!→
 
 # MSG_PAD_MENU_CFG_4
 #A
@@ -448,43 +448,43 @@
 
 # MSG_PAD_MENU_CFG_8
 #START
-!�X�^�[�g
+!スタート
 
 # MSG_PAD_MENU_CFG_9
 #SELECT
-!�Z���N�g
+!セレクト
 
 # MSG_PAD_MENU_CFG_10
 #MENU
-!���j���[
+!メニュー
 
 # MSG_PAD_MENU_CFG_11
 #FASTFORWARD
-!�^�[�{
+!ターボ
 
 # MSG_PAD_MENU_CFG_12
 #LOAD STATE
-!�X�e�[�g���[�h
+!ステートロード
 
 # MSG_PAD_MENU_CFG_13
 #SAVE STATE
-!�X�e�[�g�Z�[�u
+!ステートセーブ
 
 # MSG_PAD_MENU_CFG_14
 #RAPIDFIRE A
-!A�A��
+!A連射
 
 # MSG_PAD_MENU_CFG_15
 #RAPIDFIRE B
-!B�A��
+!B連射
 
 # MSG_PAD_MENU_CFG_16
 #RAPIDFIRE L
-!L�A��
+!L連射
 
 # MSG_PAD_MENU_CFG_17
 #RAPIDFIRE R
-!R�A��
+!R連射
 
 # MSG_PAD_MENU_CFG_18
 #VOLUME UP
@@ -500,79 +500,79 @@
 
 # MSG_PAD_MENU_CFG_21
 #NOTHING
-!�Ȃ�
+!なし
 
 # MSG_PAD_MENU_HELP_0
 #Up button on GBA d-pad.
-!���{�^����������
+!↑ボタンを割当て
 
 # MSG_PAD_MENU_HELP_1
 #Down button on GBA d-pad.
-!���{�^����������
+!↓ボタンを割当て
 
 # MSG_PAD_MENU_HELP_2
 #Left button on GBA d-pad.
-!���{�^����������
+!←ボタンを割当て
 
 # MSG_PAD_MENU_HELP_3
 #Right button on GBA d-pad.
-!���{�^����������
+!→ボタンを割当て
 
 # MSG_PAD_MENU_HELP_4
 #A button on GBA.
-!A�{�^����������
+!Aボタンを割当て
 
 # MSG_PAD_MENU_HELP_5
 #B button on GBA.
-!B�{�^����������
+!Bボタンを割当て
 
 # MSG_PAD_MENU_HELP_6
 #Left shoulder button on GBA.
-!L�{�^����������
+!Lボタンを割当て
 
 # MSG_PAD_MENU_HELP_7
 #Right shoulder button on GBA.
-!R�{�^����������
+!Rボタンを割当て
 
 # MSG_PAD_MENU_HELP_8
 #Start button on GBA.
-!�X�^�[�g�{�^����������
+!スタートボタンを割当て
 
 # MSG_PAD_MENU_HELP_9
 #Select button on GBA.
-!�Z���N�g�{�^����������
+!セレクトボタンを割当て
 
 # MSG_PAD_MENU_HELP_10
 #Brings up the options menu.
-!���j���[��������
+!メニューを割当て
 
 # MSG_PAD_MENU_HELP_11
 #Toggles fastforward on/off (don't expect it to do much or anything)
-!�^�[�{�̃I��/�I�t
+!ターボのオン/オフ
 
 # MSG_PAD_MENU_HELP_12
 #Loads the game state from the current slot.
-!�X�e�[�g���[�h��������
+!ステートロードを割当て
 
 # MSG_PAD_MENU_HELP_13
 #Saves the game state to the current slot.
-!�X�e�[�g�Z�[�u��������
+!ステートセーブを割当て
 
 # MSG_PAD_MENU_HELP_14
 #Rapidly press/release the A button on GBA.
-!�`�A�˂�������
+!Ａ連射を割当て
 
 # MSG_PAD_MENU_HELP_15
 #Rapidly press/release the B button on GBA.
-!�a�A�˂�������
+!Ｂ連射を割当て
 
 # MSG_PAD_MENU_HELP_16
 #Rapidly press/release the L shoulder button on GBA.
-!�k�A�˂�������
+!Ｌ連射を割当て
 
 # MSG_PAD_MENU_HELP_17
 #Rapidly press/release the R shoulder button on GBA.
-!�q�A�˂�������
+!Ｒ連射を割当て
 
 # MSG_PAD_MENU_HELP_18
 #Increases the volume.
@@ -588,53 +588,53 @@
 
 # MSG_PAD_MENU_HELP_21
 #Does nothing.
-!�����ĂȂ�
+!割当てなし
 
 # MSG_A_PAD_MENU_0
 #Analog up   : %s
-!�A�i���O �� : %s
+!アナログ ↑ : %s
 
 # MSG_A_PAD_MENU_1
 #Analog down : %s
-!�A�i���O �� : %s
+!アナログ ↓ : %s
 
 # MSG_A_PAD_MENU_2
 #Analog left : %s
-!�A�i���O �� : %s
+!アナログ ← : %s
 
 # MSG_A_PAD_MENU_3
 #Analog right: %s
-!�A�i���O �� : %s
+!アナログ → : %s
 
 # MSG_A_PAD_MENU_4
 #Enable analog: %s
-!�A�i���O�̗L��: %s
+!アナログの有効: %s
 
 # MSG_A_PAD_MENU_5
 #Analog sensitivity: %d
-!�A�i���O���͂̊��x: %d
+!アナログ入力の感度: %d
 
 # MSG_A_PAD_MENU_6
 #Back
-!�߂�
+!戻る
 
 # MSG_A_PAD_MENU_HELP_0
 #Select 'no' to block analog input entirely.
-!�A�i���O�p�b�h�ɃL�[���蓖�Ă����Ȃ��ꍇ�A ���͂������ɂȂ�܂�
+!アナログパッドにキー割り当てをしない場合、 入力が無効になります
 
 # MSG_A_PAD_MENU_HELP_1
 #Determine sensitivity/responsiveness of the analog input.\n
 #Lower numbers are less sensitive.
-!�A�i���O���͂̊��x/������ݒ�\n
-!�������������قǊ��x���Ⴍ�Ȃ�܂� 
+!アナログ入力の感度/応答を設定\n
+!数字が小さいほど感度が低くなります 
 
 # MSG_A_PAD_MENU_HELP_2
 #Return to the main menu.
-!���C�����j���[�ɖ߂�
+!メインメニューに戻る
 
 # MSG_CHEAT_MENU_NON_LOAD
 #cheat %d (none loaded)
-!cheat %d (�����[�h)
+!cheat %d (未ロード)
 
 # MSG_CHEAT_MENU_0
 #cheat %d (%s): %%s
@@ -642,33 +642,33 @@
 
 # MSG_CHEAT_MENU_1
 #Load Cheat File
-!�`�[�g�t�@�C�� ���[�h
+!チートファイル ロード
 
 # MSG_CHEAT_MENU_2
 #Clock speed: %s
-!�N���b�N�̑��x: %s
+!クロックの速度: %s
 
 # MSG_CHEAT_MENU_3
 #Update backup: %s
-!�o�b�N�A�b�v�̍X�V: %s
+!バックアップの更新: %s
 
 # MSG_CHEAT_MENU_4
 #Back
-!�߂�
+!戻る
 
 # MSG_CHEAT_MENU_HELP_0
 #Activate/deactivate this cheat code.
-!�I�������R�[�h�̗L��/�����̐ؑ�
+!選択したコードの有効/無効の切替
 
 # MSG_CHEAT_MENU_HELP_1
 # Load Cheat File
-!�`�[�g�t�@�C���̃��[�h
+!チートファイルのロード
 
 # MSG_CHEAT_MENU_HELP_2
 #Change the clock speed of the device. Higher clock speed will yield\n
 #better performance, but will use drain battery life further.
-!�N���b�N�̑��x��ύX���܂��B��������΍����p�t�H�[�}���X�𔭊����܂��B\n
-!�������A�o�b�e���[�̎������ʏ��茸��\��������܂��B
+!クロックの速度を変更します。高くすれば高いパフォーマンスを発揮します。\n
+!しかし、バッテリーの寿命が通常より減る可能性があります。
 
 # MSG_CHEAT_MENU_HELP_3
 #Determines when in-game save files should be written back to\n
@@ -676,155 +676,155 @@
 #the game's backup is altered. On 'exit only' it will only be written\n
 #back when you exit from this menu (NOT from using the home button).\n
 #Use the latter with extreme care.
-!�Q�[���ŁA�Z�[�u�f�[�^������MS�ɏ������܂�邩�����肵�܂��B\n
-!'����'�ɐݒ肵���ꍇ�A�Q�[���̃o�b�N�A�b�v���ύX���ꂽ�シ���ɏ������܂�܂��B\n
-!'�I����'�ł́A(HOME�{�^�����܂�)�I������Ƃ������A�������܂�܂��B\n
-!�ߓx�ɒ��ӂ�����̂Ȃ��҂��g�p���Ă��������B\n
+!ゲームで、セーブデータがいつMSに書き込まれるかを決定します。\n
+!'自動'に設定した場合、ゲームのバックアップが変更された後すぐに書き込まれます。\n
+!'終了時'では、(HOMEボタンも含め)終了するときだけ、書き込まれます。\n
+!過度に注意をするのなら後者を使用してください。\n
 !
 
 # MSG_CHEAT_MENU_HELP_4
 #Return to the main menu.
-!���C�����j���[�ɖ߂�
+!メインメニューに戻る
 
 # MSG_NON_LOAD_GAME
 #No game loaded yet.
-!�����[�h.     
+!未ロード.     
 
 # MSG_WDAY_0
 #Sunday
-!���j
+!日曜
 
 # MSG_WDAY_1
 #Monday
-!���j
+!月曜
 
 # MSG_WDAY_2
 #Tuesday
-!�Ηj
+!火曜
 
 # MSG_WDAY_3
 #Wednesday
-!���j
+!水曜
 
 # MSG_WDAY_4
 #Thursday
-!�ؗj
+!木曜
 
 # MSG_WDAY_5
 #Friday
-!���j
+!金曜
 
 # MSG_WDAY_6
 #Saturday
-!�y�j
+!土曜
 
 # MSG_YES
 #yes
-!�͂�
+!はい
 
 # MSG_NO
 #no
-!������
+!いいえ
 
 # MSG_ENABLED
 #enabled
-!�L��
+!有効
 
 # MSG_DISABLED
 #disabled
-!����
+!無効
 
 # MSG_SCN_UNSCALED
 #unscaled 3:2
-!�g��Ȃ� 3:2
+!拡大なし 3:2
 
 # MSG_SCN_SCALED
 #scaled 3:2
-!�g�� 3:2
+!拡大 3:2
 
 # MSG_SCN_FULL
 #fullscreen 16:9
-!�t���X�N���[�� 16:9
+!フルスクリーン 16:9
 
 # MSG_SCN_OPT1
 #option 1
-!�I�v�V���� 1
+!オプション 1
 
 # MSG_SCN_OPT2
 #option 2
-!�I�v�V���� 2
+!オプション 2
 
 # MSG_FS_AUTO
 #automatic
-!����
+!自動
 
 # MSG_FS_MANUAL
 #manual
-!�蓮
+!手動
 
 # MSG_FS_OFF
 #off
-!�I�t
+!オフ
 
 # MSG_FS_UNIFORM
 #uniform
-!���
+!一定
 
 # MSG_FS_RAMDOM
 #random
-!�����_��
+!ランダム
 
 # MSG_SB_2048
 #2048 bytes
-!2048 �o�C�g
+!2048 バイト
 
 # MSG_SB_3072
 #3072 bytes
-!3072 �o�C�g
+!3072 バイト
 
 # MSG_SB_4096
 #4096 bytes
-!4096 �o�C�g
+!4096 バイト
 
 # MSG_SB_5120
 #5120 bytes
-!5120 �o�C�g
+!5120 バイト
 
 # MSG_SB_6144
 #6144 bytes
-!6144 �o�C�g
+!6144 バイト
 
 # MSG_SB_7168
 #7168 bytes
-!7168 �o�C�g
+!7168 バイト
 
 # MSG_SB_8192
 #8192 bytes
-!8192 �o�C�g
+!8192 バイト
 
 # MSG_SB_9216
 #9216 bytes
-!9216 �o�C�g
+!9216 バイト
 
 # MSG_SB_10240
 #10240 bytes
-!10240 �o�C�g
+!10240 バイト
 
 # MSG_SB_11264
 #11264 bytes
-!11264 �o�C�g
+!11264 バイト
 
 # MSG_SB_12288
 #12288 bytes
-!12288 �o�C�g
+!12288 バイト
 
 # MSG_BK_EXITONLY
 #Exit only
-!�I����
+!終了時
 
 # MSG_BK_AUTO
 #Automatic
-!����
+!自動
 
 # MSG_CLK_33
 #33MHz
@@ -887,10 +887,10 @@
 #beg other people if you want, but don't hold me accountable\n
 #if you get hated or banned for it), it'll be exactly 16384\n
 #bytes large and should have the following md5sum value:\n\n
-!BIOS�t�@�C����������܂���B\n
-!gpSP��BIOS�t�@�C�����Ȃ��ƋN���ł��܂���\n
-!16384�o�C�g��BIOS�t�@�C����gba_bios.bin�̖��O��\n
-!EBOOT.PBP�Ɠ����t�H���_�ɔz�u���ĉ������B\n
+!BIOSファイルが見つかりません。\n
+!gpSPはBIOSファイルがないと起動できません\n
+!16384バイトのBIOSファイルをgba_bios.binの名前で\n
+!EBOOT.PBPと同じフォルダに配置して下さい。\n
 !\n
 !\n
 
@@ -901,20 +901,20 @@
 #When you do get it name it gba_bios.bin and put it in the\n
 #same directory as this EBOOT.\n\n
 #Good luck. Press any button to exit.\n
-!BIOS��MD5�͈ȉ��̒l�ɂȂ�܂�\n
-!GBA�̏ꍇ�FA860E8C0B6D573D191E4EC7DB1B1E4F6\n
-!NDS�̏ꍇ�F1C0D67DB9E1208B95A1506B1688A0AD6\n
-!�Ⴄ�ꍇ�͕s��̂ł�\��������܂��̂Œ��ӂ��ĉ������B\n
+!BIOSのMD5は以下の値になります\n
+!GBAの場合：A860E8C0B6D573D191E4EC7DB1B1E4F6\n
+!NDSの場合：1C0D67DB9E1208B95A1506B1688A0AD6\n
+!違う場合は不具合のでる可能性がありますので注意して下さい。\n
 !\n
-!�{�^���������ƏI�����܂��B\n
+!ボタンを押すと終了します。\n
 
 # MSG_ERR_BIOS_MD5
 #This BIOS is not regular.\n
 #There is a possibility of various trouble.\n\n
 #Please use regular BIOS.\n
-!����BIOS�͐��K�̂��̂ł͂���܂���B\n
-!�l�X�ȕs����o��\��������܂��B\n\n
-!���K��BIOS���g�p���Ă��������B\n
+!このBIOSは正規のものではありません。\n
+!様々な不具合が出る可能性があります。\n\n
+!正規のBIOSを使用してください。\n
 
 # MSG_R_4_3
 #ratio 4:3
@@ -934,7 +934,7 @@
 
 # MSG_INIT_END
 #Initialization end
-!�������I��
+!初期化終了
 
 # MSG_LOAD_STATE
 #Load State.
