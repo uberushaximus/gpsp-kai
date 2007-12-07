@@ -1,7 +1,7 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.2 test 8.5 svn rev.
+-UnOfficial gpSP kai 3.2 test 9 svn rev.
 	clear_screen()のバグを修正
 	フォントファイルの文字コードをUCS2に変更
 	上記に合わせて、ナガ10をUCS2に変換してfbm化しました
@@ -16,6 +16,8 @@
 		次回起動時に有効になります
 	PSP本体からのアップデートに対応するため、settingsフォルダをcfgにリネーム
 	(インストールするパス名は12文字までの制限があるようです)
+	同様に標準インストールフォルダをgpSPに変更
+	同様にGBAのsaveフォルダをGBA/SAVに変更
 
 	ソースコード
 	グローバル変数の頭にg_をつけた(まだ一部のみ)
