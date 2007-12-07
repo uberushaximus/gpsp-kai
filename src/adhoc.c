@@ -624,7 +624,7 @@ int adhocSelect(void)
   char temp[64];
   char title[32];
 
-  sprintf(title, "AdHoc - %s", game_name);
+  sprintf(title, "AdHoc - %s", gamepak_filename);
 //  msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
 
   while (1)
@@ -639,9 +639,11 @@ int adhocSelect(void)
       server = 0;
       if (update)
       {
-        msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
-        msg_printf(TEXT(SELECT_A_SERVER_TO_CONNECT_TO));
-        msg_printf("\n");
+//        msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
+        PRINT_STRING_BG(title, 0xFFFF, 0x0000, 0, 50);
+//        msg_printf(TEXT(SELECT_A_SERVER_TO_CONNECT_TO));
+        PRINT_STRING_BG("SELECT_A_SERVER_TO_CONNECT_TO", 0xFFFF, 0x0000, 0, 60);
+//        msg_printf("\n");
         display_psp_list(top, rows);
         update = 0;
       }
@@ -659,10 +661,10 @@ int adhocSelect(void)
       {
         if (GetPspEntry(mac, name) > 0)
         {
-          if (strcmp(name, g_matchingData) == 0)
+          if (strcmp(name, matching_data) == 0)
           {
             currentState = PSP_SELECTING;
-            sceNetAdhocMatchingSelectTarget(matchingId, mac, 0, NULL);
+            sceNetAdhocMatchingSelectTarget(matching_id, mac, 0, NULL);
             update = 1;
           }
         }
@@ -674,12 +676,12 @@ int adhocSelect(void)
         pad_wait_clear();
         return -1;
       }
-      if (matchChanged)
+      if (match_changed)
       {
-        if (g_matchEvent == MATCHING_SELECTED)
+        if (match_event == MATCHING_SELECTED)
         {
-          memcpy(mac, g_mac, 6);
-          strcpy(name, g_matchOptData);
+          memcpy(mac, mac, 6);
+          strcpy(name, match_opt_data);
           currentState = PSP_SELECTED;
         }
         update = 1;
@@ -697,16 +699,16 @@ int adhocSelect(void)
       }
       if (pad_pressed(PSP_CTRL_CROSS))
       {
-        sceNetAdhocMatchingCancelTarget(matchingId, mac);
+        sceNetAdhocMatchingCancelTarget(matching_id, mac);
         currentState = PSP_LISTING;
         update = 1;
       }
-      if (matchChanged)
+      if (match_changed)
       {
-        switch (g_matchEvent)
+        switch (match_event)
         {
         case MATCHING_SELECTED:
-          sceNetAdhocMatchingCancelTarget(matchingId, mac);
+          sceNetAdhocMatchingCancelTarget(matching_id, mac);
           break;
 
         case MATCHING_ESTABLISHED:
@@ -722,7 +724,7 @@ int adhocSelect(void)
       break;
 
     case PSP_SELECTED:
-      Server = 1;
+      server = 1;
       if (update)
       {
         msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
@@ -733,19 +735,19 @@ int adhocSelect(void)
       }
       if (pad_pressed(PSP_CTRL_CROSS))
       {
-        sceNetAdhocMatchingCancelTarget(matchingId, mac);
+        sceNetAdhocMatchingCancelTarget(matching_id, mac);
         currentState = PSP_LISTING;
         update = 1;
       }
       else if (pad_pressed(PSP_CTRL_CIRCLE))
       {
-        sceNetAdhocMatchingSelectTarget(matchingId, mac, 0, NULL);
+        sceNetAdhocMatchingSelectTarget(matching_id, mac, 0, NULL);
         currentState = PSP_WAIT_EST;
         update = 1;
       }
-      if (matchChanged)
+      if (match_changed)
       {
-        if (g_matchEvent == MATCHING_CANCELED)
+        if (match_event == MATCHING_CANCELED)
         {
           currentState = PSP_LISTING;
         }
@@ -754,9 +756,9 @@ int adhocSelect(void)
       break;
 
     case PSP_WAIT_EST:
-      if (matchChanged)
+      if (match_changed)
       {
-        if (g_matchEvent == MATCHING_ESTABLISHED)
+        if (match_event == MATCHING_ESTABLISHED)
         {
           currentState = PSP_ESTABLISHED;
         }
@@ -765,7 +767,7 @@ int adhocSelect(void)
       break;
     }
 
-    matchChanged = 0;
+    match_changed = 0;
     if (currentState == PSP_ESTABLISHED)
       break;
 
@@ -785,17 +787,17 @@ int adhocSelect(void)
 
   msg_set_text_color(0xffffffff);
 
-  if (Server) sceWlanGetEtherAddr(mac);
+  if (server) sceWlanGetEtherAddr(mac);
 
   sceNetEtherNtostr(mac, temp);
 
-  g_ssid[0] = temp[ 9];
-  g_ssid[1] = temp[10];
-  g_ssid[2] = temp[12];
-  g_ssid[3] = temp[13];
-  g_ssid[4] = temp[15];
-  g_ssid[5] = temp[16];
-  g_ssid[6] = '\0';
+  ssid[0] = temp[ 9];
+  ssid[1] = temp[10];
+  ssid[2] = temp[12];
+  ssid[3] = temp[13];
+  ssid[4] = temp[15];
+  ssid[5] = temp[16];
+  ssid[6] = '\0';
 
   return adhocStartP2P();
 }
@@ -814,7 +816,7 @@ int adhocSend(void *buffer, int length, int type)
   adhoc_buffer[0] = type;
   memcpy(&adhoc_buffer[1], buffer, length);
 
-  if ((error = sceNetAdhocPdpSend(pdpId, g_mac, PDP_PORT, adhoc_buffer, length + 1, 0, 1)) < 0)
+  if ((error = sceNetAdhocPdpSend(pdp_id, mac, PDP_PORT, adhoc_buffer, length + 1, 0, 1)) < 0)
     return error;
 
   return length;
@@ -834,7 +836,7 @@ int adhocRecv(void *buffer, int timeout, int type)
 
   memset(adhoc_buffer, 0, ADHOC_BUFFER_SIZE);
 
-  if ((error = sceNetAdhocPdpRecv(pdpId, mac, &port, adhoc_buffer, &length, timeout, 0)) < 0)
+  if ((error = sceNetAdhocPdpRecv(pdp_id, mac, &port, adhoc_buffer, &length, timeout, 0)) < 0)
     return error;
 
   if (adhoc_buffer[0] & type)
@@ -922,7 +924,7 @@ int adhocSync(void)
   int size = 0;
   int retry = 60;
 
-  if (Server)
+  if (server)
   {
     while (retry--)
     {
@@ -962,7 +964,7 @@ check_packet:
         break;
     }
 
-    if (Loop != LOOP_EXEC) return 0;
+//    if (Loop != LOOP_EXEC) return 0;
 
     sceKernelDelayThread(100);
   }
@@ -976,7 +978,7 @@ check_packet:
   なるまで待つ
 --------------------------------------------------------*/
 
-void adhocWait(int data_size)
+void adhoc_wait(int data_size)
 {
   pdpStatStruct pdpStat;
   int size = sizeof(pdpStat);
@@ -994,7 +996,7 @@ void adhocWait(int data_size)
         adhocRecv(adhoc_work, 0, ADHOC_DATATYPE_ANY);
     }
 
-    if (Loop != LOOP_EXEC) break;
+//    if (Loop != LOOP_EXEC) break;
 
     sceKernelDelayThread(100);
   }

@@ -14,7 +14,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ *s
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
   init_progress(7, "");
 
   // ディレクトリ設定の読込み
-  if (load_dircfg("settings/dir.cfg") != 0)
+  if (load_dircfg("cfg/dir.cfg") != 0)
   {
     pspDebugScreenInit();
     error_msg("dir.cfg Error!!");
@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // フォント設定の読込み
-  sprintf(filename,"settings/%s.fnt",lang[gpsp_config.language]);
+  sprintf(filename,"cfg/%s.fnt",lang[gpsp_config.language]);
   if (load_fontcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // メッセージファイルの読込み
-  sprintf(filename,"settings/%s.msg",lang[gpsp_config.language]);
+  sprintf(filename,"cfg/%s.msg",lang[gpsp_config.language]);
   if (load_msgcfg(filename) != 0)
   {
     pspDebugScreenInit();

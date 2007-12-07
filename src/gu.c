@@ -31,7 +31,7 @@ void set_video_out();
 #define GBA_LINE_SIZE   240
 #define FRAME_LINE_SIZE 768
 
-#define GPSP_CONFIG_FILENAME "settings/video.cfg"
+#define GPSP_CONFIG_FILENAME "cfg/video.cfg"
 
 // VRAM メモリマップ(VRAM割当てのAPIを使用しないで全て自前で管理)
 // 0x000000～0x0BFFFF(0xC0000 768.0kb) 表示用フレームバッファ
@@ -40,14 +40,18 @@ void set_video_out();
 // 0x0E5C00～0x125BFF(0x40000 256.0kb) MENU用フレームバッファ 1
 // 0x125C00～0x165BFF(0x40000 256.0kb) MENU用フレームバッファ 2
 // 0x165C00～0x1A5BFF(0x40000 256.0kb) MENU用スキンバッファ(将来用)
-// 0x1A5C00～0x1FBFFF(0x56400 345.0kb) 予備
+// 0x1A5C00～0x1FBFFF(0x56400 345.0kb) 汎用データバッファ
 // 0x1FC000～0x1FC0FF(0x00100 256byte) フレームバッファ転送用GUコマンドバッファ
 // 0x1FC100～0x1FC1FF(0x00100 256byte) フレームバッファ転送用頂点データバッファ
+// 0x1FC200～0x1FFFFF(0x03E00  15.5kb) 汎用頂点データバッファ
 static float *screen_vertex = (float *)0x441FC100;
 static u32 *ge_cmd = (u32 *)0x441FC000;
 static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
+float *temp_vertex = (float *)0x441FC200;
+u16 *vram_data = (u16 *)0x441A5C00;
+
 u32 video_draw_frame = FRAME_GAME;
 
 #define GBA_BUFFER_SIZE (240*161*2)  /* インタレース用に1ライン多く確保 */

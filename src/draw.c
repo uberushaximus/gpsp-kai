@@ -56,7 +56,6 @@ static int progress_total;
 static int progress_current;
 static char progress_message[256];
 static u32 __attribute__((aligned(32))) display_list[2048];
-static float *vertex = (float *)0x441FD000;
 
 /******************************************************************************
  * ローカル変数の定義
@@ -304,41 +303,29 @@ void scrollbar(u32 sx, u32 sy, u32 ex, u32 ey, u32 all,u32 view,u32 now)
 /*------------------------------------------------------
   VRAMへのテクスチャ転送(拡大縮小つき)
 ------------------------------------------------------*/
-void bit_blt(u32 vram_adr,u32 pitch, u32 sx, u32 sy, u32 ex, u32 ey, u32 x_size, u32 y_size, u32 *data)
+void bitblt(u32 vram_adr,u32 pitch, u32 sx, u32 sy, u32 ex, u32 ey, u32 x_size, u32 y_size, u32 *data)
 {
-  struct Vertex *vertices;
+   SPRITE *vertices = (SPRITE *)temp_vertex;
 
   sceGuStart(GU_DIRECT, display_list);
   sceGuDrawBufferList(GU_PSM_5551, (void *) vram_adr, pitch);
   sceGuScissor(0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
   sceGuEnable(GU_BLEND);
   sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
-  sceGuTexImage(0, 512, 512, BUF_WIDTH, tex_font);
-  sceGuTexFilter(GU_NEAREST, GU_NEAREST);
+  sceGuTexImage(0, 512, 512, x_size, data);
+  sceGuTexFilter(GU_LINEAR, GU_LINEAR);
 
-  vertices = (struct Vertex *)sceGuGetMemory(2 * sizeof(struct Vertex));
+  vertices[0].u1 = (float)0;
+  vertices[0].v1 = (float)0;
+  vertices[0].x1 = (float)sx;
+  vertices[0].y1 = (float)sy;
 
-  if (vertices)
-  {
-    vertices[0].u = 0;
-    vertices[0].v = 0;
-    vertices[0].x = sx;
-    vertices[0].y = sy;
+  vertices[0].u2 = (float)x_size;
+  vertices[0].v2 = (float)y_size;
+  vertices[0].x2 = (float)ex;
+  vertices[0].y2 = (float)ey;
 
-#if (EMU_SYSTEM == MVS)
-    vertices[1].u = 208;
-    vertices[1].v = 14;
-    vertices[1].x = sx + 208;
-    vertices[1].y = sy + 14;
-#else
-    vertices[1].u = 232;
-    vertices[1].v = 14;
-    vertices[1].x = sx + 232;
-    vertices[1].y = sy + 14;
-#endif
-  }
-
-  sceGuDrawArray(GU_SPRITES, TEXTURE_FLAGS, 2, NULL, vertices);
+  sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_32BITF, 2, NULL, vertices);
 
   sceGuDisable(GU_BLEND);
   sceGuFinish();

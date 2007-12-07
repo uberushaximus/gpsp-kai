@@ -143,6 +143,10 @@ typedef struct
   SPRITE screen_setting_2;        /* スプライトデータ 1 */
 } SCREEN_PARAMETER;
 
+extern float *temp_vertex;
+extern u16 *vram_data;
+
+
 extern u16 *screen_address;
 extern u32 screen_pitch;
 extern u32 screen_width;

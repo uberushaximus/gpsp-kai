@@ -790,7 +790,7 @@ void init_gpsp_config()
   gpsp_config.enable_home = NO;
   memcpy(gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
   memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
-  gpsp_config.language = 1; /* English */
+  sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &gpsp_config.language);
 }
 
 /*--------------------------------------------------------
