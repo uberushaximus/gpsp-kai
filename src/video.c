@@ -2190,7 +2190,7 @@ fill_line_builder(color32);
   pixel_top = (pixel_top * blend) >> 4;                                       \
 
 #define effect_condition_alpha                                                \
-  ((pixel_pair & 0x04000200/*0x02000200*/) == 0x02000200/*0x04000200*/)                                   \
+  ((pixel_pair & 0x04000200) == 0x04000200)                                   \
 
 #define effect_condition_fade(pixel_source)                                   \
   ((pixel_source & 0x00000200) == 0x00000200)                                 \

@@ -1,0 +1,849 @@
+--- game_config_old.txt	2007-12-09 14:42:54.153000000 +0900
++++ game_config.cfg	2007-06-09 12:02:18.000000000 +0900
+@@ -156,6 +156,13 @@
+ idle_loop_eliminate_target = 08000fae
+ iwram_stack_optimize = no
+ 
++# Hoshi no Kirby: Yume no Izumi Deluxe (J)
++game_name = AGB KIRBY DX
++game_code = A7KJ
++vender_code = 01
++idle_loop_eliminate_target = 08000f92
++iwram_stack_optimize = no
++
+ # Kirby: Nightmare in Dreamland (E)
+ game_name = AGB KIRBY DX
+ game_code = A7KP
+@@ -188,6 +195,13 @@
+ idle_loop_eliminate_target = 08000732
+ flash_rom_type = 128KB
+ 
++# Super Mario Advance 4 (J)
++game_name = SUPER MARIOD
++game_code = AX4J
++vender_code = 01
++idle_loop_eliminate_target = 08000732
++flash_rom_type = 128KB
++
+ # Super Mario Advance 4 (E)
+ game_name = SUPER MARIOD
+ game_code = AX4P
+@@ -211,6 +225,13 @@
+ idle_loop_eliminate_target = 080008ce
+ flash_rom_type = 128KB
+ 
++# Pokemon Emerald (J)
++game_name = POKEMON EMER
++game_code = BPEJ
++vender_code = 01
++idle_loop_eliminate_target = 080008ce
++flash_rom_type = 128KB
++
+ # Pokemon Emerald (G)
+ game_name = POKEMON EMER
+ game_code = BPED
+@@ -245,6 +266,12 @@
+ vender_code = 01
+ flash_rom_type = 128KB
+ 
++# Pokemon Sapphire (J)
++game_name = POKEMON SAPP
++game_code = AXPJ
++vender_code = 01
++flash_rom_type = 128KB
++
+ # Pokemon Sapphire (G)
+ game_name = POKEMON SAPP
+ game_code = AXPD
+@@ -275,6 +302,12 @@
+ vender_code = 01
+ flash_rom_type = 128KB
+ 
++# Pokemon Ruby (J)
++game_name = POKEMON RUBY
++game_code = AXVJ
++vender_code = 01
++flash_rom_type = 128KB
++
+ # Pokemon Ruby (G)
+ game_name = POKEMON RUBY
+ game_code = AXVD
+@@ -323,6 +356,15 @@
+ vender_code = 01
+ flash_rom_type = 128KB
+ 
++# Pokemon: Fire Red (J)
++game_name = POKEMON FIRE
++game_code = BPRJ
++vender_code = 01
++idle_loop_eliminate_target = 080008b2
++# If you have the European version try this instead.
++#idle_loop_eliminate_target = 080008c6
++flash_rom_type = 128KB
++
+ # Pokemon: Fire Red (E/U)
+ game_name = POKEMON FIRE
+ game_code = BPRE
+@@ -394,12 +436,24 @@
+ idle_loop_eliminate_target = 080008b6
+ flash_rom_type = 128KB
+ 
++# Pokemon: Fushigi no Dungeon Aka no Kyuujotai (J)
++game_name = POKE DUNGEON
++game_code = B24J
++vender_code = 01
++flash_rom_type = 128KB
++
+ # Pokemon: Red Rescue Team (E/U)
+ game_name = POKE DUNGEON
+ game_code = B24E
+ vender_code = 01
+ flash_rom_type = 128KB
+ 
++# F-Zero: Climax (J)
++game_name = F-ZEROCLIMAX
++game_code = BFTJ
++vender_code = 01
++flash_rom_type = 128KB
++
+ # Final Fantasy Tactics Advance (U)
+ game_name = FFTA_USVER.
+ game_code = AFXE
+@@ -452,6 +506,12 @@
+ vender_code = 01
+ iwram_stack_optimize = no
+ 
++# Mario Party Advance (J)
++game_name = MARIOPARTYJA
++game_code = B8MJ
++vender_code = 01
++iwram_stack_optimize = no
++
+ # Mario Party Advance (E)
+ game_name = MARIOPARTYEU
+ game_code = B8MP
+@@ -467,6 +527,15 @@
+ translation_gate_target = 03000d00
+ translation_gate_target = 03000a30
+ 
++# Mario Golf: GBA Tour (J)
++game_name = MARIOGOLFGBA
++game_code = BMGJ
++vender_code = 01
++iwram_stack_optimize = no
++idle_loop_eliminate_target = 08014e0a
++translation_gate_target = 03000d00
++translation_gate_target = 03000a30
++
+ # Mario Golf: Advance Tour (E)
+ game_name = MARIOGOLFGBA
+ game_code = BMGP
+@@ -527,6 +596,12 @@
+ vender_code = 01
+ iwram_stack_optimize = no
+ 
++# Tales of Phantasia (J)
++game_name = PHANTASIA
++game_code = AN8J
++vender_code = AF
++iwram_stack_optimize = no
++
+ # Tales of Phantasia (E)
+ game_name = PHANTASIA
+ game_code = AN8P
+@@ -617,6 +692,12 @@
+ vender_code = 41
+ idle_loop_eliminate_target = 0808ff3a
+ 
++# Rhythm Tengoku (J)
++game_name = RHYTHMTENGOK
++game_code = BRIJ
++vender_code = 01
++idle_loop_eliminate_target = 080013d4
++
+ # River City Ransom EX (U)
+ game_name = RIVERCRANSOM
+ game_code = BDTE
+@@ -787,6 +868,12 @@
+ vender_code = A4
+ iwram_stack_optimize = no
+ 
++# Sennen Kazoku (J)
++game_name = SENNENKAZOKU
++game_code = BKAJ
++vender_code = 01
++flash_rom_type = 128KB
++
+ # Doom 2 (U)
+ game_name = DOOM II
+ game_code = A9DE
+@@ -794,6 +881,18 @@
+ translation_gate_target = 030041c8
+ translation_gate_target = 03004fa0
+ 
++# Bleach Advance (J)
++game_name = BLEACH ADV1
++game_code = BLEJ
++vender_code = 8P
++iwram_stack_optimize = no
++
++# Shining Soul (J)
++game_name = SHINING SOUL
++game_code = AHUJ
++vender_code = 8P
++iwram_stack_optimize = no
++
+ # Shining Soul (U)
+ game_name = SHINING SOUL
+ game_code = AHUE
+@@ -806,6 +905,12 @@
+ vender_code = 8P
+ iwram_stack_optimize = no
+ 
++# Shining Soul 2 (J)
++game_name = SHININGSOUL2
++game_code = AU2J
++vender_code = 8P
++iwram_stack_optimize = no
++
+ # Shining Soul 2 (U)
+ game_name = SHININGSOUL2
+ game_code = AU2E
+@@ -818,24 +923,6 @@
+ vender_code = 8P
+ iwram_stack_optimize = no
+ 
+-# Motoracer Advance (E)
+-game_name = MOTORACERADV
+-game_code = A9MP
+-vender_code = 41
+-idle_loop_eliminate_target = 03001cf8
+-
+-# Kim Possible 2 (U)
+-game_name = KIMPOSSIBLE2
+-game_code = BKME
+-vender_code = 4Q
+-idle_loop_eliminate_target = 080008a2
+-
+-# Kim Possible 2 (E)
+-game_name = KIMPOSSIBLE2
+-game_code = BKMP
+-vender_code = 4Q
+-idle_loop_eliminate_target = 080008a2
+-
+ # This is needed to make the game work.
+ # Another World (Homebrew)
+ game_name = FoxAnWorld
+@@ -844,273 +931,406 @@
+ translation_gate_target = 03000f1c
+ 
+ 
++# super mario advance (j)
++game_name = SUPER MARIOA
++game_code = AMAJ
++vender_code = 01
++idle_loop_eliminate_target = 08001c82
+ 
+-# 星のカービィ 夢の泉デラックス (J)
+-# Hoshi no Kirby: Yume no Izumi Deluxe (J)
++# Kirby: Yume no Izumi DX (J)
+ game_name = AGB KIRBY DX
+ game_code = A7KJ
+ vender_code = 01
+ idle_loop_eliminate_target = 08000f92
+ iwram_stack_optimize = no
+ 
+-# スーパーマリオアドバンス4 (J)
+-# Super Mario Advance 4 (J)
+-game_name = SUPER MARIOD
+-game_code = AX4J
++# Rockman Zero 3 (J)
++game_name = ROCKMANZERO3
++game_code = BZ3J
++vender_code = 08
++idle_loop_eliminate_target = 080019bc
++
++# Mario Vs Donkey Kong (J)
++game_name = MARIOVSDK
++game_code = BM5J
+ vender_code = 01
+-idle_loop_eliminate_target = 08000732
+-flash_rom_type = 128KB
++idle_loop_eliminate_target = 080355b8
+ 
+-# ポケットモンスター エメラルド (J)
+-# Pokemon Emerald (J)
+-game_name = POKEMON EMER
+-game_code = BPEJ
++# mslug (J)
++game_name = AGB-P-BSMJ
++game_code = BSMJ
++vender_code = H4
++idle_loop_eliminate_target = 08000298
++
++# cohu makaimura R (J)
++game_name = CHOHMAKAI R
++game_code = ACJJ
++vender_code = 08
++idle_loop_eliminate_target = 08000522
++
++# final fight one (J)
++game_name = FINAL FIGHT
++game_code = AFFJ
++vender_code = 08
++idle_loop_eliminate_target = 08005e10
++
++# Gyakuten Saiban (J)
++game_name = GYAKUTEN_SAI
++game_code = ASBJ
++vender_code = 08
++idle_loop_eliminate_target = 08000252
++
++# Gyakuten Saiban 2 (J)
++game_name = GYAKUTEN_SA2
++game_code = A3GJ
++vender_code = 08
++idle_loop_eliminate_target = 08000262
++
++# Gyakuten Saiban 3 (J)
++game_name = GYAKUTEN_SA3
++game_code = A3JJ
++vender_code = 08
++idle_loop_eliminate_target = 080003f0
++
++# Kotoba no Puzzle Mojipittan Advance (J)
++game_name = MOJIPITTAN
++game_code = A8MJ
++vender_code = AF
++idle_loop_eliminate_target = 0801abee
++
++# Gradius Generation (J)
++game_name = GRADIUSGENER
++game_code = AGAJ
++vender_code = A4
++#-Opening Demo
++idle_loop_eliminate_target = 08010308
++#-Title
++idle_loop_eliminate_target = 08010968
++#-Power Up Select
++idle_loop_eliminate_target = 08012650
++#-Stage
++idle_loop_eliminate_target = 080151e4
++
++# Castlevania: Circle of the Moon (J)
++game_name = DRACULA AGB1
++game_code = AAMJ
++vender_code = EM
++idle_loop_eliminate_target = 080003ce
++
++# Made in Wario (J)
++game_name = MADEINWARIO
++game_code = AZWJ
++vender_code = 01
++idle_loop_eliminate_target = 08000f5e
++
++# Gunstar Super Heroes (J)
++game_name = GUNSTAR SH
++game_code = BGXJ
++vender_code = 8P
++idle_loop_eliminate_target = 08000834
++
++# Rhythm Tengoku (J)
++game_name = RHYTHMTENGOK
++game_code = BRIJ
+ vender_code = 01
+-idle_loop_eliminate_target = 080008ce
+-flash_rom_type = 128KB
++idle_loop_eliminate_target = 080013d4
+ 
+-# ポケットモンスター サファイア (J)
+-# Pokemon Sapphire (J)
+-game_name = POKEMON SAPP
+-game_code = AXPJ
++# Rockman Zero (J)
++game_name = ROCKMAN ZERO
++game_code = ARZJ
++vender_code = 08
++idle_loop_eliminate_target = 080004ee
++
++# Kuru Kuru Kururin (J)
++game_name = KURURIN
++game_code = AKRJ
+ vender_code = 01
+-flash_rom_type = 128KB
++idle_loop_eliminate_target = 08000422
+ 
+-# ポケットモンスター ルビー (J)
+-# Pokemon Ruby (J)
+-game_name = POKEMON RUBY
+-game_code = AXVJ
++# Mawaru Made in Wario (J)
++game_name = MAWARUWARIO
++game_code = RZWJ
+ vender_code = 01
+-flash_rom_type = 128KB
++idle_loop_eliminate_target = 0800131c
++
++#Tales of Phantasia (J)
++game_name = PHANTASIA
++game_code = AN8J
++vender_code = AF
++idle_loop_eliminate_target = 080557a8
++iwram_stack_optimize = no
++
++#Rockman Zero 4 (J)
++game_name = ROCKMANZERO4
++game_code = B4ZJ
++vender_code = 08
++idle_loop_eliminate_target = 0800090c
++
++# F-Zero (J)
++game_name = F-ZERO ADVAN
++game_code = AFZJ
++vender_code = 01
++idle_loop_eliminate_target = 08000c2e
++
++# Final Fantasy Tactics Advance (J)
++game_name = FFT_ADVANCE
++game_code = AFXJ
++vender_code = C3
++idle_loop_eliminate_target = 08000428
++
++# Rockman Zero 2 (J)
++game_name = ROCKMANZERO2
++game_code = A62J
++vender_code = 08
++idle_loop_eliminate_target = 08000664
+ 
+-# ポケットモンスター ファイアレッド (J)
+ # Pokemon: Fire Red (J)
+ game_name = POKEMON FIRE
+ game_code = BPRJ
+ vender_code = 01
+ idle_loop_eliminate_target = 080008b2
+-# If you have the European version try this instead.
+-#idle_loop_eliminate_target = 080008c6
+-flash_rom_type = 128KB
+ 
+-# ポケモン不思議のダンジョン 赤の救助隊 (J)
+-# Pokemon: Fushigi no Dungeon Aka no Kyuujotai (J)
+-# game_name = POKE DUNGEON
+-# game_code = B24J
+-# vender_code = 01
+-# flash_rom_type = 128KB
+-#
+-# save type FLASH512_V131 64kB (512kbit), not 128kB (1024kbit)
++# Pokemon: Leaf Green(J)
++game_name = POKEMON LEAF
++game_code = BPGJ
++vender_code = 01
++idle_loop_eliminate_target = 080008b2
+ 
+-# F-ZERO クライマックス (J)
+-# F-Zero: Climax (J)
+-game_name = F-ZEROCLIMAX
+-game_code = BFTJ
++# Screw Breaker (J)
++game_name = SCREWBREAKER
++game_code = V49J
+ vender_code = 01
+-flash_rom_type = 128KB
++idle_loop_eliminate_target = 080006c2
++
++# Bomberman Story (J)
++game_name = BOMSTORY
++game_code = ABSJ
++vender_code = 18
++idle_loop_eliminate_target = 08000526
++
++# Go Go Juggler (J)
++game_name = SLOT!PRO2
++game_code = ATBJ
++vender_code = A0
++idle_loop_eliminate_target = 08000206
++
++# Pinball of The Dead. The (J)
++game_name = PINBALL DEAD
++game_code = AZOJ
++vender_code = 8P
++idle_loop_eliminate_target = 08000300
++
++# Mickey to Minnie no Magical Quest 2 (J)
++game_name = M&M MAGICAL2
++game_code = A29J
++vender_code = 08
++idle_loop_eliminate_target = 0801f05c
++
++# Mickey to Donald no Magical Quest 3 (J)
++game_name = M&D MAGICAL3
++game_code = BM3J
++vender_code = 08
++idle_loop_eliminate_target = 08015a70
+ 
+-# マリオパーティアドバンス (J)
+ # Mario Party Advance (J)
+ game_name = MARIOPARTYJA
+ game_code = B8MJ
+ vender_code = 01
++idle_loop_eliminate_target = 080000c0
+ iwram_stack_optimize = no
+ 
+-# マリオゴルフGBAツアー (J)
+-# Mario Golf: GBA Tour (J)
+-game_name = MARIOGOLFGBA
+-game_code = BMGJ
+-vender_code = 01
+-iwram_stack_optimize = no
+-idle_loop_eliminate_target = 08014e0a
+-translation_gate_target = 03000d00
+-translation_gate_target = 03000a30
+-
+-# テイルズ オブ ファンタジア (J)
+-# Tales of Phantasia (J)
+-game_name = PHANTASIA
+-game_code = AN8J
++# Kotoba no Puzzle - Mojipittan Advance (J)
++game_name = MOJIPITTAN
++game_code = A8MJ
+ vender_code = AF
+-iwram_stack_optimize = no
++idle_loop_eliminate_target = 08019f2c
+ 
+-# リズム天国 (J)
+-# Rhythm Tengoku (J)
+-game_name = RHYTHMTENGOK
+-game_code = BRIJ
+-vender_code = 01
+-idle_loop_eliminate_target = 080013d4
++# Momotarou Densetsu G - Gold Deck wo Tsukure! (J)
++game_name = MOMOTETSU-G
++game_code = BM2J
++vender_code = 18
++idle_loop_eliminate_target = 080d2ffe
++iwram_stack_optimize = no
+ 
+-# 千年家族 (J)
+-# Sennen Kazoku (J)
+-game_name = SENNENKAZOKU
+-game_code = BKAJ
+-vender_code = 01
+-flash_rom_type = 128KB
++# Monster Farm Advance (J)
++game_name = MONSTERFARMA
++game_code = AMFJ
++vender_code = 9B
++idle_loop_eliminate_target = 080931d8
+ 
+-# BLEACHアドバンス 紅に染まる尸魂界 (J)
+-# Bleach Advance (J)
+-game_name = BLEACH ADV1
+-game_code = BLEJ
+-vender_code = 8P
+-iwram_stack_optimize = no
++# Monster Farm Advance 2 (J)
++game_name = MONSTERFARM2
++game_code = A2QJ
++vender_code = 9B
++idle_loop_eliminate_target = 0819eacc
+ 
+-# シャイニング・ソウル (J)
+-# Shining Soul (J)
+-game_name = SHINING SOUL
+-game_code = AHUJ
+-vender_code = 8P
+-iwram_stack_optimize = no
++# Downtown - Nekketsu Monogatari EX (J)
++game_name = DOWNTOWN
++game_code = BDTJ
++vender_code = EB
++idle_loop_eliminate_target = 0800065e
+ 
+-# シャイニング・ソウル2 (J)
+-# Shining Soul 2 (J)
+-game_name = SHININGSOUL2
+-game_code = AU2J
+-vender_code = 8P
+-iwram_stack_optimize = no
++# Konami Wai Wai Racing Advance (J)
++game_name = WAIWAI
++game_code = AKWJ
++vender_code = EM
++idle_loop_eliminate_target = 08000422
++
++# Silent Hill - Play Novel (J)
++game_name = SILENT HILL
++game_code = ASHJ
++vender_code = EM
++idle_loop_eliminate_target = 080130a8
++
++# Tekken Advance (J)
++game_name = TEKKEN
++game_code = ATKJ
++vender_code = AF
++idle_loop_eliminate_target = 0800074a
+ 
++# King of Fighters EX (J)
++game_name = KINGOFEXNEOB
++game_code = AKOJ
++vender_code = 9N
++idle_loop_eliminate_target = 08000338
++
++# King of Fighters EX2 (J)
++game_name = KOFEX2HOWLIN
++game_code = AEXJ
++vender_code = 9N
++idle_loop_eliminate_target = 080030a6
++
++# Jajamaru Jr. Denshouki (J)
++game_name = SHINJAJA
++game_code = BNJJ
++vender_code = G1
++idle_loop_eliminate_target = 0803622c
++
++# Kikaika Guntai (J)
++game_name = kykikaGontie
++game_code = AKGJ
++vender_code = 28
++idle_loop_eliminate_target = 0800e5ea
++
++# Zelda no Densetsu GBA (J)
++game_name = GBAZELDA
++game_code = AZLJ
++vender_code = 01
++idle_loop_eliminate_target = 08068ee8
++
++# EggMania (J)
++game_name = EGGOMANIA
++game_code = AEMJ
++vender_code = 28
++idle_loop_eliminate_target = 08002df2
++
++# Acrobat Kid (J)
++game_name = AEROMXXXXXXX
++game_code = AAOJ
++vender_code = 5N
++idle_loop_eliminate_target = 08036436
+ 
+-# J.LEAGUE プロサッカークラブをつくろう！アドバンス (J)
+-# J League Pro Soccer Club wo Tsukurou Advance (J)
+-game_name = SAKATUKUADV
+-game_code = AC2J
+-vender_code = 8P
+-iwram_stack_optimize = no
++# Magical Vacation (J)
++game_name = MAGICAL VACA
++game_code = AMVJ
++vender_code = 01
++idle_loop_eliminate_target = 00000214
+ 
+-# アニマル横町 どきどき進級試験!の巻 (J)
+-# Animal Yokochou Dokidoki Shinkyuu Shiken (J)
+-game_name = ANIYOKO2
+-game_code = BAXJ
+-vender_code = A4
+-iwram_stack_optimize = no
++# RockMan EXE 4 - Tournament Blue Moon (J) ※注1
++game_name = ROCK_EXE4_BM
++game_code = B4BJ
++vender_code = 08
++idle_loop_eliminate_target = 08000376
+ 
+-# アラジン (J)
+-# Disney's Aladdin (J)
+-game_name = ALADDIN
+-game_code = AJ6J
++# Rockman.EXE 5 - Team of Blues (J) ※注1
++game_name = ROCKEXE5_TOB
++game_code = BRBJ
+ vender_code = 08
+-iwram_stack_optimize = no
++idle_loop_eliminate_target = 0800039a
+ 
+-# うえきの法則 神器炸裂！能力者バトル (J)
+-# Ueki no Housoku Jingi Sakuretsu! Nouryokusya Battle (J)
+-game_name = UEKIJINGIBTL
+-game_code = BUHJ
+-vender_code = D9
+-iwram_stack_optimize = no
++# Rockman.EXE 6 - Dennoujuu Grega (J) ※注1
++game_name = ROCKEXE6_GXX
++game_code = BR5J
++vender_code = 08
++idle_loop_eliminate_target = 080003aa
+ 
+-# オリエンタルブルー 青の天外 (J)
+-# Oriental Blue - Ao no Tengai (J)
+-game_name = ORIENTALBLUE
+-game_code = AORJ
++# F-ZERO CLIMAX (J)
++game_name = F-ZEROCLIMAX
++game_code = BFTJ
+ vender_code = 01
+-iwram_stack_optimize = no
++idle_loop_eliminate_target = 09000bec
+ 
+-# カルチョビット (J)
+-# Calciobit (J)
+-game_name = CALCIOBIT01
+-game_code = BIXJ
+-vender_code = 01
+-flash_rom_type = 128KB
++# V-Rally 3 (J)
++game_name = VRALLY 3
++game_code = AVRJ
++vender_code = 70
++idle_loop_eliminate_target = 080abc64
+ 
+-# ゲームボーイウォーズアドバンス1+2 (J)
+-# Game Boy Wars Advance 1+2 (J)
+-game_name = GBWARS1+2
+-game_code = BGWJ
++# Super Mario Advance 4 (J)
++game_name = SUPER MARIOD
++game_code = AX4J
+ vender_code = 01
+-flash_rom_type = 128KB
+-
+-# こいぬちゃんのはじめてのおさんぽ (J)
+-# Koinu-Chan no Hajimete no Osanpo (J)
+-game_name = OSANPO
+-game_code = BISJ
+-vender_code = 1Q
+-iwram_stack_optimize = no
++idle_loop_eliminate_target = 08000732
+ 
+-# チキン・リトル (J)
+-# Chicken Little (J)
+-game_name = CLITTLEJ    
+-game_code = BCHJ
+-vender_code = G9
+-iwram_stack_optimize = no
++# Rockman EXE (j)
++game_name = ROCKMAN_EXE
++game_code = AREJ
++vender_code = 08
++idle_loop_eliminate_target = 08000338
+ 
+-# とっとこハム太郎 ハムハムスポーツ (JU)
+-# Tottoko Hamutaro Hamuhamu Sports (JU)
+-game_name = HAMSPORTS
+-game_code = B85A
++# Pokemon　Emerald(J)
++game_name = POKEMON EMER
++game_code = BPEJ
+ vender_code = 01
+-iwram_stack_optimize = no
++idle_loop_eliminate_target = 080008CE
+ 
+-# 西原理恵子の殿堂麻雀 (J)
+-# Nishihara Rieko no Dendou Mahjong (J)
+-game_name = DENDOHMAJANG
+-game_code = ASMJ
+-vender_code = AG
+-iwram_stack_optimize = no
++# FF5A
++game_name = FF5ADVANCE 
++game_code = BZ5J
++vender_code = GD
++idle_loop_eliminate_target = 0801f162
++
++# RockMan EXE 3 (J)
++game_name = ROCKMAN_EXE3
++game_code = A6BJ
++vender_code = 08
++# idle_loop_eliminate_target = 08000556
++idle_loop_eliminate_target = 0800036c 
+ 
+-# ボンバーマンジェッターズ ゲームコレクション (J)
+-# Bomberman Jetters Game Collection (J)
+-game_name = BOMBERMANJGC
+-game_code = BOMJ
+-vender_code = 18
+-iwram_stack_optimize = no
++# Pokemon: Fushigi no Dungeon Aka no Kyuujotai (J)
++game_name = POKE DUNGEON
++game_code = B24J
++vender_code = 01
++flash_rom_type = 128KB
+ 
+-# ポケットモンスター リーフグリーン (J)
+-# Pokemon Leaf Green (J)
+-game_name = POKEMON LEAF
+-game_code = BPGJ
++# Pokemon Ruby (J)
++game_name = POKEMON RUBY
++game_code = AXVJ
+ vender_code = 01
+ flash_rom_type = 128KB
+ 
+-# マジカル封神 (J)
+-# Magical Houshin (J)
+-game_name = M HOUSHIN
+-game_code = AJOJ
+-vender_code = C8
+-iwram_stack_optimize = no
++# Pokemon Sapphire (J)
++game_name = POKEMON SAPP
++game_code = AXPJ
++vender_code = 01
++flash_rom_type = 128KB
++
++# Super Robot War A (J)
++game_name = SRWA
++game_code = ASRJ
++vender_code = D9
++idle_loop_eliminate_target = 080003ec
++idle_loop_eliminate_target = 08001f84 
+ 
+-# メダル オブ オナー (J)
+ # Medal of Honor (J)
+ game_name = INFILTRATOR
+ game_code = BMHJ
+ vender_code = 13
++idle_loop_eliminate_target = 081bb7e2
+ iwram_stack_optimize = no
+ 
+-# ロボットポンコッツ2 クロスバージョン (J)
+-# Robot Ponkotto 2 - Cross Version (J)
+-game_name = ROBOPON2CROS
+-game_code = ACVJ
+-vender_code = 18
+-iwram_stack_optimize = no
+-
+-# ロボットポンコッツ2 リングバージョン (J)
+-# Robot Ponkotto 2 - Ring Version (J)
+-game_name = ROBOPON2RING
+-game_code = ARPJ
+-vender_code = 18
+-iwram_stack_optimize = no
+-
+-# 桃太郎電鉄G ～ゴールド・デッキを作れ！～ (J)
+-# Momotarou Densetsu G - Gold Deck wo Tsukure! (J)
+-game_name = MOMOTETSU-G
+-game_code = BM2J
+-vender_code = 18
++# Shining Soul 2 (J)
++game_name = SHININGSOUL2
++game_code = AU2J
++vender_code = 8P
+ iwram_stack_optimize = no
+-
+-
+-# set backup media
+-# savetype - "sram", "flash", "eeprom"
+-
+-# でじこミュニケーション2 ～打倒！ブラックゲマゲマ団～ (J)
+-# Digi Communication 2 - Datou! Black Gemagema Dan (J)
+-game_name = DC2
+-game_code = BDKJ
+-vender_code = G7
+-save_type = eeprom
+-
+-# ドラゴンボールZ - THE LEGACY OF GOKU 2 INTERNATIONAL (J)
+-# Dragon Ball Z - The Legacy of Goku II International (J)
+-game_name = DBZLGCYGOKU2
+-game_code = ALFJ
+-vender_code = D9
+-save_type = eeprom
+-
+-

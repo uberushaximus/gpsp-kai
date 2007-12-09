@@ -300,13 +300,13 @@ void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int heig
       {
         // 文字描画時
         if (fill & 0x01)
-          *vptr =  color;
+          *vptr =  (u16)color;
       }
       // 背景描画時
       else
       {
         if (fill & 0x10)
-          *vptr = back;
+          *vptr = (u16)back;
       }
 
       vptr++;

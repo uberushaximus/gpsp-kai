@@ -166,6 +166,8 @@ extern const SCREEN_PARAMETER screen_parameter_composite_menu_init[];
 extern const SCREEN_PARAMETER screen_parameter_component_game_init[];
 extern const SCREEN_PARAMETER screen_parameter_component_menu_init[];
 
+extern SCREEN_PARAMETER *current_parameter;
+
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();
 

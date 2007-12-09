@@ -2292,7 +2292,7 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
 
   sprintf(config_path, "%s/%s", main_path, CONFIG_FILENAME);
 
-  config_file = fopen(config_path, "rb");
+  config_file = fopen(config_path, "r");
 
   if(config_file)
   {
