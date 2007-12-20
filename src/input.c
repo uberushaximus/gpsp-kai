@@ -74,6 +74,9 @@ u32 tilt_sensor_x;
 u32 tilt_sensor_y;
 u32 sensorR;
 
+static u32 button_circle;
+static u32 button_cross;
+
 #define BUTTON_REPEAT_START    200000
 #define BUTTON_REPEAT_CONTINUE 50000
 
@@ -89,8 +92,8 @@ gui_action_type get_gui_input()
 
   sceKernelDelayThread(25000);
 
-  if (quit_flag == 1)
-    quit();
+//  if (quit_flag == 1)
+//    quit();
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
   ctrl_buttons = readHomeButton();
@@ -132,10 +135,10 @@ gui_action_type get_gui_input()
     new_button = CURSOR_SELECT;
 
   if(new_buttons & PSP_CTRL_CIRCLE)
-    new_button = CURSOR_SELECT;
+    new_button = button_circle;
 
   if(new_buttons & PSP_CTRL_CROSS)
-    new_button = CURSOR_EXIT;
+    new_button = button_cross;
 
   if(new_buttons & PSP_CTRL_SQUARE)
     new_button = CURSOR_BACK;
@@ -399,11 +402,23 @@ u32 update_input()
 
 void init_input()
 {
+  int button_swap;
   sceCtrlSetSamplingCycle(0);
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
   initHomeButton(sceKernelDevkitVersion());
   tilt_sensor_x = 0x800;
   tilt_sensor_y = 0x800;
+  sceUtilityGetSystemParamInt(9, &button_swap);
+  if (button_swap == 0)
+  {
+    button_circle = CURSOR_SELECT;
+    button_cross  = CURSOR_EXIT;
+  }
+  else
+  {
+    button_circle = CURSOR_EXIT;
+    button_cross  = CURSOR_SELECT;
+  }
 }
 
 // type = READ / WRITE_MEM

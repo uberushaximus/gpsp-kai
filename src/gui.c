@@ -896,8 +896,8 @@ u32 menu(u16 *original_screen)
   u32 first_load = 0;
 //  char savestate_ext[16];
   char current_savestate_filename[MAX_FILE];
-  char line_buffer[80];
-  char cheat_format_str[MAX_CHEATS][41];
+  char line_buffer[256];
+  char cheat_format_str[MAX_CHEATS][41*4];
 
   MENU_TYPE *current_menu;
   MENU_OPTION_TYPE *current_option;
@@ -928,6 +928,9 @@ u32 menu(u16 *original_screen)
   auto void reload_cheats_page();
   auto void home_mode();
   auto void set_gamepad();
+#ifdef ADHOC_MODE
+  auto void adhoc_connect_menu();
+#endif
 
   char *gamepad_help[] =
   {
@@ -1126,6 +1129,13 @@ u32 menu(u16 *original_screen)
   {
 
   }
+
+  void adhoc_connect_menu()
+  {
+    adhoc_init(gamepak_title);
+    adhoc_select();
+  }
+
 #endif
 
   void submenu_analog()
@@ -1339,6 +1349,7 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE adhoc_options[] =
   {
+    ACTION_OPTION(adhoc_connect_menu, NULL, "adhoc connect", "adhoc connect", 0),                                                      /*  0行目 */
 
 
 
@@ -1522,6 +1533,9 @@ u32 menu(u16 *original_screen)
     PRINT_STRING_BG(current_option->help_string, COLOR_HELP_TEXT, COLOR_BG, 30, 210);
 
     gui_action = get_gui_input();
+
+//    if (quit_flag == 1)
+//      menu_quit();
 
     switch(gui_action)
     {

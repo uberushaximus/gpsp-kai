@@ -61,7 +61,8 @@ typedef enum
   BUTTON_ID_VOLUP,
   BUTTON_ID_VOLDOWN,
   BUTTON_ID_FPS,
-  BUTTON_ID_NONE
+  BUTTON_ID_NONE,
+  BUTTON_ID_PAR_SW
 } input_buttons_id_type;
 
 typedef enum

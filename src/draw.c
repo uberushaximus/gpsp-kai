@@ -27,6 +27,7 @@
  * ヘッダファイルの読込み
  ******************************************************************************/
 #include "common.h"
+#include <stdarg.h>
 
 /******************************************************************************
  * マクロ等の定義
@@ -332,6 +333,116 @@ void bitblt(u32 vram_adr,u32 pitch, u32 sx, u32 sy, u32 ex, u32 ey, u32 x_size, 
   sceGuSync(0, GU_SYNC_FINISH);
 }
 
+/******************************************************************************
+  簡易書式付文字列表示(メニュー画面のみ対応)
+******************************************************************************/
+
+#define MAX_LINES 21
+#define MIN_X   24
+#define MIN_Y   45
+#define INC_Y   10
+
+static int cy;
+static int linefeed;
+static int text_color = COLOR16(0, 0, 0);
+static char msg_lines[MAX_LINES][128];
+static char msg_title[12];
+static int msg_color[MAX_LINES];
+
+#define COLOR_MSG_TITLE COLOR16(0, 0, 0)
+
+/*--------------------------------------------------------
+  メッセージ画面の表示
+--------------------------------------------------------*/
+void msg_screen_draw()
+{
+  draw_dialog(14, 15, 465, 38);
+  draw_dialog(14, 37, 465, 259);
+  print_string_center(22, COLOR_MSG_TITLE, COLOR_DIALOG, msg_title);
+}
+
+/*--------------------------------------------------------
+  メッセージ初期化
+--------------------------------------------------------*/
+void msg_screen_init(const char *title)
+{
+  cy = 0;
+  linefeed = 1;
+  memset(msg_lines, 0, sizeof(msg_lines));
+  strcpy(msg_title, title);
+
+  msg_screen_draw();
+}
+
+/*--------------------------------------------------------
+  メッセージ消去
+--------------------------------------------------------*/
+void msg_screen_clear(void)
+{
+  cy = 0;
+  linefeed = 1;
+}
+
+/*--------------------------------------------------------
+  テキストカラー設定
+--------------------------------------------------------*/
+void msg_set_text_color(u32 color)
+{
+  text_color = color;
+}
+
+/*--------------------------------------------------------
+  メッセージ表示
+--------------------------------------------------------*/
+void msg_printf(const char *text, ...)
+{
+  int y;
+  char buf[128];
+  va_list arg;
+
+  va_start(arg, text);
+  vsprintf(buf, text, arg);
+  va_end(arg);
+
+  if (linefeed)
+  {
+    if (cy == MAX_LINES)
+    {
+      for (y = 1; y < MAX_LINES; y++)
+      {
+        strcpy(msg_lines[y - 1], msg_lines[y]);
+        msg_color[y - 1] = msg_color[y];
+      }
+      cy = MAX_LINES - 1;
+    }
+    strcpy(msg_lines[cy], buf);
+  }
+  else
+  {
+    strcat(msg_lines[cy], buf);
+  }
+
+  msg_color[cy] = text_color;
+
+  msg_screen_draw();
+
+  for (y = 0; y <= cy; y++)
+
+    PRINT_STRING(msg_lines[y], msg_color[y], MIN_X, MIN_Y + y * 10);
+
+  if (buf[strlen(buf) - 1] == '\n')
+  {
+    linefeed = 1;
+    cy++;
+  }
+  else
+  {
+    if (buf[strlen(buf) - 1] == '\r')
+      msg_lines[cy][0] = '\0';
+    linefeed = 0;
+  }
+  flip_screen();
+}
 /******************************************************************************
  * ローカル関数の定義
  ******************************************************************************/

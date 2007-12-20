@@ -323,36 +323,22 @@ void fbm_printSUB(void *vram, int bufferwidth, int index, int isdouble, int heig
 
 void *fbm_malloc(size_t size)
 {
-  int *p;
   int h_block;
-
 
   if (size == 0) return NULL;
 
-  h_block = sceKernelAllocPartitionMemory(2, "block", 0, size + sizeof(h_block), NULL);
+  h_block = malloc(size);
 
   if (h_block < 0) return NULL;
 
-  p = (int *)sceKernelGetBlockHeadAddr(h_block);
-  *p = h_block;
-
-  return (void *)(p + 1);
+  return (void *)(h_block);
 }
 
 
 void fbm_free(void **ptr)
 {
-  int *p;
-  int h_block;
-
-
   if (*ptr != NULL)
-  {
-    p = (int *)*ptr;
-    h_block = *(p - 1);
-    sceKernelFreePartitionMemory(h_block);
-    *ptr = NULL;
-  }
+    free(*ptr);
 }
 
 

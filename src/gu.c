@@ -23,7 +23,7 @@
 
 static u32 __attribute__((aligned(32))) display_list[2048];
 
-void load_video_config();
+s32 load_video_config();
 void set_resolution_parameter(video_scale_type scale);
 void set_video_out();
 
@@ -112,6 +112,8 @@ u32 screen_flip = 0;
 
 u32 video_out_mode;
 
+u32 use_video_out;
+
 void update_screen()
 {
   if(!skip_next_frame_flag)
@@ -145,6 +147,7 @@ typedef union
 
 void init_video()
 {
+  use_video_out = 0;
   video_out_mode = 0;
   video_draw_frame = FRAME_GAME;
   static u32 first_load = 0;
@@ -152,7 +155,8 @@ void init_video()
   // パラメータの初期化
   if(first_load == 0)
   {
-    load_video_config();
+    if(load_video_config() == 0)
+      use_video_out = 1;
     first_load = 1;
   }
 
@@ -283,7 +287,7 @@ void video_resolution(u32 frame)
 
   if(video_draw_frame != frame)
   {
-    if(psp_model == psp_2000_new)
+    if((psp_model == psp_2000_new) && (use_video_out == 1))
       video_out_mode = pspDveMgrCheckVideoOut();
     else
       video_out_mode = 0;
@@ -313,7 +317,7 @@ void video_resolution(u32 frame)
     if(old_parameter != current_parameter)
     {
       old_parameter = current_parameter;
-      if(psp_model == psp_2000_new)
+      if((psp_model == psp_2000_new) && (use_video_out == 1))
       {
         pspDveMgrSetVideoOut(current_parameter->video_out.u, current_parameter->video_out.displaymode, current_parameter->video_out.width,
             current_parameter->video_out.height, current_parameter->video_out.x, current_parameter->video_out.y, current_parameter->video_out.z);
@@ -347,6 +351,8 @@ void video_resolution(u32 frame)
 
     sceGuStart(GU_DIRECT, display_list);
     sceGuDispBuffer(current_parameter->screen_size.width, current_parameter->screen_size.height, (void*)0, FRAME_LINE_SIZE);
+    sceGuOffset(2048 - (current_parameter->screen_size.width / 2), 2048 - (current_parameter->screen_size.height / 2));
+    sceGuViewport(2048, 2048, current_parameter->screen_size.width, current_parameter->screen_size.height);
     sceGuScissor(current_parameter->view.x, current_parameter->view.y, current_parameter->view.width, current_parameter->view.height);
     sceGuEnable(GU_SCISSOR_TEST);
     sceGuTexFilter(current_parameter->filter[gpsp_config.screen_filter], current_parameter->filter[gpsp_config.screen_filter]);
@@ -420,7 +426,7 @@ video_savestate_body(WRITE_MEM);
 
 #define LOAD_PARAMETER_NUMBER (SCREEN_SCALE + 1 + (SCREEN_RATIO*SCREEN_INTERLACE*SCREEN_SCALE + SCREEN_RATIO*SCREEN_INTERLACE) * 2)
 
-void load_video_config()
+s32 load_video_config()
 {
   FILE *video_file;
   char current_line[256];
@@ -430,12 +436,8 @@ void load_video_config()
   SCREEN_PARAMETER parameter[LOAD_PARAMETER_NUMBER];
 
   // 設定の初期化
-  memcpy(&parameter[0],  &screen_parameter_psp_menu_init,     sizeof(SCREEN_PARAMETER));
-  memcpy(&parameter[1],  &screen_parameter_composite_menu_init,  sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&parameter[5],  &screen_parameter_component_menu_init, sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&parameter[9],  &screen_parameter_psp_game_init,     sizeof(SCREEN_PARAMETER)*5);
-  memcpy(&parameter[14], &screen_parameter_composite_game_init,  sizeof(SCREEN_PARAMETER)*2*2*5);
-  memcpy(&parameter[34], &screen_parameter_component_game_init, sizeof(SCREEN_PARAMETER)*2*2*5);
+  memcpy(&screen_parameter_psp_menu,  &screen_parameter_psp_menu_init,     sizeof(SCREEN_PARAMETER));
+  memcpy(&screen_parameter_psp_game,  &screen_parameter_psp_game_init,     sizeof(SCREEN_PARAMETER)*5);
 
   // video configファイルのオープン
   video_file = fopen(GPSP_CONFIG_FILENAME, "r");
@@ -482,14 +484,18 @@ void load_video_config()
         loop++;
       }
       if(loop == LOAD_PARAMETER_NUMBER)
-        break;
+      {
+        // パラメータのセット
+        memcpy(&screen_parameter_psp_menu,       &parameter[0],  sizeof(SCREEN_PARAMETER));
+        memcpy(&screen_parameter_composite_menu, &parameter[1],  sizeof(SCREEN_PARAMETER)*2*2);
+        memcpy(&screen_parameter_component_menu, &parameter[5],  sizeof(SCREEN_PARAMETER)*2*2);
+        memcpy(&screen_parameter_psp_game,       &parameter[9],  sizeof(SCREEN_PARAMETER)*5);
+        memcpy(&screen_parameter_composite_game, &parameter[14], sizeof(SCREEN_PARAMETER)*2*2*5);
+        memcpy(&screen_parameter_component_game, &parameter[34], sizeof(SCREEN_PARAMETER)*2*2*5);
+        return 0;
+      }
     }
   }
-  // パラメータのセット
-  memcpy(&screen_parameter_psp_menu,     &parameter[0],  sizeof(SCREEN_PARAMETER));
-  memcpy(&screen_parameter_composite_menu,  &parameter[1],  sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&screen_parameter_component_menu, &parameter[5],  sizeof(SCREEN_PARAMETER)*2*2);
-  memcpy(&screen_parameter_psp_game,     &parameter[9],  sizeof(SCREEN_PARAMETER)*5);
-  memcpy(&screen_parameter_composite_game,  &parameter[14], sizeof(SCREEN_PARAMETER)*2*2*5);
-  memcpy(&screen_parameter_component_game, &parameter[34], sizeof(SCREEN_PARAMETER)*2*2*5);
+
+  return -1;
 }

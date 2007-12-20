@@ -21,7 +21,7 @@
 #ifndef CHEATS_H
 #define CHEATS_H
 
-#define CHEAT_NAME_LENGTH 17
+#define CHEAT_NAME_LENGTH (40*4)
 #define MAX_CHEATS_PAGE 3
 #define MAX_CHEATS (MAX_CHEATS_PAGE * 10)
 

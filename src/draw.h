@@ -90,6 +90,11 @@ extern void update_progress(void);
 extern void show_progress(char *text);
 extern void scrollbar(u32 sx, u32 sy, u32 ex, u32 ey, u32 all,u32 view,u32 now);
 extern u32 yesno_dialog(char *text);
+extern void msg_screen_init(const char *title);
+extern void msg_screen_draw();
+extern void msg_printf(const char *text, ...);
+extern void msg_screen_clear(void);
+extern void msg_set_text_color(u32 color);
 
 #endif
 

@@ -2192,8 +2192,10 @@ fill_line_builder(color32);
 #define effect_condition_alpha                                                \
   ((pixel_pair & 0x04000200) == 0x04000200)                                   \
 
+// fade in/out
 #define effect_condition_fade(pixel_source)                                   \
   ((pixel_source & 0x00000200) == 0x00000200)                                 \
+
 
 #define expand_pixel_no_dest(expand_type, pixel_source)                       \
   pixel_top = (pixel_top | (pixel_top << 16)) & 0x03E07C1F /*0x07E0F81F*/;                   \
@@ -3045,7 +3047,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Just OBJ windows */                                                    \
     case 0x04:                                                                \
     {                                                                         \
-      u32 window_obj_enable = winout >> 8;                                    \
+      /*u32 window_obj_enable = winout >> 8;*/                                    \
       render_window_clip_obj(type, 0, 240);                                   \
       break;                                                                  \
     }                                                                         \
@@ -3053,7 +3055,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 0 and OBJ window */                                             \
     case 0x05:                                                                \
     {                                                                         \
-      u32 window_obj_enable = winout >> 8;                                    \
+      /*u32 window_obj_enable = winout >> 8;*/                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(0);                                                       \
       render_window_multi(type, 0, obj);                                      \
@@ -3063,7 +3065,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 1 and OBJ window */                                             \
     case 0x06:                                                                \
     {                                                                         \
-      u32 window_obj_enable = winout >> 8;                                    \
+      /*u32 window_obj_enable = winout >> 8;*/                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(1);                                                       \
       render_window_multi(type, 1, obj);                                      \
@@ -3073,7 +3075,7 @@ void render_scanline_window_##type(u16 *scanline, u32 dispcnt)                \
     /* Window 0, 1, and OBJ window */                                         \
     case 0x07:                                                                \
     {                                                                         \
-      u32 window_obj_enable = winout >> 8;                                    \
+      /*u32 window_obj_enable = winout >> 8;*/                                    \
       u32 winin = io_registers[REG_WININ];                                    \
       window_coords(0);                                                       \
       window_coords(1);                                                       \

@@ -2,6 +2,20 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 8.7 svn rev.
+	メニュー時の"o"と”x”のボタンの動作を、PSPの設定に合わせるようにした
+	チート名の長さ制限を緩和(UTF-8Nにて40文字分確保)
+	fbm_print.cのメモリ管理をmalloc/freeに変更
+	HOMEキーでの終了時のハングアップを修正
+	OAMへのbyte単位での書込処理を修正
+	1:1出力時の1ライン欠けを修正
+	テレビ出力時のパラメータを調整
+	ビデオ初期化のバグを修正
+	内蔵のテレビ出力時のパラメータを削除(video.cfgが正常に読込めない場合はテレビ出力をしない)
+	画面の端に一部のテクスチャが回り込むのを修正(test8.6まではパラメータで回避していた)
+	IOレジスタへのbyte/word書込にジャンプテーブルを使用し、速度の安定化
+	チートのドキュメントを追加
+
 -UnOfficial gpSP kai 3.2 test 8.6 svn rev.
 	半透明処理のバグを修正
 

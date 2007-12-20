@@ -50,17 +50,17 @@ u32 load_adhoc_modules(void);
 
 u32 adhoc_init(const char *matchingData);
 u32 adhoc_term(void);
-u32 adhocSelect(void);
+u32 adhoc_select(void);
 u32 adhocReconnect(char *ssid);
 
-u32 adhocSend(void *buffer, u32 length);
-u32 adhocRecv(void *buffer, u32 length);
+u32 adhocSend(void *buffer, u32 length, u32 type);
+u32 adhocRecv(void *buffer, u32 length, u32 type);
 
 u32 adhocSendBlocking(void *buffer, u32 length);
 u32 adhocRecvBlocking(void *buffer, u32 length);
 u32 adhocRecvBlockingTimeout(void *buffer, u32 length, u32 timeout);
 
-u32 adhocSendRecvAck(void *buffer, u32 length);
-u32 adhocRecvSendAck(void *buffer, u32 length);
+int adhocSendRecvAck(void *buffer, int length, int timeout, int type);
+int adhocRecvSendAck(void *buffer, int length, int timeout, int type);
 
 #endif

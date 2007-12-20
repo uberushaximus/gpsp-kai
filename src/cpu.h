@@ -84,7 +84,7 @@ typedef enum
   CPU_MODE          = 29,
   CPU_HALT_STATE    = 30,
   CHANGED_PC_STATUS = 31
-} ext_reg_numbers;
+} EXT_REG_NUMBERS;
 
 typedef enum
 {

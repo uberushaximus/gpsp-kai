@@ -52,8 +52,8 @@ static void decrypt_gsa_code(int *address_ptr, int *value_ptr, CHEAT_VARIANT_ENU
 
   for(i = 0; i < 32; i++)
   {
-    value -= ((address << 4) + seeds[2]) ^ (address + r) ^ ((address >> 5) + seeds[3]);
-    address -= ((value << 4) + seeds[0]) ^ (value + r) ^ ((value >> 5) + seeds[1]);
+    value   -= ((address << 4) + seeds[2]) ^ (address + r) ^ ((address >> 5) + seeds[3]);
+    address -= ((value   << 4) + seeds[0]) ^ (value   + r) ^ ((value   >> 5) + seeds[1]);
     r -= 0x9e3779b9;
   }
 

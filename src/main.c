@@ -31,10 +31,13 @@ PSP_MAIN_THREAD_PRIORITY(0x11);
 PSP_MAIN_THREAD_STACK_SIZE_KB(256);
 
 /******************************************************************************
- * 変数の定義
+ * グローバル変数の定義
  ******************************************************************************/
-
 TIMER_TYPE timer[4];                              // タイマー
+
+/******************************************************************************
+ * ローカル変数の定義
+ ******************************************************************************/
 
 u32 global_cycles_per_instruction = 1;
 u64 frame_count_initial_timestamp = 0;
@@ -54,7 +57,6 @@ u32 arm_frame = 0;
 u32 thumb_frame = 0;
 u32 last_frame = 0;
 
-u32 cycle_memory_access = 0;
 u32 cycle_pc_relative_access = 0;
 u32 cycle_sp_relative_access = 0;
 u32 cycle_block_memory_access = 0;
@@ -70,7 +72,7 @@ u32 hold_state = 0;
 char main_path[MAX_PATH];
 char rom_path[MAX_PATH];
 
-vu32 quit_flag;
+//vu32 quit_flag;
 vu32 power_flag;
 
 char *lang[12] =
@@ -216,7 +218,8 @@ void init_main()
 
 int exit_callback(int arg1, int arg2, void *common)
 {
-  quit_flag = 1;
+  quit();
+//  quit_flag = 1; // TODO
   return 0;
 }
 
@@ -290,6 +293,7 @@ void quit()
   fclose(g_dbg_file);
 
   set_cpu_clock(222);
+
   sceKernelExitGame();
 }
 
@@ -317,7 +321,7 @@ int main(int argc, char *argv[])
       error_msg("Error in load/start TV OUT module.\n");
   }
   
-  quit_flag = 0;
+//  quit_flag = 0;
   power_flag = 0;
   SetupCallbacks();
 
@@ -427,15 +431,6 @@ int main(int argc, char *argv[])
   update_progress();
 
   show_progress(msg[MSG_INIT_END]);
-
-//#ifdef ADHOC_MODE
-//  // WLANのスイッチがONならばadhoc接続のテスト
-//  if (sceWlanDevIsPowerOn() == 1)
-//  {
-//    adhoc_init("adhoc test");
-//    adhoc_term();
-//  }
-//#endif
 
   if(argc > 1)
   {
@@ -608,8 +603,8 @@ u32 update_gba()
           if (check_power())
             continue;
 
-          if (quit_flag == 1)
-            quit();
+//          if (quit_flag == 1)
+//            quit();
 
           update_gbc_sound(cpu_ticks);
 

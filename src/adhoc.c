@@ -113,7 +113,6 @@ static unsigned char adhoc_work[ADHOC_BUFFER_SIZE];
 /*--------------------------------------------------------
  プログレスバー初期化
  --------------------------------------------------------*/
-
 static void adhoc_init_progress(u32 total, char *text)
   {
     char buf[MAX_FILE];
@@ -124,7 +123,7 @@ static void adhoc_init_progress(u32 total, char *text)
 
     // アイコンの表示
 //    small_icon(6, 3, UI_COLOR(UI_PAL_TITLE), ICON_SYSTEM);
-    sprintf(buf, "AdHoc - %s", gamepak_filename);
+    sprintf(buf, "AdHoc - %s", gamepak_title);
     // 文字の表示
 //    uifont_print(32, 5, UI_COLOR(UI_PAL_TITLE), buf);
 
@@ -138,7 +137,6 @@ static void adhoc_init_progress(u32 total, char *text)
 /*--------------------------------------------------------
  リスト消去
  --------------------------------------------------------*/
-
 static void clear_psp_list(void)
 {
   max = 0;
@@ -149,7 +147,6 @@ static void clear_psp_list(void)
 /*--------------------------------------------------------
  リストに追加
  --------------------------------------------------------*/
-
 static u32 add_psp(char *l_mac, char *name, u32 length)
 {
   u32 i;
@@ -216,13 +213,12 @@ static u32 del_psp(char *l_mac)
 /*--------------------------------------------------------
  リストを表示
  --------------------------------------------------------*/
-
 static void display_psp_list(u32 top, u32 rows)
   {
     if (max == 0)
       {
         // 文字表示
-//        msg_printf(TEXT(WAITING_FOR_ANOTHER_PSP_TO_JOIN));
+        msg_printf("WAITING_FOR_ANOTHER_PSP_TO_JOIN\n");
       }
     else
       {
@@ -230,7 +226,7 @@ static void display_psp_list(u32 top, u32 rows)
         char temp[20];
 
         // 画面表示
-//        video_copy_rect(show_frame, draw_frame, &full_rect, &full_rect);
+        msg_screen_draw();
 
         scrollbar(470, 26, 479, 270, max, rows, pos);
 
@@ -242,17 +238,21 @@ static void display_psp_list(u32 top, u32 rows)
             sceNetEtherNtostr((u8 *)psplist[top + i].mac, temp);
 
             if ((top + i) == pos)
-              {
-                // 文字表示
+            {
+              // 文字表示
 //                uifont_print(24, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_SELECT), temp);
 //                uifont_print(190, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_SELECT), psplist[top + i].name);
-              }
+              PRINT_STRING(temp, COLOR16(31,0,0), 24, 40 + (i + 2) *17);
+              PRINT_STRING(psplist[top + i].name, COLOR16(31,0,0), 190, 40 + (i + 2) *17);
+            }
             else
-              {
-                // 文字表示
+            {
+              // 文字表示
 //                uifont_print(24, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_NORMAL), temp);
 //                uifont_print(190, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_NORMAL), psplist[top + i].name);
-              }
+              PRINT_STRING(temp, COLOR16(31,0,0), 24, 40 + (i + 2) *17);
+              PRINT_STRING(psplist[top + i].name, COLOR16(31,0,0), 190, 40 + (i + 2) *17);
+            }
           }
 
         // 画面切替
@@ -263,7 +263,6 @@ static void display_psp_list(u32 top, u32 rows)
 /*--------------------------------------------------------
  選択中のPSPの情報を取得
  --------------------------------------------------------*/
-
 static u32 GetPspEntry(char *mac, char *name)
   {
     if (max == 0)
@@ -278,17 +277,16 @@ static u32 GetPspEntry(char *mac, char *name)
 /*--------------------------------------------------------
  Matching callback
  --------------------------------------------------------*/
-
-static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *optData)
+static void matching_callback(int unk1, int event, char *l_mac, int optLen, char *optData)
   {
     switch (event)
       {
         case MATCHING_JOINED:
-          add_psp(mac2, optData, optLen);
+          add_psp(l_mac, optData, optLen);
           break;
 
         case MATCHING_DISCONNECT:
-          del_psp(mac2);
+          del_psp(l_mac);
           break;
 
         default:
@@ -296,7 +294,7 @@ static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *
           match_event = event;
           match_opt_len = optLen;
           strncpy(match_opt_data, optData, optLen);
-          memcpy(mac, mac2, sizeof(char) * 6);
+          memcpy(mac, l_mac, sizeof(char) * 6);
           match_changed = 1;
           break;
       }
@@ -309,7 +307,6 @@ static void matchingCallback(int unk1, int event, char *mac2, int optLen, char *
 /*--------------------------------------------------------
  モジュールのロード
  --------------------------------------------------------*/
-
 u32 load_adhoc_modules(void)
 {
   if (sceKernelDevkitVersion() >= 0x02000010)
@@ -330,7 +327,6 @@ u32 load_adhoc_modules(void)
 /*--------------------------------------------------------
  初期化
  --------------------------------------------------------*/
-
 u32 adhoc_init(const char *l_matching_data)
 {
   struct productStruct product;
@@ -433,14 +429,14 @@ u32 adhoc_init(const char *l_matching_data)
 /*--------------------------------------------------------
  切断
  --------------------------------------------------------*/
-
 u32 adhoc_term(void)
 {
   if (adhoc_initialized > 0)
   {
     char message[256];
 
-    adhoc_init_progress(5, "DISCONNECTING %s", server ? "Client" : "Server");
+    sprintf(message,"DISCONNECTING %s", server ? "Client" : "Server");
+    adhoc_init_progress(5, message);
 
     sceNetAdhocctlDisconnect();
     update_progress();
@@ -468,7 +464,6 @@ u32 adhoc_term(void)
 /*--------------------------------------------------------
  ロビーから切断
  --------------------------------------------------------*/
-
 static void adhoc_disconnect(void)
 {
   char message[256];
@@ -508,11 +503,10 @@ static void adhoc_disconnect(void)
 /*--------------------------------------------------------
   ロビーから切断し、P2P開始
 --------------------------------------------------------*/
-
 static int adhoc_start_p2p(void)
 {
   int error = 0, state = 1;
-  unsigned char mac[6];
+  unsigned char l_mac[6];
   char message[256];
 
   sprintf(message, "DISCONNECTING_FROM_%s", "LOBBY");
@@ -559,11 +553,11 @@ static int adhoc_start_p2p(void)
     {
       update_progress();
 
-      sceWlanGetEtherAddr(mac);
-      memcpy(mymac, mac, 6);
+      sceWlanGetEtherAddr(l_mac);
+      memcpy(mymac, l_mac, 6);
       update_progress();
 
-      if ((pdp_id = sceNetAdhocPdpCreate(mac, PDP_PORT, PDP_BUFFER_SIZE, 0)) > 0)
+      if ((pdp_id = sceNetAdhocPdpCreate(l_mac, PDP_PORT, PDP_BUFFER_SIZE, 0)) > 0)
       {
         update_progress();
         adhoc_initialized = 2;
@@ -603,7 +597,7 @@ static int adhoc_start_p2p(void)
 
   show_progress(message);
 
-  err_msg("");
+  //wait;
 
   return -1;
 }
@@ -611,27 +605,27 @@ static int adhoc_start_p2p(void)
 /*--------------------------------------------------------
   接続先の選択
 --------------------------------------------------------*/
-
-int adhocSelect(void)
+u32 adhoc_select(void)
 {
   int top = 0;
   int rows = 11;
   int currentState = PSP_LISTING;
   int prev_max = 0;
   int update = 1;
-  unsigned char mac[6];
+  unsigned char l_mac[6];
   char name[64];
   char temp[64];
   char title[32];
+  gui_action_type button;
 
-  sprintf(title, "AdHoc - %s", gamepak_filename);
-//  msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
+  sprintf(title, "AdHoc - %s", gamepak_title);
+  msg_screen_init(title);
 
   while (1)
   {
-    pad_update();
+    button = get_gui_input();
 
-//    msg_set_text_color(0xffff);
+    msg_set_text_color(COLOR16(0,0,0));
 
     switch (currentState)
     {
@@ -639,48 +633,46 @@ int adhocSelect(void)
       server = 0;
       if (update)
       {
-//        msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
-        PRINT_STRING_BG(title, 0xFFFF, 0x0000, 0, 50);
-//        msg_printf(TEXT(SELECT_A_SERVER_TO_CONNECT_TO));
-        PRINT_STRING_BG("SELECT_A_SERVER_TO_CONNECT_TO", 0xFFFF, 0x0000, 0, 60);
-//        msg_printf("\n");
+        msg_screen_init(title);
+        msg_printf("SELECT_A_SERVER_TO_CONNECT_TO");
+        msg_printf("\n");
         display_psp_list(top, rows);
         update = 0;
       }
-      if (pad_pressed(PSP_CTRL_UP))
+      if (button == CURSOR_UP)
       {
         if (pos > 0) pos--;
         update = 1;
       }
-      else if (pad_pressed(PSP_CTRL_DOWN))
+      else if (button == CURSOR_DOWN)
       {
         if (pos < max - 1) pos++;
         update = 1;
       }
-      else if (pad_pressed(PSP_CTRL_CIRCLE))
+      else if (button == CURSOR_SELECT)
       {
-        if (GetPspEntry(mac, name) > 0)
+        if (GetPspEntry(l_mac, name) > 0)
         {
           if (strcmp(name, matching_data) == 0)
           {
             currentState = PSP_SELECTING;
-            sceNetAdhocMatchingSelectTarget(matching_id, mac, 0, NULL);
+            sceNetAdhocMatchingSelectTarget(matching_id, l_mac, 0, NULL);
             update = 1;
           }
         }
       }
-      else if (pad_pressed(PSP_CTRL_TRIANGLE))
+      else if (button == CURSOR_EXIT)
       {
-        msg_set_text_color(0xffffffff);
-        adhocDisconnect();
-        pad_wait_clear();
+        msg_set_text_color(COLOR16(0,0,0));
+        adhoc_disconnect();
+//        pad_wait_clear();
         return -1;
       }
       if (match_changed)
       {
         if (match_event == MATCHING_SELECTED)
         {
-          memcpy(mac, mac, 6);
+          memcpy(l_mac, mac, 6);
           strcpy(name, match_opt_data);
           currentState = PSP_SELECTED;
         }
@@ -691,15 +683,15 @@ int adhocSelect(void)
     case PSP_SELECTING:
       if (update)
       {
-        msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
-        sceNetEtherNtostr(mac, temp);
-        msg_printf(TEXT(WAITING_FOR_x_TO_ACCEPT_THE_CONNECTION), temp);
-        msg_printf(TEXT(TO_CANCEL_PRESS_CROSS));
+        msg_screen_init(title);
+        sceNetEtherNtostr(l_mac, temp);
+        msg_printf("WAITING_FOR_%s_TO_ACCEPT_THE_CONNECTION", temp);
+        msg_printf("TO_CANCEL_PRESS_CROSS");
         update = 0;
       }
-      if (pad_pressed(PSP_CTRL_CROSS))
+      if (button == CURSOR_EXIT)
       {
-        sceNetAdhocMatchingCancelTarget(matching_id, mac);
+        sceNetAdhocMatchingCancelTarget(matching_id, l_mac);
         currentState = PSP_LISTING;
         update = 1;
       }
@@ -708,7 +700,7 @@ int adhocSelect(void)
         switch (match_event)
         {
         case MATCHING_SELECTED:
-          sceNetAdhocMatchingCancelTarget(matching_id, mac);
+          sceNetAdhocMatchingCancelTarget(matching_id, l_mac);
           break;
 
         case MATCHING_ESTABLISHED:
@@ -727,21 +719,21 @@ int adhocSelect(void)
       server = 1;
       if (update)
       {
-        msg_screen_init(WP_LOGO, ICON_SYSTEM, title);
-        sceNetEtherNtostr(mac, temp);
-        msg_printf(TEXT(x_HAS_REQUESTED_A_CONNECTION), temp);
-        msg_printf(TEXT(TO_ACCEPT_THE_CONNECTION_PRESS_CIRCLE_TO_CANCEL_PRESS_CIRCLE));
+        msg_screen_init(title);
+        sceNetEtherNtostr(l_mac, temp);
+        msg_printf("%s_HAS_REQUESTED_A_CONNECTION\n", temp);
+        msg_printf("TO_ACCEPT_THE_CONNECTION_PRESS_CIRCLE\nTO_CANCEL_PRESS_CIRCLE\n");
         update = 0;
       }
-      if (pad_pressed(PSP_CTRL_CROSS))
+      if (button == CURSOR_EXIT)
       {
-        sceNetAdhocMatchingCancelTarget(matching_id, mac);
+        sceNetAdhocMatchingCancelTarget(matching_id, l_mac);
         currentState = PSP_LISTING;
         update = 1;
       }
-      else if (pad_pressed(PSP_CTRL_CIRCLE))
+      else if (button == CURSOR_SELECT)
       {
-        sceNetAdhocMatchingSelectTarget(matching_id, mac, 0, NULL);
+        sceNetAdhocMatchingSelectTarget(matching_id, l_mac, 0, NULL);
         currentState = PSP_WAIT_EST;
         update = 1;
       }
@@ -785,11 +777,11 @@ int adhocSelect(void)
     sceDisplayWaitVblankStart();
   }
 
-  msg_set_text_color(0xffffffff);
+  msg_set_text_color(COLOR16(0,0,0));
 
-  if (server) sceWlanGetEtherAddr(mac);
+  if (server) sceWlanGetEtherAddr(l_mac);
 
-  sceNetEtherNtostr(mac, temp);
+  sceNetEtherNtostr(l_mac, temp);
 
   ssid[0] = temp[ 9];
   ssid[1] = temp[10];
@@ -799,15 +791,14 @@ int adhocSelect(void)
   ssid[5] = temp[16];
   ssid[6] = '\0';
 
-  return adhocStartP2P();
+  return adhoc_start_p2p();
 }
 
 
 /*--------------------------------------------------------
   データを送信
 --------------------------------------------------------*/
-
-int adhocSend(void *buffer, int length, int type)
+u32 adhocSend(void *buffer, u32 length, u32 type)
 {
   int error;
 
@@ -822,12 +813,10 @@ int adhocSend(void *buffer, int length, int type)
   return length;
 }
 
-
 /*--------------------------------------------------------
   データを受信
 --------------------------------------------------------*/
-
-int adhocRecv(void *buffer, int timeout, int type)
+u32 adhocRecv(void *buffer, u32 timeout, u32 type)
 {
   int error;
   int length = ADHOC_BUFFER_SIZE;
@@ -852,7 +841,6 @@ int adhocRecv(void *buffer, int timeout, int type)
 /*--------------------------------------------------------
   データを送信し、ackを受信するまで待つ
 --------------------------------------------------------*/
-
 int adhocSendRecvAck(void *buffer, int length, int timeout, int type)
 {
   int temp_length = length;
@@ -886,7 +874,6 @@ int adhocSendRecvAck(void *buffer, int length, int timeout, int type)
 /*--------------------------------------------------------
   データの受信を待ち、ackを送信する
 --------------------------------------------------------*/
-
 int adhocRecvSendAck(void *buffer, int length, int timeout, int type)
 {
   int temp_length = length;
@@ -918,8 +905,7 @@ int adhocRecvSendAck(void *buffer, int length, int timeout, int type)
 /*--------------------------------------------------------
   相手との同期を待つ
 --------------------------------------------------------*/
-
-int adhocSync(void)
+int adhoc_sync(void)
 {
   int size = 0;
   int retry = 60;
@@ -972,12 +958,10 @@ check_packet:
   return 0;
 }
 
-
 /*--------------------------------------------------------
   指定サイズのデータを受信するか、バッファが空に
   なるまで待つ
 --------------------------------------------------------*/
-
 void adhoc_wait(int data_size)
 {
   pdpStatStruct pdpStat;
