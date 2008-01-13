@@ -2,6 +2,17 @@
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
+-UnOfficial gpSP kai 3.2 test 9.0 svn rev.
+	メッセージ画面 タイトルのバッファオーバーを修正
+	フォントメモリ解放時のメモリ破壊を修正
+	MULTIモードの通信に対応(現状では2台のみ)
+
+-UnOfficial gpSP kai 3.2 test 8.8 svn rev.
+	旧型機でZIPファイル読込み時に、メモリが足りなくなりハングアップするのを修正
+	ZIPファイル読込みバッファをVRAMに変更
+	ZIPファイル読込みバッファを128KB -> 256KBに変更
+	アセンブラのソースを見たら、switchでも最適化されていたので、IOレジスタへのbyte/word書込をswitch文に戻した(gcc賢いな)
+
 -UnOfficial gpSP kai 3.2 test 8.7 svn rev.
 	メニュー時の"o"と”x”のボタンの動作を、PSPの設定に合わせるようにした
 	チート名の長さ制限を緩和(UTF-8Nにて40文字分確保)

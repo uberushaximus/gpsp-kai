@@ -49,7 +49,7 @@
 #define ADHOC_TIMEOUT   30*1000000
 #define ADHOC_BLOCKSIZE 0x400
 
-#define PRODUCT "gpSP"
+#define PRODUCT "UOgpSPkai"
 
 /*--------------------------------------------------------
   関数パラメータの定義
@@ -74,6 +74,9 @@
   strlen(matching_data) + 1,    \
   (char *)matching_data
 
+u32 multi_id;
+u32 adhoc_link;
+
 /***************************************************************************
  ローカル変数
  ***************************************************************************/
@@ -82,8 +85,8 @@ static int mode;
 static int server;
 static int pdp_id;
 
-static unsigned char mac[16];
-static unsigned char mymac[6];
+static char mac[6];
+static char mymac[6];
 static unsigned char ssid[8];
 static u32 unk1;
 static u32 match_event;
@@ -106,9 +109,14 @@ static int adhoc_initialized = 0;
 static unsigned char adhoc_buffer[ADHOC_BUFFER_SIZE];
 static unsigned char adhoc_work[ADHOC_BUFFER_SIZE];
 
+static SceUID network_thread;
+volatile static u32 net_thread_exit_flag; // netスレッドの終了フラグ。
+
 /***************************************************************************
  ローカル関数
  ***************************************************************************/
+static int net_thread(SceSize args, void *argp);
+void adhoc_multi(u32 id, u32 command);
 
 /*--------------------------------------------------------
  プログレスバー初期化
@@ -147,7 +155,7 @@ static void clear_psp_list(void)
 /*--------------------------------------------------------
  リストに追加
  --------------------------------------------------------*/
-static u32 add_psp(char *l_mac, char *name, u32 length)
+static u32 add_psp(unsigned char *l_mac, char *name, u32 length)
 {
   u32 i;
 
@@ -182,7 +190,7 @@ static u32 add_psp(char *l_mac, char *name, u32 length)
 /*--------------------------------------------------------
  リストから削除
  --------------------------------------------------------*/
-static u32 del_psp(char *l_mac)
+static u32 del_psp(unsigned char *l_mac)
 {
   u32 i, j;
 
@@ -240,16 +248,12 @@ static void display_psp_list(u32 top, u32 rows)
             if ((top + i) == pos)
             {
               // 文字表示
-//                uifont_print(24, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_SELECT), temp);
-//                uifont_print(190, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_SELECT), psplist[top + i].name);
               PRINT_STRING(temp, COLOR16(31,0,0), 24, 40 + (i + 2) *17);
               PRINT_STRING(psplist[top + i].name, COLOR16(31,0,0), 190, 40 + (i + 2) *17);
             }
             else
             {
               // 文字表示
-//                uifont_print(24, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_NORMAL), temp);
-//                uifont_print(190, 40 + (i + 2) * 17, UI_COLOR(UI_PAL_NORMAL), psplist[top + i].name);
               PRINT_STRING(temp, COLOR16(31,0,0), 24, 40 + (i + 2) *17);
               PRINT_STRING(psplist[top + i].name, COLOR16(31,0,0), 190, 40 + (i + 2) *17);
             }
@@ -263,12 +267,12 @@ static void display_psp_list(u32 top, u32 rows)
 /*--------------------------------------------------------
  選択中のPSPの情報を取得
  --------------------------------------------------------*/
-static u32 GetPspEntry(char *mac, char *name)
+static u32 GetPspEntry(unsigned char *l_mac, char *name)
   {
     if (max == 0)
       return -1;
 
-    memcpy(mac, psplist[pos].mac, 6);
+    memcpy(l_mac, psplist[pos].mac, 6);
     strcpy(name, psplist[pos].name);
 
     return 1;
@@ -277,7 +281,7 @@ static u32 GetPspEntry(char *mac, char *name)
 /*--------------------------------------------------------
  Matching callback
  --------------------------------------------------------*/
-static void matching_callback(int unk1, int event, char *l_mac, int optLen, char *optData)
+static void matching_callback(int unk1, int event, unsigned char *l_mac, int optLen, char *optData)
   {
     switch (event)
       {
@@ -309,6 +313,9 @@ static void matching_callback(int unk1, int event, char *l_mac, int optLen, char
  --------------------------------------------------------*/
 u32 load_adhoc_modules(void)
 {
+  adhoc_link = 0;
+  multi_id = 0;
+
   if (sceKernelDevkitVersion() >= 0x02000010)
   {
     int error;
@@ -331,9 +338,21 @@ u32 adhoc_init(const char *l_matching_data)
 {
   struct productStruct product;
   int error = 0, state = 0;
-  unsigned char mac[6];
+  unsigned char l_mac[6];
   const char *unknown = "";
   char message[256];
+
+  adhoc_link = 0;
+
+  // 通信 スレッドの作成
+  network_thread = sceKernelCreateThread("Net thread", net_thread, 0x13, 0x2000, 0, NULL);
+  if (network_thread < 0)
+  {
+    quit();
+  }
+
+  //スレッドの開始
+  sceKernelStartThread(network_thread, 0, 0);
 
   mode = MODE_LOBBY;
   server = 0;
@@ -346,7 +365,7 @@ u32 adhoc_init(const char *l_matching_data)
   memset(mac, 0, sizeof(mac));
   memset(mymac, 0, sizeof(mymac));
 
-  sprintf((char *)product.product, PRODUCT "00%d%d%d", VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
+  sprintf((char *)product.product, PRODUCT);
   product.unknown = 0;
 
   clear_psp_list();
@@ -379,9 +398,9 @@ u32 adhoc_init(const char *l_matching_data)
           if (!error)
           {
             update_progress();
-            sceWlanGetEtherAddr(mac);
+            sceWlanGetEtherAddr(l_mac);
             update_progress();
-            if ((pdp_id = sceNetAdhocPdpCreate(mac, PDP_PORT, PDP_BUFFER_SIZE, 0)) > 0)
+            if ((pdp_id = sceNetAdhocPdpCreate(l_mac, PDP_PORT, PDP_BUFFER_SIZE, 0)) > 0)
             {
               update_progress();
               if ((error = sceNetAdhocMatchingInit(0x20000)) == 0)
@@ -458,6 +477,9 @@ u32 adhoc_term(void)
     adhoc_initialized = 0;
   }
 
+  adhoc_link = 0;
+  multi_id = 0;
+
   return 0;
 }
 
@@ -497,7 +519,6 @@ static void adhoc_disconnect(void)
 
   show_progress("DISCONNECTED");
 
-  adhoc_initialized = 0;
 }
 
 /*--------------------------------------------------------
@@ -564,7 +585,10 @@ static int adhoc_start_p2p(void)
 
         show_progress("WAITING_FOR_SYNCHRONIZATION");
         if ((error = adhoc_sync()) == 0)
+        {
+          adhoc_link = 1;
           return server;
+        }
       }
       else
       {
@@ -588,6 +612,8 @@ static int adhoc_start_p2p(void)
   sceNetTerm();
 
   adhoc_initialized = 0;
+  adhoc_link = 0;
+  multi_id = 0;
 
   switch (error)
   {
@@ -612,10 +638,10 @@ u32 adhoc_select(void)
   int currentState = PSP_LISTING;
   int prev_max = 0;
   int update = 1;
-  unsigned char l_mac[6];
+  char l_mac[6];
   char name[64];
   char temp[64];
-  char title[32];
+  char title[256];
   gui_action_type button;
 
   sprintf(title, "AdHoc - %s", gamepak_title);
@@ -631,6 +657,7 @@ u32 adhoc_select(void)
     {
     case PSP_LISTING:
       server = 0;
+      multi_id=1;
       if (update)
       {
         msg_screen_init(title);
@@ -685,7 +712,7 @@ u32 adhoc_select(void)
       {
         msg_screen_init(title);
         sceNetEtherNtostr(l_mac, temp);
-        msg_printf("WAITING_FOR_%s_TO_ACCEPT_THE_CONNECTION", temp);
+        msg_printf("WAITING_FOR_%s_TO_ACCEPT_THE_CONNECTION\n", temp);
         msg_printf("TO_CANCEL_PRESS_CROSS");
         update = 0;
       }
@@ -717,12 +744,13 @@ u32 adhoc_select(void)
 
     case PSP_SELECTED:
       server = 1;
+      multi_id = 0;
       if (update)
       {
         msg_screen_init(title);
         sceNetEtherNtostr(l_mac, temp);
         msg_printf("%s_HAS_REQUESTED_A_CONNECTION\n", temp);
-        msg_printf("TO_ACCEPT_THE_CONNECTION_PRESS_CIRCLE\nTO_CANCEL_PRESS_CIRCLE\n");
+        msg_printf("TO_ACCEPT_THE_CONNECTION_PRESS_CIRCLE\nTO_CANCEL_PRESS_CROSS\n");
         update = 0;
       }
       if (button == CURSOR_EXIT)
@@ -821,11 +849,11 @@ u32 adhocRecv(void *buffer, u32 timeout, u32 type)
   int error;
   int length = ADHOC_BUFFER_SIZE;
   unsigned short port = 0;
-  unsigned char mac[6];
+  unsigned char l_mac[6];
 
   memset(adhoc_buffer, 0, ADHOC_BUFFER_SIZE);
 
-  if ((error = sceNetAdhocPdpRecv(pdp_id, mac, &port, adhoc_buffer, &length, timeout, 0)) < 0)
+  if ((error = sceNetAdhocPdpRecv(pdp_id, l_mac, &port, adhoc_buffer, &length, timeout, 0)) < 0)
     return error;
 
   if (adhoc_buffer[0] & type)
@@ -986,3 +1014,77 @@ void adhoc_wait(int data_size)
   }
 }
 
+#define MAX_MULTI_ID 2
+
+/*--------------------------------------------------------
+ 通信 スレッド
+ --------------------------------------------------------*/
+// adhoc_transferのon/offを行う
+// 通信データはmulti_id + コマンド + word data の4バイト
+// send_multi = 0x00 NOP 非通信時はこのモード
+//  親機は子機にNOPを送信、最終子機からACKを受け取った後、再度NOPモードに移行する
+//  子機はNOPを受取り後、ACKを返し、再度NOPモードに移行する
+//
+// send_multi = 0x01 START
+//  
+//
+// send_multi = 0x02 END
+// send_multi = 0x1? SEND/RECV
+
+static int net_thread(SceSize args, void *argp)
+{
+
+  net_thread_exit_flag = 0;
+
+  // メインループ
+  while(net_thread_exit_flag == 0)
+  {
+    if(adhoc_link == 1) // 通信が確立されている
+    {
+      adhoc_multi(multi_id, send_multi);
+    }
+    sceKernelDelayThread(1000);
+  }
+
+  sceKernelExitThread(0);
+  return 0;
+}
+
+u8 test = 0;
+
+void adhoc_multi(u32 id, u32 command)
+{
+  u32 i,j;
+  s32 length;
+  u16 value;
+  u8 work[ADHOC_BUFFER_SIZE];
+
+  work[0] = (u8)test;
+  test++;
+
+  for(i=0; i<MAX_MULTI_ID; i++)
+  {
+    if(i != id)
+    {
+      // データの受信処理
+      length = 0;
+      j = 0;
+        length = adhocRecvSendAck(work, 4, 1000000, ADHOC_DATATYPE_ANY);
+      DBGOUT("R N:%d l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", j, length, work[0], work[1], work[2], work[3]);
+    }
+    else
+    {
+      // データの送信処理
+      length = 0;
+      j = 0;
+        length = adhocSendRecvAck(work, 4, 1000000, ADHOC_DATATYPE_ANY);
+      DBGOUT("S N:%d l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", j, length, work[0], work[1], work[2], work[3]);
+    }
+  }
+}
+
+void adhoc_exit()
+{
+  adhoc_term();
+  net_thread_exit_flag = 1;
+}

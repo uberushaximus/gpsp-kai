@@ -1,5 +1,6 @@
 gpSPのconfig fileの技術資料
-すべてuo gpSP kai 3.2 test 06以降の仕様です
+すべてuo gpSP kai 3.2 test 06での仕様です
+現在は一部変更あります
 
 dir.cfg
 	各種のフォルダを指定する

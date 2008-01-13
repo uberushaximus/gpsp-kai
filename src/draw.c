@@ -346,7 +346,7 @@ static int cy;
 static int linefeed;
 static int text_color = COLOR16(0, 0, 0);
 static char msg_lines[MAX_LINES][128];
-static char msg_title[12];
+static char msg_title[256];
 static int msg_color[MAX_LINES];
 
 #define COLOR_MSG_TITLE COLOR16(0, 0, 0)

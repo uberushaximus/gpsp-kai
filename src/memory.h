@@ -200,6 +200,11 @@ extern u8 waitstate_cycles_non_seq[2][16];
 extern u8 cpu_waitstate_cycles_seq[2][16];
 #endif
 
+// SIO
+extern u32 send_multi;
+extern u32 adhoc_transfer;
+extern u16 multi_data[4];
+
 // 関数宣言
 
 extern u8 read_memory8(u32 address);

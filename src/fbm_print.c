@@ -146,9 +146,6 @@ void fbm_freeall()
 	fbm_whence[0] = 0;
 	fbm_whence[1] = 0;
 
-	if (fbm_fd[0] >= 0) fbm_fclose(&fbm_fd[0]);
-	if (fbm_fd[1] >= 0) fbm_fclose(&fbm_fd[1]);
-
 	fbmMaxCol = fbmMaxRow = 0;
 }
 /*------------------------------------------------------

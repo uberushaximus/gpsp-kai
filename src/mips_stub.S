@@ -2125,10 +2125,11 @@ execute_store_vram_u8:
   store_u8_double vram
 
 execute_store_oam_u8:
-  translate_region 7, patch_store_u8, oam_ram, 0x3FE
-  lui $1, %hi(oam_update)         # write non-zero to oam_update
-  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
-  store_u8_double oam_ram
+   jr $ra
+#  translate_region 7, patch_store_u8, oam_ram, 0x3FE
+#  lui $1, %hi(oam_update)         # write non-zero to oam_update
+#  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+#  store_u8_double oam_ram
 
 execute_store_ignore8_u8:
   ignore_region 8, patch_store_u8
@@ -2604,17 +2605,17 @@ ext_load_u32:
   addiu $sp, $sp, 4               # fix stack (delay slot)
 
 #execute_aligned_load32:
-  srl $2, $4, 28                  # check if the address is out of range
-  bne $2, $0, ext_aligned_load32  # if it is, perform an extended load
-  srl $1, $4, 15                  # $1 = page number of address (delay)
-  sll $1, $1, 2                   # adjust to word index
-  addu $1, $1, $16                # $1 = memory_map_read[address >> 15]
-  lw $1, -32768($1)
-  beq $1, $0, ext_aligned_load32  # if it's NULL perform an extended read
-  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-  addu $1, $1, $2                 # add the memory map offset
-  jr $ra                          # return
-  lw $2, ($1)                     # read the value (delay)
+#  srl $2, $4, 28                  # check if the address is out of range
+#  bne $2, $0, ext_aligned_load32  # if it is, perform an extended load
+#  srl $1, $4, 15                  # $1 = page number of address (delay)
+#  sll $1, $1, 2                   # adjust to word index
+#  addu $1, $1, $16                # $1 = memory_map_read[address >> 15]
+#  lw $1, -32768($1)
+#  beq $1, $0, ext_aligned_load32  # if it's NULL perform an extended read
+#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+#  addu $1, $1, $2                 # add the memory map offset
+#  jr $ra                          # return
+#  lw $2, ($1)                     # read the value (delay)
 
 ext_aligned_load32:
   addiu $sp, $sp, -8              # make room on the stack for $ra
@@ -2781,20 +2782,20 @@ ext_store_u8:
 # $6: current PC
 
 #execute_store_u8:
-  srl $1, $4, 28                  # check if the address is out of range
-  bne $1, $0, ext_store_u8        # if it is, perform an extended write
-  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-  sll $2, $2, 2                   # adjust to word index
-  addu $2, $2, $16
-  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-  beq $1, $0, ext_store_u8        # if it's NULL perform an extended write
-  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-  addu $1, $1, $2                 # add the memory map offset
-  lb $2, -32768($1)               # load the SMC status
-  bne $2, $0, smc_write           # is there code there?
-  sb $5, ($1)                     # store the value (delay slot)
-  jr $ra                          # return
-  nop
+#  srl $1, $4, 28                  # check if the address is out of range
+#  bne $1, $0, ext_store_u8        # if it is, perform an extended write
+#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+#  sll $2, $2, 2                   # adjust to word index
+#  addu $2, $2, $16
+#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+#  beq $1, $0, ext_store_u8        # if it's NULL perform an extended write
+#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+#  addu $1, $1, $2                 # add the memory map offset
+#  lb $2, -32768($1)               # load the SMC status
+#  bne $2, $0, smc_write           # is there code there?
+#  sb $5, ($1)                     # store the value (delay slot)
+#  jr $ra                          # return
+#  nop
 
 # 16bit ext memory routines
 
@@ -2886,20 +2887,20 @@ ext_store_u16:
 
 
 #execute_store_u16:
-  srl $1, $4, 28                  # check if the address is out of range
-  bne $1, $0, ext_store_u16       # if it is, perform an extended write
-  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-  sll $2, $2, 2                   # adjust to word index
-  addu $2, $2, $16
-  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-  beq $1, $0, ext_store_u16       # if it's NULL perform an extended write
-  andi $2, $4, 0x7FFE             # $2 = low 15bits of address (delay slot)
-  addu $1, $1, $2                 # add the memory map offset
-  lh $2, -32768($1)               # load the SMC status
-  bne $2, $0, smc_write           # is there code there?
-  sh $5, ($1)                     # store the value (delay slot)
-  jr $ra                          # return
-  nop
+#  srl $1, $4, 28                  # check if the address is out of range
+#  bne $1, $0, ext_store_u16       # if it is, perform an extended write
+#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+#  sll $2, $2, 2                   # adjust to word index
+#  addu $2, $2, $16
+#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+#  beq $1, $0, ext_store_u16       # if it's NULL perform an extended write
+#  andi $2, $4, 0x7FFE             # $2 = low 15bits of address (delay slot)
+#  addu $1, $1, $2                 # add the memory map offset
+#  lh $2, -32768($1)               # load the SMC status
+#  bne $2, $0, smc_write           # is there code there?
+#  sh $5, ($1)                     # store the value (delay slot)
+#  jr $ra                          # return
+#  nop
 
 
 
@@ -2977,20 +2978,20 @@ ext_store_u32:
   nop
 
 #execute_store_u32:
-  srl $1, $4, 28                  # check if the address is out of range
-  bne $1, $0, ext_store_u32       # if it is, perform an extended write
-  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-  sll $2, $2, 2                   # adjust to word index
-  addu $2, $2, $16
-  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-  beq $1, $0, ext_store_u32       # if it's NULL perform an extended write
-  andi $2, $4, 0x7FFC             # $2 = low 15bits of address (delay slot)
-  addu $1, $1, $2                 # add the memory map offset
-  lw $2, -32768($1)               # load the SMC status
-  bne $2, $0, smc_write           # is there code there?
-  sw $5, ($1)                     # store the value (delay slot)
-  jr $ra                          # return
-  nop
+#  srl $1, $4, 28                  # check if the address is out of range
+#  bne $1, $0, ext_store_u32       # if it is, perform an extended write
+#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+#  sll $2, $2, 2                   # adjust to word index
+#  addu $2, $2, $16
+#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+#  beq $1, $0, ext_store_u32       # if it's NULL perform an extended write
+#  andi $2, $4, 0x7FFC             # $2 = low 15bits of address (delay slot)
+#  addu $1, $1, $2                 # add the memory map offset
+#  lw $2, -32768($1)               # load the SMC status
+#  bne $2, $0, smc_write           # is there code there?
+#  sw $5, ($1)                     # store the value (delay slot)
+#  jr $ra                          # return
+#  nop
 
 
 # 32bit ext aligned, non a2 destroying routines
@@ -3045,17 +3046,17 @@ ext_aligned_store32:
   nop
 
 #execute_aligned_store32:
-  srl $2, $4, 28                  # check if the address is out of range
-  bne $2, $0, ext_aligned_store32 # if it is, perform an extended load
-  srl $1, $4, 15                  # $1 = page number of address (delay)
-  sll $1, $1, 2                   # adjust to word index
-  addu $1, $1, $16                # $1 = memory_map_write[address >> 15]
-  lw $1, 256($1)
-  beq $1, $0, ext_aligned_store32 # if it's NULL perform an extended write
-  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-  addu $1, $1, $2                 # add the memory map offset
-  jr $ra                          # return
-  sw $5, ($1)                     # write the value
+#  srl $2, $4, 28                  # check if the address is out of range
+#  bne $2, $0, ext_aligned_store32 # if it is, perform an extended load
+#  srl $1, $4, 15                  # $1 = page number of address (delay)
+#  sll $1, $1, 2                   # adjust to word index
+#  addu $1, $1, $16                # $1 = memory_map_write[address >> 15]
+#  lw $1, 256($1)
+#  beq $1, $0, ext_aligned_store32 # if it's NULL perform an extended write
+#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+#  addu $1, $1, $2                 # add the memory map offset
+#  jr $ra                          # return
+#  sw $5, ($1)                     # write the value
 
 smc_write:
   save_registers
@@ -3350,8 +3351,6 @@ iac_loop:
 memory_map_read:
   .space 0x8000
 
-
-# TODO スクラッチパッドに置くと速くなる？
 reg:
   .space 0x100
 

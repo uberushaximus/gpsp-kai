@@ -28,7 +28,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(256);
+PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 
 /******************************************************************************
  * グローバル変数の定義
@@ -57,13 +57,13 @@ u32 arm_frame = 0;
 u32 thumb_frame = 0;
 u32 last_frame = 0;
 
-u32 cycle_pc_relative_access = 0;
-u32 cycle_sp_relative_access = 0;
-u32 cycle_block_memory_access = 0;
-u32 cycle_block_memory_sp_access = 0;
-u32 cycle_block_memory_words = 0;
-u32 cycle_dma16_words = 0;
-u32 cycle_dma32_words = 0;
+//u32 cycle_pc_relative_access = 0;
+//u32 cycle_sp_relative_access = 0;
+//u32 cycle_block_memory_access = 0;
+//u32 cycle_block_memory_sp_access = 0;
+//u32 cycle_block_memory_words = 0;
+//u32 cycle_dma16_words = 0;
+//u32 cycle_dma32_words = 0;
 
 u32 synchronize_flag = 1;
 
@@ -287,12 +287,16 @@ void quit()
 
   update_backup_force();
 
+#ifdef ADHOC_MODE
+  adhoc_exit();
+#endif
+
   sound_exit();
   fbm_freeall();
 
   fclose(g_dbg_file);
 
-  set_cpu_clock(222);
+  set_cpu_clock(10);
 
   sceKernelExitGame();
 }
@@ -603,13 +607,10 @@ u32 update_gba()
           if (check_power())
             continue;
 
-//          if (quit_flag == 1)
-//            quit();
-
           update_gbc_sound(cpu_ticks);
 
           //TODO 調整必要
-          if((gpsp_config.screen_interlace == PROGRESSIVE)||(video_out_mode == 0))
+          if((gpsp_config.screen_interlace == PROGRESSIVE) || (video_out_mode == 0))
             synchronize();
           else
           {
@@ -618,7 +619,8 @@ u32 update_gba()
             sync_flag ^= 1;
           }
 
-          update_screen();
+          if(!skip_next_frame_flag)
+            flip_screen();
 
           if(game_config.update_backup_flag)
             update_backup();
@@ -695,6 +697,16 @@ void synchronize()
     sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
 //    dump_translation_cache();
+    sprintf(print_buffer, "0x128:%04X", ADDRESS16(io_registers, 0x128));
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
+    sprintf(print_buffer, "0x120:%04X", ADDRESS16(io_registers, 0x120));
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 20);
+    sprintf(print_buffer, "0x122:%04X", ADDRESS16(io_registers, 0x122));
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 30);
+    sprintf(print_buffer, "0x124:%04X", ADDRESS16(io_registers, 0x124));
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 40);
+    sprintf(print_buffer, "0x126:%04X", ADDRESS16(io_registers, 0x126));
+    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 50);
   }
 
   // フレームスキップ フラグの初期化

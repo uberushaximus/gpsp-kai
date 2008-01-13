@@ -63,4 +63,10 @@ u32 adhocRecvBlockingTimeout(void *buffer, u32 length, u32 timeout);
 int adhocSendRecvAck(void *buffer, int length, int timeout, int type);
 int adhocRecvSendAck(void *buffer, int length, int timeout, int type);
 
+void adhoc_exit();
+
+extern u32 multi_id;
+extern u32 adhoc_link;
+extern u32 adhoc_transfer;
+
 #endif

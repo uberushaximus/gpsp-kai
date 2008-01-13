@@ -6,11 +6,11 @@
 
 VERSION_MAJOR = 3
 VERSION_MINOR = 2
-VERSION_BUILD = 8.7
+VERSION_BUILD = 8.9
 
 # コンパイル条件の設定
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定
 TEST_MODE = 1
 
 # WLANのON/OFF
-#ADHOC_MODE = 1
+ADHOC_MODE = 1

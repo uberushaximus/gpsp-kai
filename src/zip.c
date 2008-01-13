@@ -22,7 +22,7 @@
 
 #include "common.h"
 
-#define ZIP_BUFFER_SIZE (128 * 1024)
+#define ZIP_BUFFER_SIZE (256 * 1024)
 
 struct SZIPFileDataDescriptor
 {
@@ -53,6 +53,7 @@ s32 load_file_zip(char *filename)
   u8 *cbuffer;
   char *ext;
   FILE_ID fd;
+  u32 zip_buffer_size = ZIP_BUFFER_SIZE;
 
   chdir(rom_path);
   FILE_OPEN(fd, filename, READ);
@@ -107,17 +108,17 @@ s32 load_file_zip(char *filename)
         {
           z_stream stream;
           s32 err;
-          cbuffer = malloc(ZIP_BUFFER_SIZE);
-          if(cbuffer == NULL) goto outcode;
+
+          cbuffer = 0x441A5C00; // 汎用フレームバッファを使用 TODO
 
           stream.next_in = (Bytef*)cbuffer;
-          stream.avail_in = (u32)ZIP_BUFFER_SIZE;
+          stream.avail_in = (u32)zip_buffer_size;
 
           stream.next_out = (Bytef*)buffer;
 
-		  // EDIT: Now uses proper conversion of data types for retval.
-		  retval = (u32)data.DataDescriptor.UncompressedSize;
-		  stream.avail_out = data.DataDescriptor.UncompressedSize;
+          // EDIT: Now uses proper conversion of data types for retval.
+          retval = (u32)data.DataDescriptor.UncompressedSize;
+          stream.avail_out = data.DataDescriptor.UncompressedSize;
 
           stream.zalloc = (alloc_func)0;
           stream.zfree = (free_func)0;
@@ -125,7 +126,7 @@ s32 load_file_zip(char *filename)
 
           err = inflateInit2(&stream, -MAX_WBITS);
 
-          FILE_READ(fd, cbuffer, ZIP_BUFFER_SIZE);
+          FILE_READ(fd, cbuffer, zip_buffer_size);
 
           if(err == Z_OK)
           {
@@ -134,15 +135,14 @@ s32 load_file_zip(char *filename)
               err = inflate(&stream, Z_SYNC_FLUSH);
               if(err == Z_BUF_ERROR)
               {
-                stream.avail_in = ZIP_BUFFER_SIZE;
+                stream.avail_in = zip_buffer_size;
                 stream.next_in = (Bytef*)cbuffer;
-                FILE_READ(fd, cbuffer, ZIP_BUFFER_SIZE);
+                FILE_READ(fd, cbuffer, zip_buffer_size);
               }
             }
             err = Z_OK;
             inflateEnd(&stream);
           }
-          free(cbuffer);
           goto outcode;
         }
       }

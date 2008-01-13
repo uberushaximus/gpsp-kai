@@ -65,7 +65,21 @@ s32 load_gamepak_raw(char *name);
 u32 evict_gamepak_page();
 void init_memory_gamepak();
 
+// SIO
+u32 get_sio_mode(u16 io1, u16 io2);
+u32 send_adhoc_multi();
 
+u32 adhoc_transfer;
+u16 multi_data[4];
+u32 send_multi;
+
+
+#define SIO_NORMAL8     0
+#define SIO_NORMAL32    1
+#define SIO_MULTIPLAYER 2
+#define SIO_UART        3
+#define SIO_JOYBUS      4
+#define SIO_GP          5
 
 // This table is configured for sequential access on system defaults
 #ifdef OLD_COUNT
@@ -762,863 +776,733 @@ u32 read_eeprom()
 
 CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
 {
-
-  static void *jmp_table_reg8[] =
+  switch(address)
   {
-    &&R_000, &&R____, &&R____, &&R____, &&R_004, &&R____, &&R_006, &&R_007, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_028, &&R_029, &&R_02A, &&R_02B, &&R_02C, &&R_02D, &&R_02E, &&R_02F,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_038, &&R_039, &&R_03A, &&R_03B, &&R_03C, &&R_03D, &&R_03E, &&R_03F,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R_060, &&R_061, &&R_062, &&R_063, &&R_064, &&R_065, &&R____, &&R____, &&R_068, &&R_069, &&R____, &&R____, &&R_06C, &&R_06D, &&R____, &&R____,
-    &&R_070, &&R_071, &&R_072, &&R_073, &&R_074, &&R_075, &&R____, &&R____, &&R_078, &&R_079, &&R____, &&R____, &&R_07C, &&R_07D, &&R____, &&R____,
-    &&R_080, &&R_081, &&R_082, &&R_083, &&R_084, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R_090, &&R_091, &&R_092, &&R_093, &&R_094, &&R_095, &&R_096, &&R_097, &&R_098, &&R_099, &&R_09A, &&R_09B, &&R_09C, &&R_09D, &&R_09E, &&R_09F,
-    &&R_0A0, &&R_0A1, &&R_0A2, &&R_0A3, &&R_0A4, &&R_0A5, &&R_0A6, &&R_0A7, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_0BB, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_0C7, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R_0D3, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_0DF,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R_100, &&R_101, &&R____, &&R_103, &&R_104, &&R_105, &&R____, &&R_107, &&R_108, &&R_109, &&R____, &&R_10B, &&R_10C, &&R_10D, &&R____, &&R_10F,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R_128, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R_130, &&R_131, &&R____, &&R_134, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R_200, &&R_201, &&R_202, &&R_203, &&R_204, &&R_205, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R_301, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-    &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____, &&R____,
-  };
+    case 0x00:
+      {
+        u32 dispcnt = io_registers[REG_DISPCNT];
 
-  goto *jmp_table_reg8[address & 0x3FF];
+        if((value & 0x07) != (dispcnt & 0x07))
+          oam_update = 1;
 
-R_000:
-  {
-    u32 dispcnt = io_registers[REG_DISPCNT];
+        ADDRESS8(io_registers, 0x00) = value;
+      }
+      break;
 
-    if((value & 0x07) != (dispcnt & 0x07))
-      oam_update = 1;
+    // DISPSTAT (lower byte)
+    case 0x04:
+      ADDRESS8(io_registers, 0x04) =
+       (ADDRESS8(io_registers, 0x04) & 0x07) | (value & ~0x07);
+      break;
 
-    ADDRESS8(io_registers, 0x00) = value;
-  }
-  return CPU_ALERT_NONE;
+    // VCOUNT
+    case 0x06:
+    case 0x07:
+      break;
 
-// DISPSTAT (lower byte)
-R_004:
-  ADDRESS8(io_registers, 0x04) =
-    (ADDRESS8(io_registers, 0x04) & 0x07) | (value & ~0x07);
-  return CPU_ALERT_NONE;
-
-// VCOUNT
-R_006:
-R_007:
-  return CPU_ALERT_NONE;
-
-// BG2 reference X
-R_028:
+    // BG2 reference X
+    case 0x28:
       access_register8_low(0x28);
       access_register16_low(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-      R_029:
+    case 0x29:
       access_register8_high(0x28);
       access_register16_low(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_02A:
+    case 0x2A:
       access_register8_low(0x2A);
       access_register16_high(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_02B:
+    case 0x2B:
       access_register8_high(0x2A);
       access_register16_high(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG2 reference Y
-    R_02C:
+    case 0x2C:
       access_register8_low(0x2C);
       access_register16_low(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_02D:
+    case 0x2D:
       access_register8_high(0x2C);
       access_register16_low(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_02E:
+    case 0x2E:
       access_register8_low(0x2E);
       access_register16_high(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_02F:
+    case 0x2F:
       access_register8_high(0x2E);
       access_register16_high(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG3 reference X
-    R_038:
+    case 0x38:
       access_register8_low(0x38);
       access_register16_low(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_039:
+    case 0x39:
       access_register8_high(0x38);
       access_register16_low(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_03A:
+    case 0x3A:
       access_register8_low(0x3A);
       access_register16_high(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_03B:
+    case 0x3B:
       access_register8_high(0x3A);
       access_register16_high(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG3 reference Y
-    R_03C:
+    case 0x3C:
       access_register8_low(0x3C);
       access_register16_low(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_03D:
+    case 0x3D:
       access_register8_high(0x3C);
       access_register16_low(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_03E:
+    case 0x3E:
       access_register8_low(0x3E);
       access_register16_high(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_03F:
+    case 0x3F:
       access_register8_high(0x3E);
       access_register16_high(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control sweep
-    R_060:
+    case 0x60:
       access_register8_low(0x60);
       GBC_SOUND_TONE_CONTROL_SWEEP();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_061:
+    case 0x61:
       access_register8_low(0x60);
       GBC_SOUND_TONE_CONTROL_SWEEP();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control duty/length/envelope
-    R_062:
+    case 0x62:
       access_register8_low(0x62);
       GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_063:
+    case 0x63:
       access_register8_high(0x62);
       GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control frequency
-    R_064:
+    case 0x64:
       access_register8_low(0x64);
       GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_065:
+    case 0x65:
       access_register8_high(0x64);
       GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 2 control duty/length/envelope
-    R_068:
+    case 0x68:
       access_register8_low(0x68);
       GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_069:
+    case 0x69:
       access_register8_high(0x68);
       GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 2 control frequency
-    R_06C:
+    case 0x6C:
       access_register8_low(0x6C);
       GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_06D:
+    case 0x6D:
       access_register8_high(0x6C);
       GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control wave
-    R_070:
+    case 0x70:
       access_register8_low(0x70);
       GBC_SOUND_WAVE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_071:
+    case 0x71:
       access_register8_high(0x70);
       GBC_SOUND_WAVE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control length/volume
-    R_072:
+    case 0x72:
       access_register8_low(0x72);
       GBC_SOUND_TONE_CONTROL_LOW_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_073:
+    case 0x73:
       access_register8_high(0x72);
       GBC_SOUND_TONE_CONTROL_LOW_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control frequency
-    R_074:
+    case 0x74:
       access_register8_low(0x74);
       GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_075:
+    case 0x75:
       access_register8_high(0x74);
       GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 4 control length/envelope
-    R_078:
+    case 0x78:
       access_register8_low(0x78);
       GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_079:
+    case 0x79:
       access_register8_high(0x78);
       GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 4 control frequency
-    R_07C:
+    case 0x7C:
       access_register8_low(0x7C);
       GBC_SOUND_NOISE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_07D:
+    case 0x7D:
       access_register8_high(0x7C);
       GBC_SOUND_NOISE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control L
-    R_080:
+    case 0x80:
       access_register8_low(0x80);
       GBC_TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_081:
+    case 0x81:
       access_register8_high(0x80);
       GBC_TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control H
-    R_082:
+    case 0x82:
       access_register8_low(0x82);
       TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
-    R_083:
+    case 0x83:
       access_register8_high(0x82);
       TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control X
-    R_084:
+    case 0x84:
       SOUND_ON();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound wave RAM
-    R_090:
-    R_091:
-    R_092:
-    R_093:
-    R_094:
-    R_095:
-    R_096:
-    R_097:
-    R_098:
-    R_099:
-    R_09A:
-    R_09B:
-    R_09C:
-    R_09D:
-    R_09E:
-    R_09F:
+    case 0x90 ... 0x9F:
       gbc_sound_wave_update = 1;
       ADDRESS8(io_registers, address) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound FIFO A
-    R_0A0:
-    R_0A1:
-    R_0A2:
-    R_0A3:
+    case 0xA0 ... 0xA3:
       ADDRESS8(io_registers, address) = value;
       sound_timer_queue32(0);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound FIFO B
-    R_0A4:
-    R_0A5:
-    R_0A6:
-    R_0A7:
+    case 0xA4 ... 0xA7:
       ADDRESS8(io_registers, address) = value;
       sound_timer_queue32(1);
-      return CPU_ALERT_NONE;
+      break;
 
     // DMA control (trigger byte)
-    R_0BB:
+    case 0xBB:
       access_register8_high(0xBA);
       trigger_dma(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_0C7:
+    case 0xC7:
       access_register8_high(0xC6);
       trigger_dma(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_0D3:
+    case 0xD3:
       access_register8_high(0xD2);
       trigger_dma(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_0DF:
+    case 0xDF:
       access_register8_high(0xDE);
       trigger_dma(3);
-      return CPU_ALERT_NONE;
+      break;
 
     // Timer counts
-    R_100:
+    case 0x100:
       access_register8_low(0x100);
       COUNT_TIMER(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_101:
+    case 0x101:
       access_register8_high(0x100);
       COUNT_TIMER(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_104:
+    case 0x104:
       access_register8_low(0x104);
       COUNT_TIMER(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_105:
+    case 0x105:
       access_register8_high(0x104);
       COUNT_TIMER(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_108:
+    case 0x108:
       access_register8_low(0x108);
       COUNT_TIMER(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_109:
+    case 0x109:
       access_register8_high(0x108);
       COUNT_TIMER(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_10C:
+    case 0x10C:
       access_register8_low(0x10C);
       COUNT_TIMER(3);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_10D:
+    case 0x10D:
       access_register8_high(0x10C);
       COUNT_TIMER(3);
-      return CPU_ALERT_NONE;
+      break;
 
     // Timer control (trigger byte)
-    R_103:
+    case 0x103:
       access_register8_high(0x102);
       TRIGGER_TIMER(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_107:
+    case 0x107:
       access_register8_high(0x106);
       TRIGGER_TIMER(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_10B:
+    case 0x10B:
       access_register8_high(0x10A);
       TRIGGER_TIMER(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R_10F:
+    case 0x10F:
       access_register8_high(0x10E);
       TRIGGER_TIMER(3);
-      return CPU_ALERT_NONE;
+      break;
 
     // P1
-    R_130:
-    R_131:
+    case 0x130:
+    case 0x131:
       /* Read only */
-      return CPU_ALERT_NONE;
-
-    // RCNT
-    R_128:
-      ADDRESS16(io_registers, 0x128) = 0;
-      return CPU_ALERT_NONE;
-
-    // RCNT
-    R_134:
-      ADDRESS16(io_registers, 0x134) = value;
-  return CPU_ALERT_NONE;
-
+      break;
 
       // IE
-      R_200:
+      case 0x200:
         ADDRESS8(io_registers, 0x200) = value;
-        return CPU_ALERT_NONE;
+        break;
 
-      R_201:
+      case 0x201:
         ADDRESS8(io_registers, 0x201) = value;
-        return CPU_ALERT_NONE;
+        break;
 
     // IF
-    R_202:
+    case 0x202:
       ADDRESS8(io_registers, 0x202) &= ~value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R_203:
+    case 0x203:
       ADDRESS8(io_registers, 0x203) &= ~value;
-      return CPU_ALERT_NONE;
+      break;
 
     // WAITCNT
-    R_204:
+    case 0x204:
 #ifndef OLD_COUNT
       access_register8_low(0x204);
       waitstate_control();
 #endif
-      return CPU_ALERT_NONE;
+      break;
 
-    R_205:
+    case 0x205:
 #ifndef OLD_COUNT
       access_register8_high(0x204);
       waitstate_control();
 #endif
-      return CPU_ALERT_NONE;
+      break;
 
     // Halt
-    R_301:
+    case 0x301:
       if(value & 0x80)
         reg[CPU_HALT_STATE] = CPU_STOP;
       else
         reg[CPU_HALT_STATE] = CPU_HALT;
       return CPU_ALERT_HALT;
 
-R____:
+    default:
       ADDRESS8(io_registers, address) = value;
-      return CPU_ALERT_NONE;
+      break;
+  }
+
+  return CPU_ALERT_NONE;
 }
 
 CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 {
-  static void *jmp_table_reg16[] =
+  switch(address)
   {
-    &&R16_000, &&R16____, &&R16_004, &&R16_006, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16_028, &&R16_02A, &&R16_02C, &&R16_02E,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16_038, &&R16_03A, &&R16_03C, &&R16_03E,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16_060, &&R16_062, &&R16_064, &&R16____, &&R16_068, &&R16____, &&R16_06C, &&R16____,
-    &&R16_070, &&R16_072, &&R16_074, &&R16____, &&R16_078, &&R16____, &&R16_07C, &&R16____,
-    &&R16_080, &&R16_082, &&R16_084, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16_090, &&R16_092, &&R16_094, &&R16_096, &&R16_098, &&R16_09A, &&R16_09C, &&R16_09E,
-    &&R16_0A0, &&R16_0A2, &&R16_0A4, &&R16_0A6, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16_0BA, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16_0C6, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16_0D2, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16_0DE,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16_100, &&R16_102, &&R16_104, &&R16_106, &&R16_108, &&R16_10A, &&R16_10C, &&R16_10E,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16_128, &&R16____, &&R16____, &&R16____,
-    &&R16_130, &&R16____, &&R16_134, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16_200, &&R16_202, &&R16_204, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16_300, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-    &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____, &&R16____,
-  };
-
-  goto *jmp_table_reg16[(address & 0x3FF) >> 1];
-
-R16_000:
+    case 0x00:
     {
       u32 dispcnt = io_registers[REG_DISPCNT];
       if((value & 0x07) != (dispcnt & 0x07))
         oam_update = 1;
 
       ADDRESS16(io_registers, 0x00) = value;
+      break;
     }
-    return CPU_ALERT_NONE;
 
     // DISPSTAT
-R16_004:
+    case 0x04:
       ADDRESS16(io_registers, 0x04) =
        (ADDRESS16(io_registers, 0x04) & 0x07) | (value & ~0x07);
-      return CPU_ALERT_NONE;
+      break;
 
     // VCOUNT
-R16_006:
-      return CPU_ALERT_NONE;
+    case 0x06:
+      break;
 
     // BG2 reference X
-R16_028:
+    case 0x28:
       access_register16_low(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-R16_02A:
+    case 0x2A:
       access_register16_high(0x28);
       affine_reference_x[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x28) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG2 reference Y
-    R16_02C:
+    case 0x2C:
       access_register16_low(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_02E:
+    case 0x2E:
       access_register16_high(0x2C);
       affine_reference_y[0] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x2C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG3 reference X
 
-    R16_038:
+    case 0x38:
       access_register16_low(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_03A:
+    case 0x3A:
       access_register16_high(0x38);
       affine_reference_x[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x38) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // BG3 reference Y
-    R16_03C:
+    case 0x3C:
       access_register16_low(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_03E:
+    case 0x3E:
       access_register16_high(0x3C);
       affine_reference_y[1] = (s32)(value << 4) >> 4;
       ADDRESS32(io_registers, 0x3C) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control sweep
-    R16_060:
+    case 0x60:
       GBC_SOUND_TONE_CONTROL_SWEEP();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control duty/length/envelope
-    R16_062:
+    case 0x62:
       GBC_SOUND_TONE_CONTROL_LOW(0, 0x62);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 1 control frequency
-    R16_064:
+    case 0x64:
       GBC_SOUND_TONE_CONTROL_HIGH(0, 0x64);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 2 control duty/length/envelope
-    R16_068:
+    case 0x68:
       GBC_SOUND_TONE_CONTROL_LOW(1, 0x68);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 2 control frequency
-    R16_06C:
+    case 0x6C:
       GBC_SOUND_TONE_CONTROL_HIGH(1, 0x6C);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control wave
-    R16_070:
+    case 0x70:
       GBC_SOUND_WAVE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control length/volume
-    R16_072:
+    case 0x72:
       GBC_SOUND_TONE_CONTROL_LOW_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 3 control frequency
-    R16_074:
+    case 0x74:
       GBC_SOUND_TONE_CONTROL_HIGH_WAVE();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 4 control length/envelope
-    R16_078:
+    case 0x78:
       GBC_SOUND_TONE_CONTROL_LOW(3, 0x78);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound 4 control frequency
-    R16_07C:
+    case 0x7C:
       GBC_SOUND_NOISE_CONTROL();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control L
-    R16_080:
+    case 0x80:
       GBC_TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control H
-    R16_082:
+    case 0x82:
       TRIGGER_SOUND();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound control X
-    R16_084:
+    case 0x84:
       SOUND_ON();
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound wave RAM
-    R16_090:
-    R16_092:
-    R16_094:
-    R16_096:
-    R16_098:
-    R16_09A:
-    R16_09C:
-    R16_09E:
+    case 0x90 ... 0x9E:
       gbc_sound_wave_update = 1;
       ADDRESS16(io_registers, address) = value;
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound FIFO A
-    R16_0A0:
-    R16_0A2:
+    case 0xA0:
+    case 0xA2:
       ADDRESS16(io_registers, address) = value;
       sound_timer_queue32(0);
-      return CPU_ALERT_NONE;
+      break;
 
     // Sound FIFO B
-    R16_0A4:
-    R16_0A6:
+    case 0xA4:
+    case 0xA6:
       ADDRESS16(io_registers, address) = value;
       sound_timer_queue32(1);
-      return CPU_ALERT_NONE;
+      break;
 
     // DMA control
-    R16_0BA:
+    case 0xBA:
       trigger_dma(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_0C6:
+    case 0xC6:
       trigger_dma(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_0D2:
+    case 0xD2:
       trigger_dma(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_0DE:
+    case 0xDE:
       trigger_dma(3);
-      return CPU_ALERT_NONE;
+      break;
 
     // Timer counts
-    R16_100:
+    case 0x100:
 //      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_104:
+    case 0x104:
 //      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_108:
+    case 0x108:
 //      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_10C:
+    case 0x10C:
 //      ADDRESS16(io_registers, address) = value;
       COUNT_TIMER(3);
-      return CPU_ALERT_NONE;
+      break;
 
     // Timer control
-    R16_102:
+    case 0x102:
       TRIGGER_TIMER(0);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_106:
+    case 0x106:
       TRIGGER_TIMER(1);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_10A:
+    case 0x10A:
       TRIGGER_TIMER(2);
-      return CPU_ALERT_NONE;
+      break;
 
-    R16_10E:
+    case 0x10E:
       TRIGGER_TIMER(3);
-      return CPU_ALERT_NONE;
+      break;
+#ifdef ADHOC_MODE
+    // SIOCNT
+    case 0x128:
+      switch(get_sio_mode(value, ADDRESS16(io_registers, 0x134)))
+      {
+        case SIO_MULTIPLAYER: // マルチプレイヤーモード
+          if(value & 0x80) // bit7(start bit)が1の時 転送開始命令
+          {
+            if(!multi_id)  // 親モードの時 multi_id = 0
+            {
+              if(!adhoc_transfer) // adhoc_transfer == 0 転送中で無いとき
+              {
+//                ADDRESS16(io_registers, 0x120) = 0xffff;
+//                ADDRESS16(io_registers, 0x122) = 0xffff;
+//                ADDRESS16(io_registers, 0x124) = 0xffff;
+//                ADDRESS16(io_registers, 0x126) = 0xffff;
+                send_multi = 1; // データの送信
+              } // 転送中の時
+              value |= (adhoc_transfer!=0)<<7;
+            }
+            // 親機/子機共通
+            value &= 0xff8b;
+            value |= (multi_id ? 0xc : 8);
+            value |= multi_id<<4;
+            ADDRESS16(io_registers, 0x128) = value;
+            if(multi_id)
+              ADDRESS16(io_registers, 0x134) = 7; // 親と子で0x134の設定値を変える
+            else
+              ADDRESS16(io_registers, 0x134) = 3;
+            break;
+          }
+      }
 
-    // P1
-    R16_130:
-      return CPU_ALERT_NONE;
-
-      // RCNT
-      R16_128:
-        ADDRESS16(io_registers, 0x128) = 0;
-        return CPU_ALERT_NONE;
+    // SIOMLT_SEND
+    case 0x12A:
+      multi_data[multi_id] = value;
+      ADDRESS16(io_registers, 0x12A) = value;
+      break;
 
     // RCNT
-    R16_134:
-      ADDRESS16(io_registers, 0x134) = value;
-      return CPU_ALERT_NONE;
-
-
-      // IE
-      R16_200:
-        ADDRESS16(io_registers, 0x200) = value;
+    case 0x134:
+      if(!value) // 0の場合
+      {
+        ADDRESS16(io_registers, 0x134) = 0;
         return CPU_ALERT_NONE;
+      }
+      switch(get_sio_mode(ADDRESS16(io_registers, 0x128), value))
+      {
+        case SIO_MULTIPLAYER:
+          value &= 0xc0f0;
+          value |= 3;
+          if(multi_id) value |= 4;
+          ADDRESS16(io_registers, 0x134) = value;
+          ADDRESS16(io_registers, 0x128) = ((ADDRESS16(io_registers, 0x128)&0xff8b)|(multi_id ? 0xc : 8)|(multi_id<<4));
+          return CPU_ALERT_NONE;
+        break;
+      }
+      break;
+#endif
+    // IE
+    case 0x200:
+      ADDRESS16(io_registers, 0x200) = value;
+      break;
 
     // Interrupt flag
-    R16_202:
+    case 0x202:
       ADDRESS16(io_registers, 0x202) &= ~value;
-      return CPU_ALERT_NONE;
+      break;
 
     // WAITCNT
-    R16_204:
+    case 0x204:
 #ifndef OLD_COUNT
       waitstate_control();
 #endif
-      return CPU_ALERT_NONE;
+      break;
 
     // Halt
-    R16_300:
+    case 0x300:
       if(value & 0x8000)
         reg[CPU_HALT_STATE] = CPU_STOP;
       else
@@ -1626,10 +1510,12 @@ R16_02A:
 
       return CPU_ALERT_HALT;
 
-R16____:
-  ADDRESS16(io_registers, address) = value;
-  return CPU_ALERT_NONE;
+    default:
+      ADDRESS16(io_registers, address) = value;
+      break;
+  }
 
+  return CPU_ALERT_NONE;
 }
 
 
@@ -2639,9 +2525,9 @@ s32 load_gamepak(char *name)
 
   if(!strcasecmp(dot_position, ".zip"))
   {
-    set_cpu_clock(333); 
+    set_cpu_clock(9); 
     // プログレスバーの表示
-    init_progress(5, "Load ZIP ROM.");  // TODO
+    init_progress(5, "Load ZIP ROM.");  // TODO エラーチェック
     file_size = load_file_zip(name);
   }
   else
@@ -3479,9 +3365,10 @@ void init_memory_gamepak()
 void init_gamepak_buffer()
 {
   gamepak_rom = NULL;
+  strcpy(gamepak_title, "gpSP");
 
   // 増加メモリ対応の判別
-  if (psp_model != psp_2000_new)
+  if (1)/*(psp_model != psp_2000_new)*/
   {
     // 対応していない場合
     // Try to initialize 32MB
@@ -3889,3 +3776,30 @@ memory_savestate_body(READ_MEM);
 
 void memory_write_mem_savestate()
 memory_savestate_body(WRITE_MEM);
+
+u32 get_sio_mode(u16 io1, u16 io2)
+{
+  return SIO_MULTIPLAYER;
+  if(!(io2 & 0x8000))
+  {
+    switch(io1 & 0x3000)
+    {
+      case 0x0000:
+        return SIO_NORMAL8;
+      case 0x1000:
+        return SIO_NORMAL32;
+      case 0x2000:
+        return SIO_MULTIPLAYER;
+      case 0x3000:
+        return SIO_UART;
+    }
+  }
+  if(io2 & 0x4000) return SIO_JOYBUS;
+  return SIO_GP;
+}
+
+// multiモードのデータを送る
+u32 send_adhoc_multi()
+{
+  return 0;
+}

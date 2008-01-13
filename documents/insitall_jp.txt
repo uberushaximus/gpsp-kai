@@ -7,13 +7,16 @@
 
 新規インストール
 	配布ファイルを解凍し、ms0の中にあるPSPを、フォルダごとメモリースティックにコピーする
-	正しくコピー出来ていれば、メモリースティックの\PSP\GAME\UO_gpSP_kai\に、いくつかのファイル/フォルダが出来ている
-	GBAのBIOSファイルをGBA_BIOS.BINにリネームし、メモリースティックの\PSP\GAME\UO_gpSP_kai\にコピーする
-	GBAのROMファイルを\PSP\GAME\UO_gpSP_kai\GBA\ROM\にコピーする
+	正しくコピー出来ていれば、メモリースティックの\PSP\GAME\gpSP\に、いくつかのファイル/フォルダが出来ている
+	GBAのBIOSファイルをGBA_BIOS.BINにリネームし、メモリースティックの\PSP\GAME\gpSP\にコピーする
+	GBAのROMファイルを\PSP\GAME\gpSP\GBA\ROM\にコピーする
 
 上書きインストール
-	配布ファイルを解凍し、ms0\PSP\GAME\UO_gpSP_kai\の中にあるEBOOT.PBP、dvemgr.prx、homehook.prxを、インストール済みのフォルダにコピーする
+	配布ファイルを解凍し、ms0\PSP\GAME\gpSP\の中にあるEBOOT.PBP、dvemgr.prx、homehook.prxを、インストール済みのフォルダにコピーする
 	そのほかのファイルが更新されているバージョンもあるので、添付のファイルやリリース時の説明を確認すること
 
+ネットワークインストール
+	PSPのブラウザから http://www.tfact.jp/psp/gpsp/ にアクセスし、アップデート3ヶ所と新規インストール1ヶ所のリンクからインストールする
+
 ROMフォルダ/SAVEフォルダ/スナップショットフォルダの変更方法
-	config_file.txtのdir.cfgの項目を参照し、settings/dir.cfgを変更する	
+	config_file.txtのdir.cfgの項目を参照し、cfg/dir.cfgを変更する
