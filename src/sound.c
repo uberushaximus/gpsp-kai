@@ -270,7 +270,7 @@
 }                                                                             \
 
 #define CHECK_BUFFER()                                                        \
-  (abs(gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)                \
+  ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)                \
 
 #define SET_AUDIO_BUFFER_SIZE()                                               \
     audio_buffer_size = SAMPLE_SIZE * (5 + game_config.audio_buffer_size_number) \
@@ -368,16 +368,14 @@ void sound_timer(FIXED16_16 frequency_step, u32 channel)
     ds->fifo_fractional = FP16_16_FRACTIONAL_PART(fifo_fractional);
 
     // マジカルバケーションで動作が遅くなるのが改善される
-/*    u8 fifo_length;
+    u8 fifo_length;
 
     if (ds->fifo_top > ds->fifo_base)
       fifo_length = ds->fifo_top - ds->fifo_base;
     else
       fifo_length = ds->fifo_top + (32 - ds->fifo_base);
 
-    if (fifo_length <= 16)
-*/
-      if ((abs(ds->fifo_top - ds->fifo_base) % 32) <= 16)
+      if (fifo_length <= 16)
       {
         if (dma[1].direct_sound_channel == channel)
           dma_transfer(dma + 1);

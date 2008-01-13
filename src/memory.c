@@ -3377,7 +3377,7 @@ void init_gamepak_buffer()
 
     if(gamepak_rom == NULL)
     {
-      // Try 14MB, for PSP, then lower in 2MB increments
+      // Try 14MB, for PSP, then lower in 1MB increments
       gamepak_ram_buffer_size = 31 * 1024 * 1024;
       gamepak_rom = malloc(gamepak_ram_buffer_size);
 
