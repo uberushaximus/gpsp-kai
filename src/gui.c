@@ -930,6 +930,7 @@ u32 menu(u16 *original_screen)
   auto void set_gamepad();
 #ifdef ADHOC_MODE
   auto void adhoc_connect_menu();
+  auto void adhoc_disconnect_menu();
 #endif
 
   char *gamepad_help[] =
@@ -1132,8 +1133,16 @@ u32 menu(u16 *original_screen)
 
   void adhoc_connect_menu()
   {
+    DBGOUT("CONNECT\n");
+    set_cpu_clock(game_config.clock_speed_number);
     adhoc_init(gamepak_title);
     adhoc_select();
+  }
+
+  void adhoc_disconnect_menu()
+  {
+    DBGOUT("DISCONNECT\n");
+    adhoc_exit();
   }
 
 #endif
@@ -1266,7 +1275,7 @@ u32 menu(u16 *original_screen)
     CHEAT_OPTION((10 * menu_cheat_page) + 9),
     NUMERIC_SELECTION_OPTION(reload_cheats_page, msg[MSG_CHEAT_MENU_5], &menu_cheat_page, MAX_CHEATS_PAGE, msg[MSG_CHEAT_MENU_HELP_5], 10),
     ACTION_OPTION(menu_load_cheat_file, NULL, msg[MSG_CHEAT_MENU_1], msg[MSG_CHEAT_MENU_HELP_1], 11),
-    STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &gpsp_config.language, 12, "言語", 12), /* TODO */
+    STRING_SELECTION_OPTION(NULL, "Lang : %s", language_options, &gpsp_config.language, 12, "Lang", 12), /* TODO */
     STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 13),
     STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 14),
     STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 15),
@@ -1350,7 +1359,8 @@ u32 menu(u16 *original_screen)
   MENU_OPTION_TYPE adhoc_options[] =
   {
     ACTION_OPTION(adhoc_connect_menu, NULL, "adhoc connect", "adhoc connect", 0),                                                      /*  0行目 */
-
+    ACTION_OPTION(adhoc_disconnect_menu, NULL, "adhoc disconnect", "adhoc disconnect", 1),                                                      /*  0行目 */
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 2),
 
 
 

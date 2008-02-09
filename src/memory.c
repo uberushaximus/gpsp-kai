@@ -69,9 +69,8 @@ void init_memory_gamepak();
 u32 get_sio_mode(u16 io1, u16 io2);
 u32 send_adhoc_multi();
 
-u32 adhoc_transfer;
 u16 multi_data[4];
-u32 send_multi;
+u32 g_multi_mode;
 
 
 #define SIO_NORMAL8     0
@@ -1433,24 +1432,20 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
         case SIO_MULTIPLAYER: // マルチプレイヤーモード
           if(value & 0x80) // bit7(start bit)が1の時 転送開始命令
           {
-            if(!multi_id)  // 親モードの時 multi_id = 0
+            if(!g_multi_id)  // 親モードの時 g_multi_id = 0
             {
-              if(!adhoc_transfer) // adhoc_transfer == 0 転送中で無いとき
+              if(!g_adhoc_transfer_flag) // g_adhoc_transfer_flag == 0 転送中で無いとき
               {
-//                ADDRESS16(io_registers, 0x120) = 0xffff;
-//                ADDRESS16(io_registers, 0x122) = 0xffff;
-//                ADDRESS16(io_registers, 0x124) = 0xffff;
-//                ADDRESS16(io_registers, 0x126) = 0xffff;
-                send_multi = 1; // データの送信
+                g_multi_mode = MULTI_START; // データの送信
               } // 転送中の時
-              value |= (adhoc_transfer!=0)<<7;
+              value |= (g_adhoc_transfer_flag != 0)<<7;
             }
             // 親機/子機共通
             value &= 0xff8b;
-            value |= (multi_id ? 0xc : 8);
-            value |= multi_id<<4;
+            value |= (g_multi_id ? 0xc : 8);
+            value |= g_multi_id << 4;
             ADDRESS16(io_registers, 0x128) = value;
-            if(multi_id)
+            if(g_multi_id)
               ADDRESS16(io_registers, 0x134) = 7; // 親と子で0x134の設定値を変える
             else
               ADDRESS16(io_registers, 0x134) = 3;
@@ -1460,7 +1455,7 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // SIOMLT_SEND
     case 0x12A:
-      multi_data[multi_id] = value;
+      multi_data[g_multi_id] = value;
       ADDRESS16(io_registers, 0x12A) = value;
       break;
 
@@ -1476,9 +1471,9 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
         case SIO_MULTIPLAYER:
           value &= 0xc0f0;
           value |= 3;
-          if(multi_id) value |= 4;
+          if(g_multi_id) value |= 4;
           ADDRESS16(io_registers, 0x134) = value;
-          ADDRESS16(io_registers, 0x128) = ((ADDRESS16(io_registers, 0x128)&0xff8b)|(multi_id ? 0xc : 8)|(multi_id<<4));
+          ADDRESS16(io_registers, 0x128) = ((ADDRESS16(io_registers, 0x128)&0xff8b)|(g_multi_id ? 0xc : 8)|(g_multi_id<<4));
           return CPU_ALERT_NONE;
         break;
       }
@@ -3362,13 +3357,14 @@ void init_memory_gamepak()
   }
 }
 
+// TODO
 void init_gamepak_buffer()
 {
   gamepak_rom = NULL;
   strcpy(gamepak_title, "gpSP");
 
   // 増加メモリ対応の判別
-  if (1)/*(psp_model != psp_2000_new)*/
+  if (psp_model != psp_2000_new)
   {
     // 対応していない場合
     // Try to initialize 32MB

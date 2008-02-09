@@ -43,6 +43,14 @@
 #define ADHOC_DATASIZE_USER3  (1)
 #define ADHOC_DATASIZE_USER4  (1)
 
+#define MULTI_DATASIZE        (4)
+#define MULTI_NOP   0x00
+#define MULTI_START 0x01
+#define MULTI_END   0x02
+#define MULTI_SEND  0x10
+#define MULTI_RECV  0x20
+#define MULTI_KILL  0xFF
+
 /******************************************************************************
  * グローバル関数の宣言
  ******************************************************************************/
@@ -65,8 +73,7 @@ int adhocRecvSendAck(void *buffer, int length, int timeout, int type);
 
 void adhoc_exit();
 
-extern u32 multi_id;
-extern u32 adhoc_link;
-extern u32 adhoc_transfer;
+extern u32 g_multi_id;
+extern u32 g_adhoc_transfer_flag;
 
 #endif

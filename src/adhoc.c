@@ -74,14 +74,18 @@
   strlen(matching_data) + 1,    \
   (char *)matching_data
 
-u32 multi_id;
-u32 adhoc_link;
+u32 g_multi_id;
+u32 g_adhoc_transfer_flag;
+
+static u32 g_adhoc_link_flag;
+static u32 s_multi_mode; 
+
 
 /***************************************************************************
- ローカル変数
+ 静的広域変数
  ***************************************************************************/
 
-static int mode;
+static int s_mode;
 static int server;
 static int pdp_id;
 
@@ -110,13 +114,13 @@ static unsigned char adhoc_buffer[ADHOC_BUFFER_SIZE];
 static unsigned char adhoc_work[ADHOC_BUFFER_SIZE];
 
 static SceUID network_thread;
-volatile static u32 net_thread_exit_flag; // netスレッドの終了フラグ。
+volatile static u32 s_net_thread_exit_flag; // netスレッドの終了フラグ。
 
 /***************************************************************************
  ローカル関数
  ***************************************************************************/
 static int net_thread(SceSize args, void *argp);
-void adhoc_multi(u32 id, u32 command);
+void adhoc_multi();
 
 /*--------------------------------------------------------
  プログレスバー初期化
@@ -313,8 +317,8 @@ static void matching_callback(int unk1, int event, unsigned char *l_mac, int opt
  --------------------------------------------------------*/
 u32 load_adhoc_modules(void)
 {
-  adhoc_link = 0;
-  multi_id = 0;
+  g_adhoc_link_flag = 0;
+  g_multi_id = 0;
 
   if (sceKernelDevkitVersion() >= 0x02000010)
   {
@@ -342,7 +346,7 @@ u32 adhoc_init(const char *l_matching_data)
   const char *unknown = "";
   char message[256];
 
-  adhoc_link = 0;
+  g_adhoc_link_flag = 0;
 
   // 通信 スレッドの作成
   network_thread = sceKernelCreateThread("Net thread", net_thread, 0x13, 0x2000, 0, NULL);
@@ -354,7 +358,7 @@ u32 adhoc_init(const char *l_matching_data)
   //スレッドの開始
   sceKernelStartThread(network_thread, 0, 0);
 
-  mode = MODE_LOBBY;
+  s_mode = MODE_LOBBY;
   server = 0;
   adhoc_initialized = 0;
 
@@ -477,8 +481,8 @@ u32 adhoc_term(void)
     adhoc_initialized = 0;
   }
 
-  adhoc_link = 0;
-  multi_id = 0;
+  g_adhoc_link_flag = 0;
+  g_multi_id = 0;
 
   return 0;
 }
@@ -557,7 +561,7 @@ static int adhoc_start_p2p(void)
   update_progress();
   show_progress("DISCONNECTED");
 
-  mode = MODE_P2P;
+  s_mode = MODE_P2P;
   sprintf(message, "CONNECTING_TO_%s", server ? "CLIENT" : "SERVER");
   adhoc_init_progress(4, message);
 
@@ -586,7 +590,7 @@ static int adhoc_start_p2p(void)
         show_progress("WAITING_FOR_SYNCHRONIZATION");
         if ((error = adhoc_sync()) == 0)
         {
-          adhoc_link = 1;
+          g_adhoc_link_flag = 1;
           return server;
         }
       }
@@ -612,8 +616,8 @@ static int adhoc_start_p2p(void)
   sceNetTerm();
 
   adhoc_initialized = 0;
-  adhoc_link = 0;
-  multi_id = 0;
+  g_adhoc_link_flag = 0;
+  g_multi_id = 0;
 
   switch (error)
   {
@@ -657,7 +661,7 @@ u32 adhoc_select(void)
     {
     case PSP_LISTING:
       server = 0;
-      multi_id=1;
+      g_multi_id=1;
       if (update)
       {
         msg_screen_init(title);
@@ -744,7 +748,7 @@ u32 adhoc_select(void)
 
     case PSP_SELECTED:
       server = 1;
-      multi_id = 0;
+      g_multi_id = 0;
       if (update)
       {
         msg_screen_init(title);
@@ -973,7 +977,7 @@ check_packet:
     {
       // 余分なパケットを破棄
       if (pdpStat.rcvdData == ADHOC_DATASIZE_SYNC)
-        adhocRecv(adhoc_work, 0, ADHOC_DATATYPE_SYNC);
+        adhocRecv(adhoc_work, 10, ADHOC_DATATYPE_SYNC);
       else
         break;
     }
@@ -1020,30 +1024,80 @@ void adhoc_wait(int data_size)
  通信 スレッド
  --------------------------------------------------------*/
 // adhoc_transferのon/offを行う
+
 // 通信データはmulti_id + コマンド + word data の4バイト
-// send_multi = 0x00 NOP 非通信時はこのモード
+
+// 親機が別の子機と通信している間の待ちはどうするのか？
+
+// g_multi_mode = 0x00 NOP 非通信時はこのモード
 //  親機は子機にNOPを送信、最終子機からACKを受け取った後、再度NOPモードに移行する
+//  最大３回送信を行う
+//
 //  子機はNOPを受取り後、ACKを返し、再度NOPモードに移行する
+//  １回受信を行う
 //
-// send_multi = 0x01 START
-//  
+// g_multi_mode = 0x01 START マルチ通信開始時のモード
+//  親機は子機にSTARTを送信、受信データをすべて0xFFFFに設定、最終子機からACKを受け取った後、SNEDモードに移行する
+//  最大３回送信を行う
 //
-// send_multi = 0x02 END
-// send_multi = 0x1? SEND/RECV
+//  子機はSTARTを受け取り後、ACKを返し、受信データをすべて0xFFFFに設定、RECVモードに移行する
+//  １回受信を行う
+//
+// g_multi_mode = 0x02 END マルチ通信終了
+//  親機は子機にENDを送信、最終子機からACKを受け取った後、通信ビットを０にして、NOPモードに移行する
+//  最大３回送信を行う
+//
+//  子機はENDを受け取り後、ACKを返し、NOPモードに移行する
+//  １回受信を行う
+//
+// g_multi_mode = 0x1? SEND マルチデータ送信
+//  親機は子機に実データを送信、子機からACKを受け取った後、RECVモードに移行する
+//
+//  子機は他の機に実データを送信、ACKを受信したあと、RECVモードに移行
+//  自信が最終idの場合はENDモードに移行する
+//
+// recv_multi = 0x2? RECV マルチデータ受信
+//  親機は子機から実データを受信、ACKを送信したあと、下８ビットが最終idと同じ場合ENDモードに移行、
+//  そのほかは再度RECVモード
+//
+//  子機は親機から実データを受信、ACKを送信したあと、下８ビットが最終idと同じ場合ENDモードに移行、
+//  そのほかは再度RECVモードに移行
+
+//  送信関数と受信関数を作成
+//  メインルーチン内で親子のフラグとidにてswitchで振り分け
+//
+//データの送受信について
+//
+//　送信
+//　　必ず(通信台数-1)回送信を行う
+//　　エラーの場合はOKになるまで送信を行う
+//　　※ACKにエラーコードを持たせる様に修正必要
+//　　ただし、合計バイト数程度のチェックしか行わない
+//
+//　受信
+//　　必ず(通信台数-1)回受信を行う
+//
+//
+//
+
+u32 multi_send(u32 id, u32 command, u32 data1, u32 data2);
+u32 multi_recv(u8 *data);
+
 
 static int net_thread(SceSize args, void *argp)
 {
 
-  net_thread_exit_flag = 0;
+  s_net_thread_exit_flag = 0;
+  g_multi_mode = MULTI_NOP;
 
   // メインループ
-  while(net_thread_exit_flag == 0)
+  while(s_net_thread_exit_flag == 0)
   {
-    if(adhoc_link == 1) // 通信が確立されている
+    if(g_adhoc_link_flag == 1) // 通信が確立されている
     {
-      adhoc_multi(multi_id, send_multi);
+      adhoc_multi();
     }
-    sceKernelDelayThread(1000);
+    sceKernelDelayThread(100);
   }
 
   sceKernelExitThread(0);
@@ -1052,39 +1106,148 @@ static int net_thread(SceSize args, void *argp)
 
 u8 test = 0;
 
-void adhoc_multi(u32 id, u32 command)
+#define MULTI_REG_0 0x0120
+#define MULTI_REG_1 0x0122
+#define MULTI_REG_2 0x0124
+#define MULTI_REG_3 0x0126
+
+void adhoc_multi()
 {
-  u32 i,j;
-  s32 length;
-  u16 value;
+  u32 value;
+  u32 length;
   u8 work[ADHOC_BUFFER_SIZE];
-
-  work[0] = (u8)test;
-  test++;
-
-  for(i=0; i<MAX_MULTI_ID; i++)
+  switch(g_multi_id)
   {
-    if(i != id)
-    {
-      // データの受信処理
-      length = 0;
-      j = 0;
-        length = adhocRecvSendAck(work, 4, 1000000, ADHOC_DATATYPE_ANY);
-      DBGOUT("R N:%d l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", j, length, work[0], work[1], work[2], work[3]);
-    }
-    else
-    {
-      // データの送信処理
-      length = 0;
-      j = 0;
-        length = adhocSendRecvAck(work, 4, 1000000, ADHOC_DATATYPE_ANY);
-      DBGOUT("S N:%d l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", j, length, work[0], work[1], work[2], work[3]);
-    }
+    case 0:  // 親機の場合 能動的に処理を行なう
+      switch(g_multi_mode)
+      {
+        case MULTI_NOP: // 基本的にNOPモードでループ
+          multi_send(g_multi_id, MULTI_NOP, 0x00, 0x00);
+          g_multi_mode = MULTI_NOP;
+          break;
+
+        case MULTI_START:// 通信レジスタのビット操作によりSTARTモードに移行
+          multi_send(g_multi_id, MULTI_START, 0x00, 0x00);
+          // 転送フラグを1に
+          g_adhoc_transfer_flag = 1;
+          // 通信データレジスタをすべて0xFFFFに設定
+          ADDRESS16(io_registers, MULTI_REG_0) = 0xffff;
+          ADDRESS16(io_registers, MULTI_REG_1) = 0xffff;
+          ADDRESS16(io_registers, MULTI_REG_2) = 0xffff;
+          ADDRESS16(io_registers, MULTI_REG_3) = 0xffff;
+          // SENDモードに移行
+          g_multi_mode = MULTI_SEND;
+          break;
+
+        case MULTI_END: // 後処理をした後、NOPモードへ
+          multi_send(g_multi_id, MULTI_END, 0x00, 0x00);
+          // 転送フラグを0に
+          g_adhoc_transfer_flag = 0;
+          // 通信ビットを0にする
+          value = ADDRESS16(io_registers, 0x128);
+          value &= 0xff7f;
+          ADDRESS16(io_registers, 0x128) = value;
+          // NOPモードに移行
+          g_multi_mode = MULTI_NOP;
+          break;
+
+        case MULTI_SEND: // 子機にデータを送る
+          multi_send(g_multi_id, MULTI_RECV, 0x00, 0x00);
+          // 通信データレジスタに自分の値を書き込む TODO
+          g_multi_mode = MULTI_RECV; // RECVモードで子機のデータを受け取る
+          break;
+
+        case MULTI_RECV:
+          multi_recv(work);
+          // 通信データレジスタに子機の値を書き込む
+          g_multi_mode = MULTI_END; // ENDモードへ移行
+          break;
+
+        case MULTI_KILL: // 物理的な通信切断時に、子機に終了サインを送る
+          multi_send(g_multi_id, MULTI_KILL, 0x00, 0x00);
+          g_adhoc_link_flag == 0; // フラグをOFFにし、スレッドを終了させる
+          g_multi_mode = MULTI_NOP; // 一応NOPモードへ
+          break;
+      }
+      break;
+
+    case 1 ... 3:  // 子機の場合 受動的に処理を行なう
+      if(g_multi_mode != MULTI_SEND) // SENDモード以外はデータを受信
+      {
+        multi_recv(work);
+        g_multi_mode = work[1]; // コマンドを取り出す
+      }
+
+      // 受け取ったコマンドにより処理を振り分け
+      switch(g_multi_mode)
+      {
+        case MULTI_NOP:
+          break;
+
+        case MULTI_START:
+          // 通信データレジスタをすべて0xFFFFに設定
+          break;
+
+        case MULTI_RECV:
+          // 通信データレジスタに親機の値を書き込む
+          break;
+
+        case MULTI_KILL:
+          g_adhoc_link_flag == 0; // フラグをOFFにし、スレッドを終了させる
+          g_multi_mode = MULTI_NOP; // 一応NOPモードへ
+          break;
+
+        case MULTI_SEND:
+          multi_send(g_multi_id, MULTI_RECV, 0x00, 0x00);
+          // 通信データレジスタに自分の値を書き込む
+          g_multi_mode = MULTI_NOP; // 一時的にNOPモードにする
+          break;
+      }
+      break;
   }
+}
+
+/* 1パケット分の通信の流れ
+親機			子機
+NOP			NOP（NOPを受ける）
+通信フラグON
+START			NOP（STARTを受ける）
+SEND			START
+*/
+
+
+
+
+// commandは子機へのモード指定
+u32 multi_send(u32 id, u32 command, u32 data1, u32 data2)
+{
+  u32 length;
+  u8 work[ADHOC_BUFFER_SIZE];
+  work[0] = id;
+  work[1] = command;
+  work[2] = data1;
+  work[3] = data2;
+  length = adhocSendRecvAck(work, MULTI_DATASIZE, 1000000, ADHOC_DATATYPE_ANY);
+  DBGOUT("S l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", length, work[0], work[1], work[2], work[3]);
+  return length;
+}
+
+u32 multi_recv(u8 *data)
+{
+  u32 length;
+  u8 work[ADHOC_BUFFER_SIZE];
+  length = adhocRecvSendAck(work, MULTI_DATASIZE, 1000000, ADHOC_DATATYPE_ANY);
+  DBGOUT("R l:%d d0:%02X d1:%02X d2:%02X d3:%02X\n", length, work[0], work[1], work[2], work[3]);
+  data[0] = work[0];
+  data[1] = work[1];
+  data[2] = work[2];
+  data[3] = work[3];
+  return length;
 }
 
 void adhoc_exit()
 {
   adhoc_term();
-  net_thread_exit_flag = 1;
+  g_adhoc_link_flag = 0;
+  s_net_thread_exit_flag = 1;
 }

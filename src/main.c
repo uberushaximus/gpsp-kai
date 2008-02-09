@@ -36,7 +36,7 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 TIMER_TYPE timer[4];                              // タイマー
 
 /******************************************************************************
- * ローカル変数の定義
+ * グローバル変数の定義
  ******************************************************************************/
 
 u32 global_cycles_per_instruction = 1;
@@ -56,14 +56,6 @@ u32 ticks;
 u32 arm_frame = 0;
 u32 thumb_frame = 0;
 u32 last_frame = 0;
-
-//u32 cycle_pc_relative_access = 0;
-//u32 cycle_sp_relative_access = 0;
-//u32 cycle_block_memory_access = 0;
-//u32 cycle_block_memory_sp_access = 0;
-//u32 cycle_block_memory_words = 0;
-//u32 cycle_dma16_words = 0;
-//u32 cycle_dma32_words = 0;
 
 u32 synchronize_flag = 1;
 
@@ -336,6 +328,7 @@ int main(int argc, char *argv[])
   g_dbg_file = fopen(DBG_FILE_NAME, "awb");
 
   getcwd(main_path, 512);
+  DBGOUT("argv[0] %s\n",argv[0]);
 
 #ifdef ADHOC_MODE
   // adhoc用モジュールのロード
@@ -696,17 +689,17 @@ void synchronize()
     char print_buffer[256];
     sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
-//    dump_translation_cache();
-    sprintf(print_buffer, "0x128:%04X", ADDRESS16(io_registers, 0x128));
-    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
-    sprintf(print_buffer, "0x120:%04X", ADDRESS16(io_registers, 0x120));
-    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 20);
-    sprintf(print_buffer, "0x122:%04X", ADDRESS16(io_registers, 0x122));
-    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 30);
-    sprintf(print_buffer, "0x124:%04X", ADDRESS16(io_registers, 0x124));
-    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 40);
-    sprintf(print_buffer, "0x126:%04X", ADDRESS16(io_registers, 0x126));
-    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 50);
+
+//    sprintf(print_buffer, "0x128:%04X", ADDRESS16(io_registers, 0x128));
+//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
+//    sprintf(print_buffer, "0x120:%04X", ADDRESS16(io_registers, 0x120));
+//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 20);
+//    sprintf(print_buffer, "0x122:%04X", ADDRESS16(io_registers, 0x122));
+//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 30);
+//    sprintf(print_buffer, "0x124:%04X", ADDRESS16(io_registers, 0x124));
+//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 40);
+//    sprintf(print_buffer, "0x126:%04X", ADDRESS16(io_registers, 0x126));
+//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 50);
   }
 
   // フレームスキップ フラグの初期化
@@ -942,9 +935,12 @@ void raise_interrupt(IRQ_TYPE irq_raised)
   }
 }
 
+
 MODEL_TYPE get_model()
 {
-  if(kuKernelGetModel() != PSP_MODEL_SLIM_AND_LITE)
+//  return psp_1000;
+  
+  if(kuKernelGetModel() != 1 /*PSP_MODEL_SLIM_AND_LITE*/)
   {
     return psp_1000;
   }

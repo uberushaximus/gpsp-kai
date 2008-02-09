@@ -5,8 +5,8 @@
 # Global definitions
 
 VERSION_MAJOR = 3
-VERSION_MINOR = 2
-VERSION_BUILD = 8.9
+VERSION_MINOR = 3
+VERSION_BUILD = 1
 
 # コンパイル条件の設定
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定

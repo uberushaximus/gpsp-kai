@@ -373,18 +373,16 @@ u32 update_input()
       else
 
       if((button_id >= BUTTON_ID_RAPIDFIRE_A) &&
-       (button_id <= BUTTON_ID_RAPIDFIRE_L))
+       (button_id <= BUTTON_ID_RAPIDFIRE_R))
       {
         rapidfire_flag ^= 1;
         if(rapidfire_flag)
         {
-          new_key |= button_id_to_gba_mask[button_id -
-           BUTTON_ID_RAPIDFIRE_A + BUTTON_ID_A];
+          new_key |= button_id_to_gba_mask[button_id - BUTTON_ID_RAPIDFIRE_A + BUTTON_ID_A];
         }
         else
         {
-          new_key &= ~button_id_to_gba_mask[button_id -
-           BUTTON_ID_RAPIDFIRE_A + BUTTON_ID_A];
+          new_key &= ~button_id_to_gba_mask[button_id - BUTTON_ID_RAPIDFIRE_A + BUTTON_ID_A];
         }
       }
     }
