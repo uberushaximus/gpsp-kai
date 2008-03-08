@@ -44,13 +44,13 @@
 #define GPSP_CONFIG_HEADER     "gpSP"
 #define GPSP_CONFIG_HEADER_U32 0x50537067
 const u32 gpsp_config_ver = 0x00010000;
-GPSP_CONFIG_V10 gpsp_config;
+GPSP_CONFIG gpsp_config;
 
 // ヘッダーは4byteまで
 #define GAME_CONFIG_HEADER     "gcfg"
 #define GAME_CONFIG_HEADER_U32 0x67666367
 const u32 game_config_ver = 0x00010000;
-GAME_CONFIG_V10 game_config;
+GAME_CONFIG game_config;
 
 #ifdef TEST_MODE
 #define VER_RELEASE "test"
@@ -79,7 +79,7 @@ GAME_CONFIG_V10 game_config;
   gamepad_help[gamepad_config_map[                                            \
    gamepad_config_line_to_button[number]]],                                   \
   number,                                                                     \
-  STRING_SELECTION_TYPE                                                     \
+  STRING_SELECTION_TYPE                                                       \
 }                                                                             \
 
 #define ANALOG_CONFIG_OPTION(display_string, number)                          \
@@ -239,7 +239,8 @@ typedef enum
   SAVESTATE_MENU,
   FRAMESKIP_MENU,
   CHEAT_MENU,
-  ADHOC_MENU
+  ADHOC_MENU,
+  MISC_MENU
 } MENU_ENUM;
 typedef struct _MENU_TYPE MENU_TYPE;
 
@@ -311,7 +312,7 @@ s32 load_file(char **wildcards, char *result,char *default_dir_name)
   u32 num_dirs;                       // カレントディレクトリのフォルダ数
   char *file_name;
   u32 file_name_length;
-  u32 ext_pos = -1;
+  s32 ext_pos = -1;
   u32 chosen_file, chosen_dir;
   s32 return_value = 1;
   u32 current_file_selection;         // 選択しているファイル
@@ -791,17 +792,23 @@ void init_gpsp_config()
   memcpy(gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
   memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &gpsp_config.language);
+  gpsp_config.emulate_core = ASM_CORE;
+  gpsp_config.debug_flag = NO;
 }
 
 /*--------------------------------------------------------
   game cfgファイルの読込み
+  3/4修正
 --------------------------------------------------------*/
-s32 load_game_config_file()
+void load_game_config_file(void)
 {
   char game_config_filename[MAX_FILE];
   char game_config_path[MAX_PATH];
   FILE_ID game_config_file;
   u32 header, ver;
+
+  // 初期値の設定
+  init_game_config();
 
   change_ext(gamepak_filename, game_config_filename, ".cfg");
 
@@ -816,31 +823,23 @@ s32 load_game_config_file()
   {
     // ヘッダーのチェック
     FILE_READ_VARIABLE(game_config_file, header);
-    if(header != GAME_CONFIG_HEADER_U32)
+    if(header == GAME_CONFIG_HEADER_U32)
     {
-      FILE_CLOSE(game_config_file);
-      // 読み込めなかった場合の初期値の設定
-      init_game_config();
-      return -1;
+      // バージョンのチェック
+      FILE_READ_VARIABLE(game_config_file, ver);
+      switch(ver)
+      {
+        case 0x10000: /* 1.0 */
+          FILE_READ_VARIABLE(game_config_file, game_config);
+          if(game_config.use_default_gamepad_map == YES)
+            memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+          else
+            memcpy(gamepad_config_map, game_config.gamepad_config_map, sizeof(game_config.gamepad_config_map));
+          break;
+      }
     }
-    FILE_READ_VARIABLE(game_config_file, ver);
-    switch(ver)
-    {
-      case 0x10000: /* 1.0 */
-        FILE_READ_VARIABLE(game_config_file, game_config);
-        if(game_config.use_default_gamepad_map == 0)
-          memcpy(gamepad_config_map, game_config.gamepad_config_map, sizeof(game_config.gamepad_config_map));
-        else
-          memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
-        break;
-    }
-    FILE_CLOSE(game_config_file);
-    return 0;
   }
   FILE_CLOSE(game_config_file);
-  // 読み込めなかった場合の初期値の設定
-  init_game_config();
-  return -1;
 }
 
 /*--------------------------------------------------------
@@ -920,7 +919,8 @@ u32 menu(u16 *original_screen)
   auto void menu_load_cheat_file();
   auto void menu_fix_gamepad_help();
   auto void submenu_graphics_sound();
-  auto void submenu_cheats_misc();
+  auto void submenu_cheats();
+  auto void submenu_misc();
   auto void submenu_gamepad();
   auto void submenu_analog();
   auto void submenu_savestate();
@@ -928,7 +928,7 @@ u32 menu(u16 *original_screen)
   auto void reload_cheats_page();
   auto void home_mode();
   auto void set_gamepad();
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
   auto void adhoc_connect_menu();
   auto void adhoc_disconnect_menu();
 #endif
@@ -975,6 +975,8 @@ u32 menu(u16 *original_screen)
   {
     char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
     char load_filename[MAX_FILE];
+
+    save_config_file();
     save_game_config_file();
 
 //    if(!gpsp_config.update_backup_flag)
@@ -1115,7 +1117,12 @@ u32 menu(u16 *original_screen)
     
   }
 
-  void submenu_cheats_misc()
+  void submenu_cheats()
+  {
+
+  }
+
+  void submenu_misc()
   {
 
   }
@@ -1125,7 +1132,7 @@ u32 menu(u16 *original_screen)
 
   }
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
   void submenu_adhoc()
   {
 
@@ -1163,13 +1170,25 @@ u32 menu(u16 *original_screen)
     get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
   }
 
-  char *yes_no_options[] = { msg[MSG_NO], msg[MSG_YES] };
+  char *yes_no_options[] =
+  {
+    msg[MSG_NO],
+    msg[MSG_YES]
+  };
 
-  char *enable_disable_options[] = { msg[MSG_DISABLED], msg[MSG_ENABLED] };
+  char *enable_disable_options[] =
+  {
+    msg[MSG_DISABLED],
+    msg[MSG_ENABLED]
+  };
 
   char *scale_options[] =
   {
-    msg[MSG_SCN_UNSCALED], msg[MSG_SCN_SCALED], msg[MSG_SCN_FULL], msg[MSG_SCN_OPT1], msg[MSG_SCN_OPT2]
+    msg[MSG_SCALE_UNSCALED],
+    msg[MSG_SCALE_SCALED],
+    msg[MSG_SCALE_FULL],
+    msg[MSG_SCN_OPT1],
+    msg[MSG_SCN_OPT2]
   };
 
   char *frameskip_options[] = { msg[MSG_FS_AUTO], msg[MSG_FS_MANUAL], msg[MSG_FS_OFF] };
@@ -1234,6 +1253,14 @@ u32 menu(u16 *original_screen)
     lang[11]
   };
 
+#ifdef USE_C_CORE
+  char *emulate_core_options[] =
+  {
+    "ASM CORE",
+    "C CORE"
+  };
+#endif
+
   /*--------------------------------------------------------
      グラフィック・サウンド オプション
   --------------------------------------------------------*/
@@ -1261,7 +1288,7 @@ u32 menu(u16 *original_screen)
   /*--------------------------------------------------------
      チート オプション
   --------------------------------------------------------*/
-  MENU_OPTION_TYPE cheats_misc_options[] =
+  MENU_OPTION_TYPE cheats_options[] =
   {
     CHEAT_OPTION((10 * menu_cheat_page) + 0),
     CHEAT_OPTION((10 * menu_cheat_page) + 1),
@@ -1282,7 +1309,25 @@ u32 menu(u16 *original_screen)
     SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16) 
   };
 
-  MAKE_MENU(cheats_misc, submenu_cheats_misc, NULL);
+  MAKE_MENU(cheats, submenu_cheats, NULL);
+
+  /*--------------------------------------------------------
+     mics オプション
+  --------------------------------------------------------*/
+  MENU_OPTION_TYPE misc_options[] =
+  {
+#ifdef USE_C_CORE
+    STRING_SELECTION_OPTION(NULL, "Emulate Core : %s", emulate_core_options, &gpsp_config.emulate_core , 2, "Emulate Core", 1),
+#endif
+
+#ifdef USE_DEBUG
+    STRING_SELECTION_OPTION(NULL, "Debug mode : %s", yes_no_options, &gpsp_config.debug_flag, 2, "Debug mode", 2),
+#endif
+
+    SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16) 
+  };
+
+  MAKE_MENU(misc, submenu_misc, NULL);
 
   /*--------------------------------------------------------
      セーブステート オプション
@@ -1352,7 +1397,7 @@ u32 menu(u16 *original_screen)
 
   MAKE_MENU(analog_config, submenu_analog, NULL);
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
   /*--------------------------------------------------------
      ADHOC オプション
   --------------------------------------------------------*/
@@ -1360,7 +1405,7 @@ u32 menu(u16 *original_screen)
   {
     ACTION_OPTION(adhoc_connect_menu, NULL, "adhoc connect", "adhoc connect", 0),                                                      /*  0行目 */
     ACTION_OPTION(adhoc_disconnect_menu, NULL, "adhoc disconnect", "adhoc disconnect", 1),                                                      /*  0行目 */
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 2),
+
 
 
 
@@ -1393,11 +1438,11 @@ u32 menu(u16 *original_screen)
 
     SUBMENU_OPTION(&gamepad_config_menu, msg[MSG_MAIN_MENU_4], msg[MSG_MAIN_MENU_HELP_4], 6),                                         /*  6行目 */
     SUBMENU_OPTION(&analog_config_menu, msg[MSG_MAIN_MENU_5], msg[MSG_MAIN_MENU_HELP_5], 7),                                          /*  7行目 */
-#ifdef ADHOC_MODE
-    SUBMENU_OPTION(&adhoc_menu, "adhoc", "adhoc", 8),                                                                                 /*  9行目 */
+#ifdef USE_ADHOC
+    SUBMENU_OPTION(&adhoc_menu, "adhoc", "adhoc", 8),                                                                                 /*  8行目 */
 #endif
-    SUBMENU_OPTION(&cheats_misc_menu, msg[MSG_MAIN_MENU_6], msg[MSG_MAIN_MENU_HELP_6], 9),                                            /*  9行目 */
-
+    SUBMENU_OPTION(&cheats_menu, msg[MSG_MAIN_MENU_6], msg[MSG_MAIN_MENU_HELP_6], 9),                                            /*  9行目 */
+    SUBMENU_OPTION(&misc_menu, "misc", "misc", 10),                                                                                   /* 10行目 */
     ACTION_OPTION(menu_load, NULL, msg[MSG_MAIN_MENU_7], msg[MSG_MAIN_MENU_HELP_7], 11),                                              /* 11行目 */
     ACTION_OPTION(menu_restart, NULL, msg[MSG_MAIN_MENU_8], msg[MSG_MAIN_MENU_HELP_8], 12),                                           /* 12行目 */
     ACTION_OPTION(menu_exit, NULL, msg[MSG_MAIN_MENU_9], msg[MSG_MAIN_MENU_HELP_9], 13),                                              /* 13行目 */
@@ -1423,20 +1468,12 @@ u32 menu(u16 *original_screen)
      current_menu->init_function();
   }
 
-//  void clear_help()
-//  {
-//    for(i = 0; i < 6; i++)
-//    {
-//      PRINT_STRING_BG(" ", COLOR_BG, COLOR_BG, 30, 210 + (i * 10));
-//    }
-//  }
-
   void reload_cheats_page()
   {
     for(i = 0; i<10; i++)
     {
-      cheats_misc_options[i].display_string = cheat_format_str[(10 * menu_cheat_page) + i];
-      cheats_misc_options[i].current_option = &(game_config.cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
+      cheats_options[i].display_string = cheat_format_str[(10 * menu_cheat_page) + i];
+      cheats_options[i].current_option = &(game_config.cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
     }
   }
 
@@ -2090,8 +2127,8 @@ static void print_status(u32 mode)
   sprintf(print_buffer_1, msg[MSG_MENU_BATTERY], scePowerGetBatteryLifePercent(), scePowerGetBatteryLifeTime());
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 0);
 
-  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %.1f",
-      (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_RELEASE, VERSION_BUILD);
+  sprintf(print_buffer_1, "MAX ROM BUF: %02d MB Ver:%d.%d %s %d Build %d",
+      (int)(gamepak_ram_buffer_size/1024/1024), VERSION_MAJOR, VERSION_MINOR, VER_RELEASE, VERSION_BUILD, BUILD_COUNT);
   PRINT_STRING_BG(print_buffer_1, COLOR_HELP_TEXT, COLOR_BG, 240, 10);
 
   if (mode == 0)

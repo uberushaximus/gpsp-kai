@@ -5,6 +5,7 @@
 # Global definitions
 
 include ../Makefile.set
+include ../build_count.inc
 
 PSPSDK          = ${shell psp-config --pspsdk-path}
 PREFIX          = ${shell psp-config --psp-prefix}
@@ -13,11 +14,11 @@ PSP_EBOOT_ICON  = ../image/icon1.png
 #文字列が表示されないので保留
 #PSP_EBOOT_PIC1  = ../image/pic1.png 
 
-OBJS            = main.o cpu.o video.o memory.o sound.o input.o gu.o
+OBJS            = main.o cpu_common.o cpu_asm.o cpu_c.o video.o memory.o sound.o input.o gu.o
 OBJS           += gui.o zip.o cheats.o mips_stub.o fbm_print.o bios.o draw.o video_setting.o
 OBJS           += pspDveManager.o homehook.o unicode.o
 
-ifeq ($(ADHOC_MODE), 1)
+ifeq ($(USE_ADHOC), 1)
 OBJS           += adhoc.o
 COMMON_FILE += adhoc.h
 endif
@@ -33,7 +34,7 @@ endif
 
 VERSION_OPT = ${VERSION_RELEASE} ${VERSION_BUILD}
 
-PSP_EBOOT_TITLE = UO gpSP kai ${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT}
+PSP_EBOOT_TITLE = UO gpSP kai ${VERSION_MAJOR}.${VERSION_MINOR} ${VERSION_OPT} Build ${BUILD_COUNT}
 
 VPATH           += ..
 CFLAGS          += -O3 -DPSP_BUILD -G0 -funsigned-char
@@ -45,23 +46,33 @@ CFLAGS          +=  -funsigned-char -ffast-math -fforce-addr -fmerge-all-constan
 CFLAGS          += -DVERSION_MAJOR=${VERSION_MAJOR}
 CFLAGS          += -DVERSION_MINOR=${VERSION_MINOR}
 CFLAGS          += -DVERSION_BUILD=${VERSION_BUILD}
+CFLAGS          += -DBUILD_COUNT=${BUILD_COUNT}
 
 ifeq ($(TEST_MODE), 1)
 CFLAGS          += -DTEST_MODE
 endif
 
-ifeq ($(ADHOC_MODE), 1)
-CFLAGS          += -DADHOC_MODE
+ifeq ($(USE_DEBUG), 1)
+CFLAGS          += -DUSE_DEBUG
 endif
+
+ifeq ($(USE_ADHOC), 1)
+CFLAGS          += -DUSE_ADHOC
+endif
+
+ifeq ($(USE_C_CORE), 1)
+CFLAGS          += -DUSE_C_CORE
+endif
+
 
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP
 
 #LDFLAGS += -Wl,-Map gpSP.map
 
-LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge -lpspgum -lm
+LIBS            += -lpspgu -lpsprtc -lpspaudio -lz -lpsppower -lpspkubridge -lpspgum -lpspsystemctrl_user -lm
 
-ifdef ADHOC_MODE
+ifdef USE_ADHOC
 LIBS            += -lpspnet -lpspwlan -lpspnet_adhoc -lpspnet_adhocctl -lpspnet_adhocmatching
 endif
 
@@ -87,7 +98,9 @@ UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
                                  ${SRC_DIR}message.h
 
 main.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
-cpu.o						: ${COMMON_FILE} ${SRC_DIR}cpu.c
+cpu_common.o						: ${COMMON_FILE} ${SRC_DIR}cpu_common.c
+cpu_asm.o						: ${COMMON_FILE} ${SRC_DIR}cpu_asm.c
+cpu_c.o						: ${COMMON_FILE} ${SRC_DIR}cpu_c.c
 video.o					: ${COMMON_FILE} ${SRC_DIR}video.c 
 gu.o						: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}gu.c 
 memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
@@ -105,7 +118,7 @@ homehook.o			: ${SRC_DIR}homehook.S
 video_setting.o		: ${COMMON_FILE} ${SRC_DIR}video_setting.c
 unicode.o				: ${COMMON_FILE} ${SRC_DIR}unicode.c
 
-ifdef ADHOC_MODE
+ifdef USE_ADHOC
 adhoc.o					: ${COMMON_FILE} ${SRC_DIR}adhoc.c ${SRC_DIR}adhoc.h
 endif
 
@@ -127,5 +140,6 @@ endif
 
 all:
 	rm ./PARAM.SFO
+	rm ./gui.o
 	cp ./*.prx ../obj/
 	cp ./*.PBP ../obj/

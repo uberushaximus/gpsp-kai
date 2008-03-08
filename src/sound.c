@@ -94,7 +94,12 @@
         rate = rate + (rate >> gs->sweep_shift);                              \
                                                                               \
       if (rate > 2047)                                                        \
+      {                                                                       \
         rate = 2047;                                                          \
+        gs->active_flag = 0;                                                  \
+        break;                                                                \
+      }                                                                       \
+                                                                              \
       frequency_step = FLOAT_TO_FP16_16(((131072.0 / (2048.0 - rate)) * 8.0) / SOUND_FREQUENCY); \
                                                                               \
       gs->frequency_step = frequency_step;                                    \
@@ -143,6 +148,7 @@
   tick_counter += gbc_sound_tick_step;                                        \
   if(tick_counter > 0xFFFF)                                                   \
   {                                                                           \
+    tick_counter &= 0xFFFF;                                                   \
     if(gs->length_status)                                                     \
     {                                                                         \
       u32 length_ticks = gs->length_ticks - 1;                                \
@@ -154,11 +160,8 @@
         break;                                                                \
       }                                                                       \
     }                                                                         \
-                                                                              \
     UPDATE_TONE_##envelope_op();                                              \
     UPDATE_TONE_##sweep_op();                                                 \
-                                                                              \
-    tick_counter &= 0xFFFF;                                                   \
   }                                                                           \
 
 // サウンドバッファにLEFT CHANNELのデータを書込む
@@ -256,9 +259,9 @@
   u32 temp_sound_read_offset = sound_read_offset;                             \
   u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                   \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_on);                       \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, temp_sound_read_offset);         \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, /*temp_*/sound_read_offset);         \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_last_cpu_ticks);           \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, temp_gbc_sound_buffer_index);    \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, /*temp_*/gbc_sound_buffer_index);    \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_last_cpu_ticks);       \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_partial_ticks);        \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_left);   \
@@ -414,8 +417,7 @@ s8 wave_samples[64];
 u32 noise_table15[1024];
 u32 noise_table7[4];
 
-u32 gbc_sound_master_volume_table[4] =
-  { 1, 2, 4, 0 };
+u32 gbc_sound_master_volume_table[4] = { 1, 2, 4, 0 };
 
 u32 gbc_sound_channel_volume_table[8] =
   { FIXED_DIV(0, 7, 12), 
@@ -676,7 +678,7 @@ static int sound_update_thread(SceSize args, void *argp)
 //        if(sample < -4096) sample = -4096;
         buffer[1][loop] = sample << 4;
         sound_buffer[sound_read_offset] = 0;
-        sound_read_offset = (sound_read_offset + 1) % BUFFER_SIZE;
+        sound_read_offset = (sound_read_offset + 1) & BUFFER_SIZE;
       }
     }
     else

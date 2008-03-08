@@ -734,15 +734,15 @@
 #disabled
 !無効
 
-# MSG_SCN_UNSCALED
+# MSG_SCALE_UNSCALED
 #unscaled 3:2
 !拡大なし 3:2
 
-# MSG_SCN_SCALED
+# MSG_SCALE_SCALED
 #scaled 3:2
 !拡大 3:2
 
-# MSG_SCN_FULL
+# MSG_SCALE_FULL
 #fullscreen 16:9
 !フルスクリーン 16:9
 

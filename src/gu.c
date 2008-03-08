@@ -287,7 +287,7 @@ void video_resolution(u32 frame)
 
   if(video_draw_frame != frame)
   {
-    if((psp_model == psp_2000_new) && (use_video_out == 1))
+    if((psp_model == psp_2000) && (use_video_out == 1))
       video_out_mode = pspDveMgrCheckVideoOut();
     else
       video_out_mode = 0;
@@ -317,7 +317,7 @@ void video_resolution(u32 frame)
     if(old_parameter != current_parameter)
     {
       old_parameter = current_parameter;
-      if((psp_model == psp_2000_new) && (use_video_out == 1))
+      if((psp_model == psp_2000) && (use_video_out == 1))
       {
         pspDveMgrSetVideoOut(current_parameter->video_out.u, current_parameter->video_out.displaymode, current_parameter->video_out.width,
             current_parameter->video_out.height, current_parameter->video_out.x, current_parameter->video_out.y, current_parameter->video_out.z);

@@ -845,7 +845,7 @@ translation_gate_target = 03000f1c
 
 
 
-# æ˜Ÿã®ã‚«ãƒ¼ãƒ“ã‚£ å¤¢ã®æ³‰ãƒ‡ãƒ©ãƒƒã‚¯ã‚¹ (J)
+# ¯‚ÌƒJ[ƒrƒB –²‚Ìòƒfƒ‰ƒbƒNƒX (J)
 # Hoshi no Kirby: Yume no Izumi Deluxe (J)
 game_name = AGB KIRBY DX
 game_code = A7KJ
@@ -853,7 +853,7 @@ vender_code = 01
 idle_loop_eliminate_target = 08000f92
 iwram_stack_optimize = no
 
-# ã‚¹ãƒ¼ãƒ‘ãƒ¼ãƒãƒªã‚ªã‚¢ãƒ‰ãƒãƒ³ã‚¹4 (J)
+# ƒX[ƒp[ƒ}ƒŠƒIƒAƒhƒoƒ“ƒX4 (J)
 # Super Mario Advance 4 (J)
 game_name = SUPER MARIOD
 game_code = AX4J
@@ -861,7 +861,7 @@ vender_code = 01
 idle_loop_eliminate_target = 08000732
 flash_rom_type = 128KB
 
-# ãƒã‚±ãƒƒãƒˆãƒ¢ãƒ³ã‚¹ã‚¿ãƒ¼ ã‚¨ãƒ¡ãƒ©ãƒ«ãƒ‰ (J)
+# ƒ|ƒPƒbƒgƒ‚ƒ“ƒXƒ^[ ƒGƒƒ‰ƒ‹ƒh (J)
 # Pokemon Emerald (J)
 game_name = POKEMON EMER
 game_code = BPEJ
@@ -869,21 +869,21 @@ vender_code = 01
 idle_loop_eliminate_target = 080008ce
 flash_rom_type = 128KB
 
-# ãƒã‚±ãƒƒãƒˆãƒ¢ãƒ³ã‚¹ã‚¿ãƒ¼ ã‚µãƒ•ã‚¡ã‚¤ã‚¢ (J)
+# ƒ|ƒPƒbƒgƒ‚ƒ“ƒXƒ^[ ƒTƒtƒ@ƒCƒA (J)
 # Pokemon Sapphire (J)
 game_name = POKEMON SAPP
 game_code = AXPJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ãƒã‚±ãƒƒãƒˆãƒ¢ãƒ³ã‚¹ã‚¿ãƒ¼ ãƒ«ãƒ“ãƒ¼ (J)
+# ƒ|ƒPƒbƒgƒ‚ƒ“ƒXƒ^[ ƒ‹ƒr[ (J)
 # Pokemon Ruby (J)
 game_name = POKEMON RUBY
 game_code = AXVJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ãƒã‚±ãƒƒãƒˆãƒ¢ãƒ³ã‚¹ã‚¿ãƒ¼ ãƒ•ã‚¡ã‚¤ã‚¢ãƒ¬ãƒƒãƒ‰ (J)
+# ƒ|ƒPƒbƒgƒ‚ƒ“ƒXƒ^[ ƒtƒ@ƒCƒAƒŒƒbƒh (J)
 # Pokemon: Fire Red (J)
 game_name = POKEMON FIRE
 game_code = BPRJ
@@ -893,7 +893,7 @@ idle_loop_eliminate_target = 080008b2
 #idle_loop_eliminate_target = 080008c6
 flash_rom_type = 128KB
 
-# ãƒã‚±ãƒ¢ãƒ³ä¸æ€è­°ã®ãƒ€ãƒ³ã‚¸ãƒ§ãƒ³ èµ¤ã®æ•‘åŠ©éšŠ (J)
+# ƒ|ƒPƒ‚ƒ“•sv‹c‚Ìƒ_ƒ“ƒWƒ‡ƒ“ Ô‚Ì‹~•‘à (J)
 # Pokemon: Fushigi no Dungeon Aka no Kyuujotai (J)
 # game_name = POKE DUNGEON
 # game_code = B24J
@@ -902,21 +902,21 @@ flash_rom_type = 128KB
 #
 # save type FLASH512_V131 64kB (512kbit), not 128kB (1024kbit)
 
-# F-ZERO ã‚¯ãƒ©ã‚¤ãƒãƒƒã‚¯ã‚¹ (J)
+# F-ZERO ƒNƒ‰ƒCƒ}ƒbƒNƒX (J)
 # F-Zero: Climax (J)
 game_name = F-ZEROCLIMAX
 game_code = BFTJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ãƒãƒªã‚ªãƒ‘ãƒ¼ãƒ†ã‚£ã‚¢ãƒ‰ãƒãƒ³ã‚¹ (J)
+# ƒ}ƒŠƒIƒp[ƒeƒBƒAƒhƒoƒ“ƒX (J)
 # Mario Party Advance (J)
 game_name = MARIOPARTYJA
 game_code = B8MJ
 vender_code = 01
 iwram_stack_optimize = no
 
-# ãƒãƒªã‚ªã‚´ãƒ«ãƒ•GBAãƒ„ã‚¢ãƒ¼ (J)
+# ƒ}ƒŠƒIƒSƒ‹ƒtGBAƒcƒA[ (J)
 # Mario Golf: GBA Tour (J)
 game_name = MARIOGOLFGBA
 game_code = BMGJ
@@ -926,42 +926,42 @@ idle_loop_eliminate_target = 08014e0a
 translation_gate_target = 03000d00
 translation_gate_target = 03000a30
 
-# ãƒ†ã‚¤ãƒ«ã‚º ã‚ªãƒ– ãƒ•ã‚¡ãƒ³ã‚¿ã‚¸ã‚¢ (J)
+# ƒeƒCƒ‹ƒY ƒIƒu ƒtƒ@ƒ“ƒ^ƒWƒA (J)
 # Tales of Phantasia (J)
 game_name = PHANTASIA
 game_code = AN8J
 vender_code = AF
 iwram_stack_optimize = no
 
-# ãƒªã‚ºãƒ å¤©å›½ (J)
+# ƒŠƒYƒ€“V‘ (J)
 # Rhythm Tengoku (J)
 game_name = RHYTHMTENGOK
 game_code = BRIJ
 vender_code = 01
 idle_loop_eliminate_target = 080013d4
 
-# åƒå¹´å®¶æ— (J)
+# ç”N‰Æ‘° (J)
 # Sennen Kazoku (J)
 game_name = SENNENKAZOKU
 game_code = BKAJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# BLEACHã‚¢ãƒ‰ãƒãƒ³ã‚¹ ç´…ã«æŸ“ã¾ã‚‹å°¸é­‚ç•Œ (J)
+# BLEACHƒAƒhƒoƒ“ƒX g‚Éõ‚Ü‚é›™°ŠE (J)
 # Bleach Advance (J)
 game_name = BLEACH ADV1
 game_code = BLEJ
 vender_code = 8P
 iwram_stack_optimize = no
 
-# ã‚·ãƒ£ã‚¤ãƒ‹ãƒ³ã‚°ãƒ»ã‚½ã‚¦ãƒ« (J)
+# ƒVƒƒƒCƒjƒ“ƒOEƒ\ƒEƒ‹ (J)
 # Shining Soul (J)
 game_name = SHINING SOUL
 game_code = AHUJ
 vender_code = 8P
 iwram_stack_optimize = no
 
-# ã‚·ãƒ£ã‚¤ãƒ‹ãƒ³ã‚°ãƒ»ã‚½ã‚¦ãƒ«2 (J)
+# ƒVƒƒƒCƒjƒ“ƒOEƒ\ƒEƒ‹2 (J)
 # Shining Soul 2 (J)
 game_name = SHININGSOUL2
 game_code = AU2J
@@ -969,126 +969,189 @@ vender_code = 8P
 iwram_stack_optimize = no
 
 
-# J.LEAGUE ãƒ—ãƒ­ã‚µãƒƒã‚«ãƒ¼ã‚¯ãƒ©ãƒ–ã‚’ã¤ãã‚ã†ï¼ã‚¢ãƒ‰ãƒãƒ³ã‚¹ (J)
+# J.LEAGUE ƒvƒƒTƒbƒJ[ƒNƒ‰ƒu‚ğ‚Â‚­‚ë‚¤IƒAƒhƒoƒ“ƒX (J)
 # J League Pro Soccer Club wo Tsukurou Advance (J)
 game_name = SAKATUKUADV
 game_code = AC2J
 vender_code = 8P
 iwram_stack_optimize = no
 
-# ã‚¢ãƒ‹ãƒãƒ«æ¨ªç”º ã©ãã©ãé€²ç´šè©¦é¨“!ã®å·» (J)
+# ƒAƒjƒ}ƒ‹‰¡’¬ ‚Ç‚«‚Ç‚«i‹‰Œ±!‚ÌŠª (J)
 # Animal Yokochou Dokidoki Shinkyuu Shiken (J)
 game_name = ANIYOKO2
 game_code = BAXJ
 vender_code = A4
 iwram_stack_optimize = no
 
-# ã‚¢ãƒ©ã‚¸ãƒ³ (J)
+# ƒAƒ‰ƒWƒ“ (J)
 # Disney's Aladdin (J)
 game_name = ALADDIN
 game_code = AJ6J
 vender_code = 08
 iwram_stack_optimize = no
 
-# ã†ãˆãã®æ³•å‰‡ ç¥å™¨ç‚¸è£‚ï¼èƒ½åŠ›è€…ãƒãƒˆãƒ« (J)
+# ‚¤‚¦‚«‚Ì–@‘¥ _Šíày—ôI”\—ÍÒƒoƒgƒ‹ (J)
 # Ueki no Housoku Jingi Sakuretsu! Nouryokusya Battle (J)
 game_name = UEKIJINGIBTL
 game_code = BUHJ
 vender_code = D9
 iwram_stack_optimize = no
 
-# ã‚ªãƒªã‚¨ãƒ³ã‚¿ãƒ«ãƒ–ãƒ«ãƒ¼ é’ã®å¤©å¤– (J)
+# ƒIƒŠƒGƒ“ƒ^ƒ‹ƒuƒ‹[ Â‚Ì“VŠO (J)
 # Oriental Blue - Ao no Tengai (J)
 game_name = ORIENTALBLUE
 game_code = AORJ
 vender_code = 01
 iwram_stack_optimize = no
 
-# ã‚«ãƒ«ãƒãƒ§ãƒ“ãƒƒãƒˆ (J)
+# ‰©‹à‚Ì‘¾—z ¸‚í‚ê‚µ‘ã (J)
+# Ougon no Taiyo - Ushinawareshi Toki (J)
+game_name = OUGONTAIYO_B
+game_code = AGFJ
+vender_code = 01
+idle_loop_eliminate_target = 08013542
+
+# ƒJƒ‹ƒ`ƒ‡ƒrƒbƒg (J)
 # Calciobit (J)
 game_name = CALCIOBIT01
 game_code = BIXJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ã‚²ãƒ¼ãƒ ãƒœãƒ¼ã‚¤ã‚¦ã‚©ãƒ¼ã‚ºã‚¢ãƒ‰ãƒãƒ³ã‚¹1+2 (J)
+# ƒQ[ƒ€ƒ{[ƒCƒEƒH[ƒYƒAƒhƒoƒ“ƒX1+2 (J)
 # Game Boy Wars Advance 1+2 (J)
 game_name = GBWARS1+2
 game_code = BGWJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ã“ã„ã¬ã¡ã‚ƒã‚“ã®ã¯ã˜ã‚ã¦ã®ãŠã•ã‚“ã½ (J)
+# ‚±‚¢‚Ê‚¿‚á‚ñ‚Ì‚Í‚¶‚ß‚Ä‚Ì‚¨‚³‚ñ‚Û (J)
 # Koinu-Chan no Hajimete no Osanpo (J)
 game_name = OSANPO
 game_code = BISJ
 vender_code = 1Q
 iwram_stack_optimize = no
 
-# ãƒã‚­ãƒ³ãƒ»ãƒªãƒˆãƒ« (J)
+# ƒ`ƒLƒ“EƒŠƒgƒ‹ (J)
 # Chicken Little (J)
 game_name = CLITTLEJ    
 game_code = BCHJ
 vender_code = G9
 iwram_stack_optimize = no
 
-# ã¨ã£ã¨ã“ãƒãƒ å¤ªéƒ ãƒãƒ ãƒãƒ ã‚¹ãƒãƒ¼ãƒ„ (JU)
+# ‚Æ‚Á‚Æ‚±ƒnƒ€‘¾˜Y ƒnƒ€ƒnƒ€ƒXƒ|[ƒc (JU)
 # Tottoko Hamutaro Hamuhamu Sports (JU)
 game_name = HAMSPORTS
 game_code = B85A
 vender_code = 01
 iwram_stack_optimize = no
 
-# è¥¿åŸç†æµå­ã®æ®¿å ‚éº»é›€ (J)
+# ¼Œ´—Œbq‚Ì“a“°–ƒ (J)
 # Nishihara Rieko no Dendou Mahjong (J)
 game_name = DENDOHMAJANG
 game_code = ASMJ
 vender_code = AG
 iwram_stack_optimize = no
 
-# ãƒœãƒ³ãƒãƒ¼ãƒãƒ³ã‚¸ã‚§ãƒƒã‚¿ãƒ¼ã‚º ã‚²ãƒ¼ãƒ ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ (J)
+# ¼Œ´—Œbq‚Ì“a“°–ƒ (J)
+# Nishihara Rieko no Dendou Mahjong (J)
+game_name = NishiharaDMJ
+game_code = ASMJ
+vender_code = AG
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.1 ƒ{ƒ“ƒo[ƒ}ƒ“ƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.1 - Bomberman Collection (J)
+game_name = HUBEST_VOL01
+game_code = B7IJ
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.2 ƒ[ƒhƒ‰ƒ“ƒi[ƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.2 - Lode Runner Collection (J)
+game_name = HUBEST_VOL02
+game_code = B72J
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.3 ƒAƒNƒVƒ‡ƒ“ƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.3 - Action Collection (J)
+game_name = HUBEST_VOL03
+game_code = B73J
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.4 “ä‰ğ‚«ƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.4 - Nazotoki Collection (J)
+game_name = HUBEST_VOL04
+game_code = B74J
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.5 ƒVƒ…[ƒeƒBƒ“ƒOƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.5 - Shooting Collection (J)
+game_name = HUBEST_VOL05
+game_code = B75J
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒnƒhƒ\ƒ“ƒxƒXƒgƒRƒŒƒNƒVƒ‡ƒ“Vol.6 –`Œ¯“‡ƒRƒŒƒNƒVƒ‡ƒ“ (J)
+# Hudson Best Collection Vol.6 - Bouken Jima Collection (J)
+game_name = HUBEST_VOL06
+game_code = B76J
+vender_code = 18
+iwram_stack_optimize = no
+
+# ƒ{ƒ“ƒo[ƒ}ƒ“ƒWƒFƒbƒ^[ƒY ƒQ[ƒ€ƒRƒŒƒNƒVƒ‡ƒ“ (J)
 # Bomberman Jetters Game Collection (J)
 game_name = BOMBERMANJGC
 game_code = BOMJ
 vender_code = 18
 iwram_stack_optimize = no
 
-# ãƒã‚±ãƒƒãƒˆãƒ¢ãƒ³ã‚¹ã‚¿ãƒ¼ ãƒªãƒ¼ãƒ•ã‚°ãƒªãƒ¼ãƒ³ (J)
+# ƒ|ƒPƒbƒgƒ‚ƒ“ƒXƒ^[ ƒŠ[ƒtƒOƒŠ[ƒ“ (J)
 # Pokemon Leaf Green (J)
 game_name = POKEMON LEAF
 game_code = BPGJ
 vender_code = 01
 flash_rom_type = 128KB
 
-# ãƒã‚¸ã‚«ãƒ«å°ç¥ (J)
+# ƒ}ƒWƒJƒ‹••_ (J)
 # Magical Houshin (J)
 game_name = M HOUSHIN
 game_code = AJOJ
 vender_code = C8
 iwram_stack_optimize = no
 
-# ãƒ¡ãƒ€ãƒ« ã‚ªãƒ– ã‚ªãƒŠãƒ¼ (J)
+# ƒ}ƒŠƒIƒeƒjƒXƒAƒhƒoƒ“ƒX (J)
+# Mario Tennis Advance (J)
+game_name = MARIOTENNISA
+game_code = BTMJ
+vender_code = 01
+idle_loop_eliminate_target = 08013888
+
+# ƒƒ_ƒ‹ ƒIƒu ƒIƒi[ (J)
 # Medal of Honor (J)
 game_name = INFILTRATOR
 game_code = BMHJ
 vender_code = 13
 iwram_stack_optimize = no
 
-# ãƒ­ãƒœãƒƒãƒˆãƒãƒ³ã‚³ãƒƒãƒ„2 ã‚¯ãƒ­ã‚¹ãƒãƒ¼ã‚¸ãƒ§ãƒ³ (J)
+# ƒƒ{ƒbƒgƒ|ƒ“ƒRƒbƒc2 ƒNƒƒXƒo[ƒWƒ‡ƒ“ (J)
 # Robot Ponkotto 2 - Cross Version (J)
 game_name = ROBOPON2CROS
 game_code = ACVJ
 vender_code = 18
 iwram_stack_optimize = no
 
-# ãƒ­ãƒœãƒƒãƒˆãƒãƒ³ã‚³ãƒƒãƒ„2 ãƒªãƒ³ã‚°ãƒãƒ¼ã‚¸ãƒ§ãƒ³ (J)
+# ƒƒ{ƒbƒgƒ|ƒ“ƒRƒbƒc2 ƒŠƒ“ƒOƒo[ƒWƒ‡ƒ“ (J)
 # Robot Ponkotto 2 - Ring Version (J)
 game_name = ROBOPON2RING
 game_code = ARPJ
 vender_code = 18
 iwram_stack_optimize = no
 
-# æ¡ƒå¤ªéƒé›»é‰„G ï½ã‚´ãƒ¼ãƒ«ãƒ‰ãƒ»ãƒ‡ãƒƒã‚­ã‚’ä½œã‚Œï¼ï½ (J)
+# “‘¾˜Y“d“SG `ƒS[ƒ‹ƒhEƒfƒbƒL‚ğì‚êI` (J)
 # Momotarou Densetsu G - Gold Deck wo Tsukure! (J)
 game_name = MOMOTETSU-G
 game_code = BM2J
@@ -1099,14 +1162,14 @@ iwram_stack_optimize = no
 # set backup media
 # savetype - "sram", "flash", "eeprom"
 
-# ã§ã˜ã“ãƒŸãƒ¥ãƒ‹ã‚±ãƒ¼ã‚·ãƒ§ãƒ³2 ï½æ‰“å€’ï¼ãƒ–ãƒ©ãƒƒã‚¯ã‚²ãƒã‚²ãƒå›£ï½ (J)
+# ‚Å‚¶‚±ƒ~ƒ…ƒjƒP[ƒVƒ‡ƒ“2 `‘Å“|Iƒuƒ‰ƒbƒNƒQƒ}ƒQƒ}’c` (J)
 # Digi Communication 2 - Datou! Black Gemagema Dan (J)
 game_name = DC2
 game_code = BDKJ
 vender_code = G7
 save_type = eeprom
 
-# ãƒ‰ãƒ©ã‚´ãƒ³ãƒœãƒ¼ãƒ«Z - THE LEGACY OF GOKU 2 INTERNATIONAL (J)
+# ƒhƒ‰ƒSƒ“ƒ{[ƒ‹Z - THE LEGACY OF GOKU 2 INTERNATIONAL (J)
 # Dragon Ball Z - The Legacy of Goku II International (J)
 game_name = DBZLGCYGOKU2
 game_code = ALFJ

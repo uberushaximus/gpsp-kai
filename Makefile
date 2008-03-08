@@ -12,6 +12,7 @@ dvemgr:
 	make -C ./prx/dvemgr/
 
 main:
+	./counter.pl
 	make -C ./gpsp/
 
 homehookprx:

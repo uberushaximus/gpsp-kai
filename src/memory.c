@@ -69,7 +69,6 @@ void init_memory_gamepak();
 u32 get_sio_mode(u16 io1, u16 io2);
 u32 send_adhoc_multi();
 
-u16 multi_data[4];
 u32 g_multi_mode;
 
 
@@ -1153,6 +1152,24 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       TRIGGER_TIMER(3);
       break;
 
+    case 0x128:
+      DBGOUT("Write 0x128(8) %04X\n",value);
+      if(g_adhoc_link_flag == NO)
+        ADDRESS8(io_registers, 0x128) |= 0x0C;
+      break;
+
+    case 0x129:
+      DBGOUT("Write 0x129(8) %04X\n",value);
+      break;
+
+    case 0x134:
+      DBGOUT("Write 0x134(8) %04X\n",value);
+      break;
+
+    case 0x135:
+      DBGOUT("Write 0x135(8) %04X\n",value);
+      break;
+
     // P1
     case 0x130:
     case 0x131:
@@ -1424,43 +1441,73 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
     case 0x10E:
       TRIGGER_TIMER(3);
       break;
-#ifdef ADHOC_MODE
-    // SIOCNT
+
+#ifdef USE_ADHOC
+// SIOCNT
+//      Bit   Expl.
+//      0-1   Baud Rate          (0-3: 9600,38400,57600,115200 bps)
+//      2     SI-Terminal        (0=Parent, 1=Child)                  (Read Only)
+//      3     SD-Terminal        (0=Bad connection, 1=All GBAs Ready) (Read Only)
+
+//      4-5   Multi-Player ID    (0=Parent, 1-3=1st-3rd child)        (Read Only)
+//      6     Multi-Player Error (0=Normal, 1=Error)                  (Read Only)
+//      7     Start/Busy Bit     (0=Inactive, 1=Start/Busy) (Read Only for Slaves)
+
+//      8-11  Not used           (R/W, should be 0)
+
+//      12    Must be "0" for Multi-Player mode
+//      13    Must be "1" for Multi-Player mode
+//      14    IRQ Enable         (0=Disable, 1=Want IRQ upon completion)
+//      15    Not used           (Read only, always 0)
     case 0x128:
-      switch(get_sio_mode(value, ADDRESS16(io_registers, 0x134)))
+      DBGOUT("Write 0x128 %04X\n",value);
+      if(g_adhoc_link_flag == NO)
+        ADDRESS16(io_registers, 0x128) |= 0x0C;
+      else
       {
-        case SIO_MULTIPLAYER: // マルチプレイヤーモード
-          if(value & 0x80) // bit7(start bit)が1の時 転送開始命令
-          {
-            if(!g_multi_id)  // 親モードの時 g_multi_id = 0
+        switch(get_sio_mode(value, ADDRESS16(io_registers, 0x134)))
+        {
+          case SIO_MULTIPLAYER: // マルチプレイヤーモード
+            if(value & 0x80) // bit7(start bit)が1の時 転送開始命令
             {
-              if(!g_adhoc_transfer_flag) // g_adhoc_transfer_flag == 0 転送中で無いとき
+              if(!g_multi_id)  // 親モードの時 g_multi_id = 0
               {
-                g_multi_mode = MULTI_START; // データの送信
-              } // 転送中の時
-              value |= (g_adhoc_transfer_flag != 0)<<7;
+                if(!g_adhoc_transfer_flag) // g_adhoc_transfer_flag == 0 転送中で無いとき
+                {
+                  g_multi_mode = MULTI_START; // データの送信
+                } // 転送中の時
+                value |= (g_adhoc_transfer_flag != 0)<<7;
+              }
             }
-            // 親機/子機共通
-            value &= 0xff8b;
-            value |= (g_multi_id ? 0xc : 8);
-            value |= g_multi_id << 4;
-            ADDRESS16(io_registers, 0x128) = value;
             if(g_multi_id)
+            {
+              value &= 0xf00b;
+              value |= 0x8;
+              value |= g_multi_id << 4;
+              ADDRESS16(io_registers, 0x128) = value;
               ADDRESS16(io_registers, 0x134) = 7; // 親と子で0x134の設定値を変える
+            }
             else
+            {
+              value &= 0xf00f;
+              value |= 0xc;
+              value |= g_multi_id << 4;
+              ADDRESS16(io_registers, 0x128) = value;
               ADDRESS16(io_registers, 0x134) = 3;
+            }
             break;
-          }
+        }
       }
 
     // SIOMLT_SEND
     case 0x12A:
-      multi_data[g_multi_id] = value;
+      DBGOUT("Write 0x12A %04X\n",value);
       ADDRESS16(io_registers, 0x12A) = value;
       break;
 
     // RCNT
     case 0x134:
+      DBGOUT("Write 0x134 %04X\n",value);
       if(!value) // 0の場合
       {
         ADDRESS16(io_registers, 0x134) = 0;
@@ -1474,11 +1521,19 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
           if(g_multi_id) value |= 4;
           ADDRESS16(io_registers, 0x134) = value;
           ADDRESS16(io_registers, 0x128) = ((ADDRESS16(io_registers, 0x128)&0xff8b)|(g_multi_id ? 0xc : 8)|(g_multi_id<<4));
-          return CPU_ALERT_NONE;
-        break;
+          break;
+
+        default:
+          ADDRESS16(io_registers, 0x134) = value;
+          break;
       }
       break;
+#else
+    case 0x128:
+      ADDRESS16(io_registers, 0x128) |= 0x0C;
+      break;
 #endif
+
     // IE
     case 0x200:
       ADDRESS16(io_registers, 0x200) = value;
@@ -2362,25 +2417,17 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
   {
     while(fgets(current_line, 256, config_file))
     {
-      if(parse_config_line(current_line, current_variable, current_value)
-       != -1)
+      if(parse_config_line(current_line, current_variable, current_value) != -1)
       {
-        if(strcasecmp(current_variable, "game_name") ||
-         strcasecmp(current_value, gamepak_title))
+        if(strcasecmp(current_variable, "game_name") || strcasecmp(current_value, gamepak_title))
           continue;
 
-        if(!fgets(current_line, 256, config_file) ||
-         (parse_config_line(current_line, current_variable,
-           current_value) == -1) ||
-         strcasecmp(current_variable, "game_code") ||
-         strcasecmp(current_value, gamepak_code))
+        if(!fgets(current_line, 256, config_file) || (parse_config_line(current_line, current_variable, current_value) == -1) ||
+         strcasecmp(current_variable, "game_code") || strcasecmp(current_value, gamepak_code))
           continue;
 
-        if(!fgets(current_line, 256, config_file) ||
-         (parse_config_line(current_line, current_variable,
-           current_value) == -1) ||
-         strcasecmp(current_variable, "vender_code") ||
-          strcasecmp(current_value, gamepak_maker))
+        if(!fgets(current_line, 256, config_file) || (parse_config_line(current_line, current_variable, current_value) == -1) ||
+         strcasecmp(current_variable, "vender_code") || strcasecmp(current_value, gamepak_maker))
           continue;
 
         while(fgets(current_line, 256, config_file))
@@ -2414,14 +2461,12 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
               }
             }
 
-            if(!strcasecmp(current_variable, "iwram_stack_optimize") &&
-              !strcasecmp(current_value, "no"))
+            if(!strcasecmp(current_variable, "iwram_stack_optimize") && !strcasecmp(current_value, "no"))
             {
                 iwram_stack_optimize = 0;
             }
 
-            if(!strcasecmp(current_variable, "flash_rom_type") &&
-              !strcasecmp(current_value, "128KB"))
+            if(!strcasecmp(current_variable, "flash_rom_type") && !strcasecmp(current_value, "128KB"))
             {
               flash_device_id = FLASH_DEVICE_MACRONIX_128KB;
             }
@@ -3363,33 +3408,21 @@ void init_gamepak_buffer()
   gamepak_rom = NULL;
   strcpy(gamepak_title, "gpSP");
 
-  // 増加メモリ対応の判別
-  if (psp_model != psp_2000_new)
+  // Try to initialize 32MB
+  gamepak_ram_buffer_size = 32 * 1024 * 1024;
+  gamepak_rom = malloc(gamepak_ram_buffer_size);
+
+  if(gamepak_rom == NULL)
   {
-    // 対応していない場合
-    // Try to initialize 32MB
-    gamepak_ram_buffer_size = 32 * 1024 * 1024;
+    // Try 14MB, for PSP, then lower in 1MB increments
+    gamepak_ram_buffer_size = 31 * 1024 * 1024;
     gamepak_rom = malloc(gamepak_ram_buffer_size);
 
-    if(gamepak_rom == NULL)
+    while(gamepak_rom == NULL)
     {
-      // Try 14MB, for PSP, then lower in 1MB increments
-      gamepak_ram_buffer_size = 31 * 1024 * 1024;
+      gamepak_ram_buffer_size -= (1 * 1024 * 1024);
       gamepak_rom = malloc(gamepak_ram_buffer_size);
-
-      while(gamepak_rom == NULL)
-      {
-        gamepak_ram_buffer_size -= (1 * 1024 * 1024);
-        gamepak_rom = malloc(gamepak_ram_buffer_size);
-      }
     }
-  }
-  else
-  {
-    // 対応している場合
-    gamepak_ram_buffer_size = 32 * 1024 * 1024;
-    gamepak_rom = (u8 *)PSP2K_MEM_TOP;
-    gamepak_rom_resume = malloc(4 * 1024 * 1024);
   }
   // Here's assuming we'll have enough memory left over for this,
   // and that the above succeeded (if not we're in trouble all around)
@@ -3491,6 +3524,7 @@ void init_memory()
   io_registers[REG_BG3PA] = 0x100;
   io_registers[REG_BG3PD] = 0x100;
   io_registers[REG_RCNT] = 0x8000;
+  io_registers[REG_SIOCNT] = 0x000C;
 
   sram_size = SRAM_SIZE_32KB;
   flash_size = FLASH_SIZE_64KB;
@@ -3775,22 +3809,30 @@ memory_savestate_body(WRITE_MEM);
 
 u32 get_sio_mode(u16 io1, u16 io2)
 {
-  return SIO_MULTIPLAYER;
   if(!(io2 & 0x8000))
   {
     switch(io1 & 0x3000)
     {
       case 0x0000:
+        DBGOUT("SIO MODE NORMAL8\n");
         return SIO_NORMAL8;
       case 0x1000:
+        DBGOUT("SIO MODE NORMAL32\n");
         return SIO_NORMAL32;
       case 0x2000:
+        DBGOUT("SIO MODE MULTI\n");
         return SIO_MULTIPLAYER;
       case 0x3000:
+        DBGOUT("SIO MODE UART\n");
         return SIO_UART;
     }
   }
-  if(io2 & 0x4000) return SIO_JOYBUS;
+  if(io2 & 0x4000)
+  {
+    DBGOUT("SIO MODE JOYBUS\n");
+    return SIO_JOYBUS;
+  }
+  DBGOUT("SIO MODE GP\n");
   return SIO_GP;
 }
 

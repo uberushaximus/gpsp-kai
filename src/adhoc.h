@@ -75,5 +75,6 @@ void adhoc_exit();
 
 extern u32 g_multi_id;
 extern u32 g_adhoc_transfer_flag;
+extern u32 g_adhoc_link_flag;
 
 #endif

@@ -17,6 +17,8 @@
 
 ネットワークインストール
 	PSPのブラウザから http://www.tfact.jp/psp/gpsp/ にアクセスし、アップデート3ヶ所と新規インストール1ヶ所のリンクからインストールする
+	GBAのBIOSファイルをGBA_BIOS.BINにリネームし、メモリースティックの\PSP\GAME\gpSP\にコピーする
+	GBAのROMファイルを\PSP\GAME\gpSP\GBA\ROM\にコピーする
 
 ROMフォルダ/SAVEフォルダ/スナップショットフォルダの変更方法
 	config_file.txtのdir.cfgの項目を参照し、cfg/dir.cfgを変更する

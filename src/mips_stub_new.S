@@ -2,7 +2,6 @@
 #
 # Copyright (C) 2006 Exophase <exophase@gmail.com>
 # Copyright (C) 2007 takka <takka@tfact.net>
-# Copyright (C) 2007 _____ <_____>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -17,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-
-# CPUエミュレート ASMコア
 
 .align 4
 
@@ -49,7 +46,7 @@
 .global execute_arm_translate
 .global invalidate_icache_region
 .global invalidate_all_cache
-.global reg_check
+# .global reg_check
 
 .global memory_map_read
 .global memory_map_write
@@ -59,16 +56,16 @@
 
 # MIPS register layout:
 
-# $0 - constant zero
-# $1 - temporary
-# $2 - temporary / return value
-# $3 - ARM r0 (not saved)
-# $4 - temporary / function argument 0
-# $5 - temporary / function argument 1
-# $6 - temporary / function argument 2
-# $7 - ARM r1 (not saved)
-# $8 - ARM r2 (not saved)
-# $9 - ARM r3 (not saved)
+# $0  - constant zero
+# $1  - temporary
+# $2  - temporary / return value
+# $3  - ARM r0 (not saved)
+# $4  - temporary / function argument 0
+# $5  - temporary / function argument 1
+# $6  - temporary / function argument 2
+# $7  - ARM r1 (not saved)
+# $8  - ARM r2 (not saved)
+# $9  - ARM r3 (not saved)
 # $10 - ARM r4 (not saved)
 # $11 - ARM r5 (not saved)
 # $12 - ARM r6 (not saved)
@@ -161,10 +158,10 @@
 .endm
 
 .macro save_registers
-  sw $3, REG_R0($16)
-  sw $7, REG_R1($16)
-  sw $8, REG_R2($16)
-  sw $9, REG_R3($16)
+  sw $3,  REG_R0($16)
+  sw $7,  REG_R1($16)
+  sw $8,  REG_R2($16)
+  sw $9,  REG_R3($16)
   sw $10, REG_R4($16)
   sw $11, REG_R5($16)
   sw $12, REG_R6($16)
@@ -182,10 +179,10 @@
 .endm
 
 .macro restore_registers
-  lw $3, REG_R0($16)
-  lw $7, REG_R1($16)
-  lw $8, REG_R2($16)
-  lw $9, REG_R3($16)
+  lw $3,  REG_R0($16)
+  lw $7,  REG_R1($16)
+  lw $8,  REG_R2($16)
+  lw $9,  REG_R3($16)
   lw $10, REG_R4($16)
   lw $11, REG_R5($16)
   lw $12, REG_R6($16)
@@ -197,7 +194,7 @@
 
   lw $18, REG_R10($16)
   lw $28, REG_R13($16)
-  lw $30, REG_R14($16)
+#  lw $30, REG_R14($16)
 .endm
 
 # Process a hardware event. Since an interrupt might be
@@ -214,10 +211,11 @@ mips_update_gba:
 
   addiu $sp, $sp, -4              # make room on the stack
   sw $ra,($sp)                    # save return address
+
   collapse_flags                  # update cpsr
   save_registers                  # save registers
   jal update_gba                  # process the next event
-  sw $0, CHANGED_PC_STATUS($16)
+  lw $28, GP_SAVE($16)            # save registers (delay)
 
   lw $ra, ($sp)                   # restore return address
   addiu $sp, $sp, 4               # fix stack
@@ -227,9 +225,8 @@ mips_update_gba:
   addu $17, $2, $0                # $17 = new cycle count (delay slot)
 
   restore_registers
-
   jr $ra                          # if not, go back to caller
-  nop
+  lw $30, REG_R14($16)            # restore registers (delay)
 
 # Perform an indirect branch.
 
@@ -238,26 +235,29 @@ mips_update_gba:
 mips_indirect_branch_arm:
   save_registers
   jal block_lookup_address_arm    # $2 = MIPS address to jump to
-  nop
+  lw $28, GP_SAVE($16)            # save registers (delay)
+
   restore_registers
   jr $2                           # jump to it
-  nop
+  lw $30, REG_R14($16)            # restore registers (delay)
 
 mips_indirect_branch_thumb:
   save_registers
   jal block_lookup_address_thumb  # $2 = MIPS address to jump to
-  nop
+  lw $28, GP_SAVE($16)            # save registers (delay)
+
   restore_registers
   jr $2                           # jump to it
-  nop
+  lw $30, REG_R14($16)            # restore registers (delay)
 
 mips_indirect_branch_dual:
   save_registers
   jal block_lookup_address_dual   # $2 = MIPS address to jump to
-  nop
+  lw $28, GP_SAVE($16)            # save registers (delay)
+
   restore_registers
   jr $2                           # jump to it
-  nop
+  lw $30, REG_R14($16)            # restore registers (delay)
 
 
 # $4: address to write to
@@ -271,18 +271,17 @@ mips_indirect_branch_dual:
 .macro patch_handler ftable, force_open
   srl $1, $4, 24                  # $1 = address region
   sltu $2, $1, 0x0F               # check if the value is open
-  bne $2, $0, 1f
-  sll $1, $1, 2                   # make address word indexed (delay)
-
+  sll $1, $1, 2                   # make address word indexed
+  beql $2, $0, 1f
   addiu $1, $0, (\force_open * 4)
 
 1:
   lui $2, %hi(\ftable)
   addu $2, $2, $1
   lw $2, %lo(\ftable)($2)         # new function handler is in $2
-  srl $2, $2, 2                   # remove lower two bits
 
   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
+  srl $2, $2, 2                   # remove lower two bits
   ins $1, $2, 0, 26               # insert offset into jal
 
   addiu $ra, $ra, -8              # rewind return address to function call
@@ -302,21 +301,18 @@ mips_indirect_branch_dual:
 .macro patch_handler_align ftable, alignment
   srl $1, $4, 24                  # $1 = address region
   sltu $2, $1, 0x0F               # check if the value is open
-  bne $2, $0, 1f
-  sll $1, $1, 2                   # make address word indexed (delay)
-
-  addiu $1, $0, 4                 # force address to 0x1 (open)
+  sll $1, $1, 2                   # make address word indexed
+  beql $2, $0, 1f
+  addiu $1, $0, 4                 # force address to 0x1 (open) delay slot
 
 1:
   ins $1, $4, 6, \alignment       # place alignment bits into offset
   lui $2, %hi(\ftable)
-
   addu $2, $2, $1
   lw $2, %lo(\ftable)($2)         # new function handler is in $2
 
-  srl $2, $2, 2                   # remove lower two bits
-
   lui $1, %hi(3 << 26)            # $1 = 3 (JAL opcode)
+  srl $2, $2, 2                   # remove lower two bits
   ins $1, $2, 0, 26               # insert offset into jal
 
   addiu $ra, $ra, -8              # rewind return address to function call
@@ -444,75 +440,77 @@ mips_indirect_branch_dual:
 
 
 .macro translate_region_vram_core
-  addiu $2, $2, -3                # see if it's 3
   ext $4, $4, 0, 17               # generate 17bit offset
-  bne $2, $0, 1f                  # if $2 != $0 then j 1:
-  lui $1, %hi(vram)               # start loading vram address (delay)
-
-  addiu $4, $4, -0x8000           # move address into VRAM region
+  bnel $2, $0, 1f                 # if address >= 0x10000
+  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
 
 1:
+  lui $1, %hi(vram)               # start loading vram address
   addu $2, $1, $4                 # $2 = (hi)vram + address
 .endm
 
 .macro translate_region_vram patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align16 align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 1                # mask out lower bit of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_load_align32 align_bits, alignment, patch_handler
   region_check_align 6, \align_bits, \alignment, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 2                # mask out lower two bits of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_store_align16 patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 1                # mask out lower bit of address
   translate_region_vram_core
 .endm
 
 .macro translate_region_vram_store_align32 patch_handler
   region_check 6, \patch_handler
-  ext $2, $4, 15, 2               # $2 = bits 15 and 16 of address (delay)
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
   ins $4, $0, 0, 2                # mask out lower two bits of address
   translate_region_vram_core
 .endm
+
+
 
 .macro translate_region_gamepak_core mask
   srl $2, $4, 15                  # $2 = page number of address (delay)
   sll $2, $2, 2                   # adjust to word index
   addu $2, $2, $16                # $2 = memory_map_read[address >> 15]
-  lw $2, -32768($2)               #
+  lw $2, -32768($2)
   bne $2, $0, 1f                  # if it's non-NULL continue
   andi $1, $4, \mask              # $1 = low 15bits of address (delay slot)
 
   sw $ra, REG_SAVE2($16)          # save return address
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
   ext $4, $4, 15, 10              # $4 = (address >> 15) & 0x3FF
 
   jal load_gamepak_page           # get page in $2
   sw $1, REG_SAVE($16)            # save offset (delay)
-  lw $1, REG_SAVE($16)            # restore offset (delay)
 
+  lw $1, REG_SAVE($16)            # restore offset
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE2($16)          # restore return address
 
@@ -554,13 +552,15 @@ mips_indirect_branch_dual:
   sw $6, REG_SAVE3($16)           # save a2
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
   ext $4, $4, 15, 10              # $4 = (address >> 15) & 0x3FF
 
   jal load_gamepak_page           # get page in $2
   sw $1, REG_SAVE($16)            # save offset (delay)
-  lw $1, REG_SAVE($16)            # restore offset
 
+  lw $1, REG_SAVE($16)            # restore offset
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE2($16)          # restore return address
   lw $6, REG_SAVE3($16)           # restore a2
@@ -572,16 +572,16 @@ mips_indirect_branch_dual:
 
 .macro eeprom_load_a patch_handler
   region_check 0xD, \patch_handler
-
   sw $ra, REG_SAVE($16)           # save the return address (delay)
-  sw $6, REG_SAVE2($16)           # save a2
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal read_eeprom                 # get eeprom value in $2
-  nop
+  sw $6, REG_SAVE2($16)           # save a2 (delay)
 
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
@@ -593,15 +593,13 @@ mips_indirect_branch_dual:
   sw $ra, REG_SAVE($16)           # save the return address (delay)
 
   save_registers                  # save the registers
-
   jal read_eeprom                 # get eeprom value in $2
-  nop
+  lw $28, GP_SAVE($16)
 
   restore_registers               # restore the other registers
-
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
-  nop
+  lw $30, REG_R14($16)
 .endm
 
 .macro eeprom_load patch_handler
@@ -625,11 +623,13 @@ mips_indirect_branch_dual:
 
 .macro backup_load_core
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal read_backup                 # get backup value in $2
-  ext $4, $4, 0, 16               # address &= 0xFFFF (delay)
+  andi $4, $4, 0xFFFF             # address &= 0xFFFF (delay)
 
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
@@ -641,11 +641,13 @@ mips_indirect_branch_dual:
   sw $6, REG_SAVE2($16)           # save a2
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal read_backup                 # get backup value in $2
-  ext $4, $4, 0, 16               # address &= 0xFFFF (delay)
+  andi $4, $4, 0xFFFF             # address &= 0xFFFF (delay)
 
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
@@ -681,23 +683,31 @@ mips_indirect_branch_dual:
 
 
 .macro open_load8_core
-  lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
-  andi $2, $2, 0x20               # test T bit
-  beq $2, $0, 1f                  # branch if ARM mode
-  andi $4, $4, 0x03               # isolate lower 3bits from address (delay)
+  srl $2, $4, 29
+  bnel $2, $0, 2f                 # if(address > 0x1FFFFFFF)
+  addu $2, $0, $0                 # value = 0 (delay)
 
-  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit
+  lw $2, REG_CPSR($16)            # $2 = CPSR
+  andi $2, $2, 0x20               # test T bit
+  andi $4, $4, 0x03               # in ARM mode, isolate lower 2bits from address
+
+  bnel $2, $0, 1f                 # branch if Thumb mode
+  andi $4, $4, 0x01               # in Thumb mode, isolate one more bit (delay)
 
 1:
   sw $ra, REG_SAVE($16)           # save the return address
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal read_memory8                # get instruction at PC
   addu $4, $5, $4                 # a0 = PC + low bits of address
 
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
+
+2:
   jr $ra                          # return
 .endm
 
@@ -709,23 +719,31 @@ mips_indirect_branch_dual:
 
 
 .macro open_load16_core
-  lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
-  andi $2, $2, 0x20               # test T bit
-  beq $2, $0, 1f                  # branch if ARM mode
-  andi $4, $4, 0x02               # isolate bit 1 from address (delay)
+  srl $2, $4, 29
+  bnel $2, $0, 2f                 # if(address > 0x1FFFFFFF)
+  addu $2, $0, $0                 # value = 0 (delay)
 
-  addu $4, $0, $0                 # zero out address bit
+  lw $2, REG_CPSR($16)            # $2 = CPSR
+  andi $2, $2, 0x20               # test T bit
+  andi $4, $4, 0x02               # in ARM mode, isolate bit 1 from address
+
+  bnel $2, $0, 1f                 # branch if Thumb mode
+  addu $4, $0, $0                 # in Thumb mode, zero out address bit (delay)
 
 1:
   sw $ra, REG_SAVE($16)           # save the return address
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal read_memory16               # get instruction at PC
   addu $4, $5, $4                 # a0 = PC + low bits of address
 
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
+
+2:
   jr $ra                          # return
 .endm
 
@@ -741,10 +759,15 @@ mips_indirect_branch_dual:
 
 
 .macro open_load32_core
-  lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
+  srl $2, $4, 29
+  bnel $2, $0, 3f                 # if(address > 0x1FFFFFFF)
+  addu $2, $0, $0                 # value = 0 (delay)
+
+  lw $2, REG_CPSR($16)            # $2 = CPSR
   andi $2, $2, 0x20               # test T bit
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   beq $2, $0, 1f                  # branch if ARM mode
   sw $ra, REG_SAVE($16)           # save the return address (delay)
@@ -757,22 +780,30 @@ mips_indirect_branch_dual:
 
 1:
   jal read_memory32               # get instruction at PC
-  addu $4, $5, $4                 # a0 = PC
+  addu $4, $5, $0                 # a0 = PC (delay)
 
 2:                                # join point
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
+
+3:
   jr $ra                          # return
 .endm
 
 .macro open_load32_a patch_handler
   region_check_open \patch_handler
 
-  lw $2, REG_CPSR($16)            # $2 = CPSR (delay)
+  srl $2, $4, 29
+  bnel $2, $0, 3f                 # if(address > 0x1FFFFFFF)
+  addu $2, $0, $0                 # value = 0 (delay)
+
+  lw $2, REG_CPSR($16)            # $2 = CPSR
   andi $2, $2, 0x20               # test T bit
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
   sw $6, REG_SAVE2($16)           # save a2
 
   beq $2, $0, 1f                  # branch if ARM mode
@@ -786,14 +817,19 @@ mips_indirect_branch_dual:
 
 1:
   jal read_memory32               # get instruction at PC
-  addu $4, $5, $4                 # a0 = PC
+  addu $4, $5, $0                 # a0 = PC (delay)
 
 2:
   restore_registers               # restore the other registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
   lw $6, REG_SAVE2($16)           # restore a2 (delay)
+
+3:
+  jr $ra
+  nop
 .endm
 
 .macro open_load32_align align_bits, alignment, patch_handler
@@ -811,6 +847,7 @@ mips_indirect_branch_dual:
   sw $ra, REG_SAVE($16)           # save the return address (delay)
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal \function                   # store value out
   andi $4, $4, \mask              # mask address (delay)
@@ -819,7 +856,7 @@ mips_indirect_branch_dual:
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
-  nop
+  lw $30, REG_R14($16)
 .endm
 
 
@@ -828,6 +865,7 @@ mips_indirect_branch_dual:
   sw $ra, REG_SAVE($16)           # save the return address (delay)
 
   save_registers                  # save the registers
+  lw $28, GP_SAVE($16)
 
   jal \function                   # store value out
   andi $4, $4, \mask              # mask address (delay)
@@ -836,7 +874,7 @@ mips_indirect_branch_dual:
 
   lw $ra, REG_SAVE($16)           # restore return address
   jr $ra                          # return
-  nop
+  lw $30, REG_R14($16)
 .endm
 
 
@@ -973,7 +1011,6 @@ execute_load_bios_u8:
   open_load8_core
   nop
 
-
 execute_load_ewram_u8:
   translate_region_ewram patch_load_u8
   load_u8 (ewram + 0x8000)
@@ -987,8 +1024,17 @@ execute_load_iwram_u8:
   load_u8 (iwram + 0x8000)
 
 execute_load_io_u8:
-  translate_region 4, patch_load_u8, io_registers, 0x3FF
+  region_check 4, patch_load_u8
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u8 io_registers
+
+1:
+  open_load8_core
+  nop
 
 execute_load_palette_u8:
   translate_region 5, patch_load_u8, palette_ram, 0x3FF
@@ -1090,8 +1136,17 @@ execute_load_iwram_s8:
   load_s8 (iwram + 0x8000)
 
 execute_load_io_s8:
-  translate_region 4, patch_load_s8, io_registers, 0x3FF
+  region_check 4, patch_load_s8
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_s8 io_registers
+
+1:
+  open_load8_core
+  seb $2, $2
 
 execute_load_palette_s8:
   translate_region 5, patch_load_s8, palette_ram, 0x3FF
@@ -1192,8 +1247,17 @@ execute_load_iwram_u16:
   load_u16 (iwram + 0x8000)
 
 execute_load_io_u16:
-  translate_region_align 4, 1, 0, patch_load_u16, io_registers, 0x3FF
+  region_check_align 4, 1, 0 patch_load_u16
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u16 io_registers
+
+1:
+  open_load16_core
+  nop
 
 execute_load_palette_u16:
   translate_region_align 5, 1, 0, patch_load_u16, palette_ram, 0x3FF
@@ -1273,8 +1337,17 @@ execute_load_iwram_u16u:
   load_u16_unaligned (iwram + 0x8000)
 
 execute_load_io_u16u:
-  translate_region_align 4, 1, 1, patch_load_u16, io_registers, 0x3FE
+  region_check_align 4, 1, 1, patch_load_u16
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FE              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u16_unaligned io_registers
+
+1:
+  open_load16_core
+  ror $2, $2, 8
 
 execute_load_palette_u16u:
   translate_region_align 5, 1, 1, patch_load_u16, palette_ram, 0x3FE
@@ -1320,7 +1393,6 @@ execute_load_open_u16u:
   ror $2, $2, 8                   # rotate value by 8bits
 
 load_u16_ftable:
-#  .long execute_load_full_u16
   .long execute_load_bios_u16     # 0x00 BIOS
   .long execute_load_open_u16     # 0x01 open address
   .long execute_load_ewram_u16    # 0x02 EWRAM
@@ -1356,41 +1428,6 @@ load_u16_ftable:
   .long execute_load_open_u16u    # 0x0F open unaligned
 
 
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-  .long execute_load_full_u16
-
-
-
 patch_load_u16:
   patch_handler_align load_u16_ftable, 1
 
@@ -1410,13 +1447,12 @@ execute_load_bios_s16:
 
 1:
   lui $2, %hi(bios_read_protect)  # generate upper address
-  ins $2, $4, 0, 2                # bit 1 contributes
+  ins $2, $4, 0, 2                # bit 2 contributes
   load_s16 bios_read_protect
 
 2:
   open_load16_core
   seh $2, $2
-
 
 execute_load_ewram_s16:
   translate_region_ewram_load_align 1, 0, patch_load_s16
@@ -1428,8 +1464,17 @@ execute_load_iwram_s16:
   load_s16 (iwram + 0x8000)
 
 execute_load_io_s16:
-  translate_region_align 4, 1, 0, patch_load_s16, io_registers, 0x3FF
+  region_check_align 4, 1, 0, patch_load_s16
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_s16 io_registers
+
+1:
+  open_load16_core
+  seh $2, $2
 
 execute_load_palette_s16:
   translate_region_align 5, 1, 0, patch_load_s16, palette_ram, 0x3FF
@@ -1485,62 +1530,70 @@ execute_load_bios_s16u:
   bne $1, $0, 1f                  # if not, perform BIOS protected read
   lui $2, %hi(bios_rom)           # generate upper address (delay)
 
-  andi $4, $4, 0x3FFE             # generate offset
+  andi $4, $4, 0x3FFF             # generate offset
   addu $2, $2, $4
   load_s16_unaligned bios_rom
 
 1:
   lui $2, %hi(bios_read_protect)  # generate upper address
-  ext $1, $4, 1, 1
-  ins $2, $1, 1, 1                # bit 1 contributes
+  ins $2, $4, 0, 2                # bit 2 contributes
   load_s16_unaligned bios_read_protect
 
 2:
-  open_load16_core
+  open_load8_core
   seb $2, $2
 
 execute_load_ewram_s16u:
-  translate_region_ewram_load_align16 1, 1, patch_load_s16
+  translate_region_ewram_load_align 1, 1, patch_load_s16
   load_s16_unaligned (ewram + 0x8000)
 
 execute_load_iwram_s16u:
-  translate_region_align 3, 1, 1, patch_load_s16, (iwram + 0x8000), 0x7FFE
+  translate_region_align 3, 1, 1, patch_load_s16, (iwram + 0x8000), 0x7FFF
   load_s16_unaligned (iwram + 0x8000)
 
 execute_load_io_s16u:
-  translate_region_align 4, 1, 1, patch_load_s16, io_registers, 0x3FE
+  region_check_align 4, 1, 1, patch_load_s16
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_s16_unaligned io_registers
 
+1:
+  open_load8_core
+  seb $2, $2
+
 execute_load_palette_s16u:
-  translate_region_align 5, 1, 1, patch_load_s16, palette_ram, 0x3FE
+  translate_region_align 5, 1, 1, patch_load_s16, palette_ram, 0x3FF
   load_s16_unaligned palette_ram
 
 execute_load_vram_s16u:
-  translate_region_vram_load_align16 1, 1, patch_load_s16
+  translate_region_vram_load_align 1, 1, patch_load_s16
   load_s16_unaligned vram
 
 execute_load_oam_s16u:
-  translate_region_align 7, 1, 1, patch_load_s16, oam_ram, 0x3FE
+  translate_region_align 7, 1, 1, patch_load_s16, oam_ram, 0x3FF
   load_s16_unaligned oam_ram
 
 execute_load_gamepak8_s16u:
-  translate_region_gamepak_align16 8, 1, 1, patch_load_s16
+  translate_region_gamepak_align 8, 1, 1, patch_load_s16
   load_s16_unaligned 0
 
 execute_load_gamepak9_s16u:
-  translate_region_gamepak_align16 9, 1, 1, patch_load_s16
+  translate_region_gamepak_align 9, 1, 1, patch_load_s16
   load_s16_unaligned 0
 
 execute_load_gamepakA_s16u:
-  translate_region_gamepak_align16 10, 1, 1, patch_load_s16
+  translate_region_gamepak_align 10, 1, 1, patch_load_s16
   load_s16_unaligned 0
 
 execute_load_gamepakB_s16u:
-  translate_region_gamepak_align16 11, 1, 1, patch_load_s16
+  translate_region_gamepak_align 11, 1, 1, patch_load_s16
   load_s16_unaligned 0
 
 execute_load_gamepakC_s16u:
-  translate_region_gamepak_align16 12, 1, 1, patch_load_s16
+  translate_region_gamepak_align 12, 1, 1, patch_load_s16
   load_s16_unaligned 0
 
 execute_load_eeprom_s16u:
@@ -1551,7 +1604,8 @@ execute_load_backup_s16u:
   seb $2, $2                      # sign extend result from 8bits
 
 execute_load_open_s16u:
-  open_load16_align 1, 1, patch_load_s16
+  region_check_open_align 1, 1, patch_load_s16
+  open_load8_core
   seb $2, $2                      # sign extend result from 8bits
 
 load_s16_ftable:
@@ -1627,8 +1681,17 @@ execute_load_iwram_u32:
   load_u32 (iwram + 0x8000)
 
 execute_load_io_u32:
-  translate_region_align 4, 2, 0, patch_load_u32, io_registers, 0x3FF
+  region_check_align 4, 2, 0, patch_load_u32
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u32 io_registers
+
+1:
+  open_load32_core
+  nop
 
 execute_load_palette_u32:
   translate_region_align 5, 2, 0, patch_load_u32, palette_ram, 0x3FF
@@ -1705,8 +1768,17 @@ execute_load_iwram_u32u1:
   load_u32_unaligned (iwram + 0x8000), 1
 
 execute_load_io_u32u1:
-  translate_region_align 4, 2, 1, patch_load_u32, io_registers, 0x3FC
+  region_check_align 4, 2, 1, patch_load_u32
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FC              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u32_unaligned io_registers, 1
+
+1:
+  open_load32_core
+  ror $2, $2, 8
 
 execute_load_palette_u32u1:
   translate_region_align 5, 2, 1, patch_load_u32, palette_ram, 0x3FC
@@ -1783,8 +1855,17 @@ execute_load_iwram_u32u2:
   load_u32_unaligned (iwram + 0x8000), 2
 
 execute_load_io_u32u2:
-  translate_region_align 4, 2, 2, patch_load_u32, io_registers, 0x3FC
+  region_check_align 4, 2, 2, patch_load_u32
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FC              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u32_unaligned io_registers, 2
+
+1:
+  open_load32_core
+  ror $2, $2, 16
 
 execute_load_palette_u32u2:
   translate_region_align 5, 2, 2, patch_load_u32, palette_ram, 0x3FC
@@ -1860,8 +1941,17 @@ execute_load_iwram_u32u3:
   load_u32_unaligned (iwram + 0x8000), 3
 
 execute_load_io_u32u3:
-  translate_region_align 4, 2, 3, patch_load_u32, io_registers, 0x3FC
+  region_check_align 4, 2, 3, patch_load_u32
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FC              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u32_unaligned io_registers, 3
+
+1:
+  open_load32_core
+  ror $2, $2, 24
 
 execute_load_palette_u32u3:
   translate_region_align 5, 2, 3, patch_load_u32, palette_ram, 0x3FC
@@ -2001,7 +2091,6 @@ execute_load_bios_u32a:
 
 2:
   open_load32_a
-  nop
 
 execute_load_ewram_u32a:
   translate_region_ewram patch_load_u32a
@@ -2013,8 +2102,16 @@ execute_load_iwram_u32a:
   load_u32 (iwram + 0x8000)
 
 execute_load_io_u32a:
-  translate_region 4, patch_load_u32a, io_registers, 0x3FF
+  region_check 4, patch_load_u32a
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, 1f                  # if not, perform open read
+  lui $2, %hi(io_registers)       # generate upper address (delay)
+  andi $4, $4, 0x3FF              # generate offset
+  addu $2, $2, $4                 # add ptr upper and offset
   load_u32 io_registers
+
+1:
+  open_load32_a
 
 execute_load_palette_u32a:
   translate_region 5, patch_load_u32a, palette_ram, 0x3FF
@@ -2053,7 +2150,6 @@ execute_load_eeprom_u32a:
 
 execute_load_backup_u32a:
   backup_load_a patch_load_u32a
-  nop
 
 execute_load_open_u32a:
   open_load32_a patch_load_u32a
@@ -2099,37 +2195,54 @@ execute_store_iwram_u8:
 
 execute_store_io_u8:
   region_check 4, patch_store_u8
-  andi $5, $5, 0xFF               # make value 8bit
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $5, $5, 0xFF               # make value 8bit (delay)
   andi $4, $4, 0x3FF              # wrap around address
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register8          # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 execute_store_palette_u8:
-  region_check 5, patch_store_u8
-  lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
-  ins $5, $5, 8, 8                # double value
-  andi $4, $4, 0x3FE              # align palette address
-  addu $2, $2, $4
-
-  jr $ra                          # return
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  translate_region 5, patch_store_u8, palette_ram, 0x3FE
+  store_u8_double palette_ram
 
 execute_store_vram_u8:
-  translate_region_vram_store_align16 patch_store_u8
+  region_check 6, patch_store_u8
+  lui $2, %hi(io_registers)
+  addu $2, $2, $0                 # REG_DISPCNT = 0x00
+  lhu $1, %lo(io_registers)($2)   # $1 = io_registers[REG_DISPCNT]
+
+  lui $2, %hi(obj_address)
+  addi $1, $1, 0x01
+  andi $1, $1, 0x04               # ((DISPCNT + 1) >> 2) & 0x01 << word offset
+  addu $2, $2, $1
+  lw $2, %lo(obj_address)($2)     # $2 = OBJ Tile address
+
+  ext $4, $4, 0, 17               # address = adress & 0x1FFFF
+  sltu $1, $4, $2                 # if(address < OBJ Tile address) $1 = 1
+  beq $1, $0, ext_store_ignore    # byte writes to OBJ are ignored
+
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ins $4, $0, 0, 1                # mask out lower bit of address
+  bnel $2, $0, 1f                 # if address >= 0x10000
+  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
+
+1:
+  lui $1, %hi(vram)               # start loading vram address
+  addu $2, $1, $4                 # $2 = (hi)vram + address
   store_u8_double vram
 
 execute_store_oam_u8:
-   jr $ra
-#  translate_region 7, patch_store_u8, oam_ram, 0x3FE
-#  lui $1, %hi(oam_update)         # write non-zero to oam_update
-#  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
-#  store_u8_double oam_ram
+  ignore_region 7, patch_store_u8 # Write byte datas are ignore
 
 execute_store_ignore8_u8:
   ignore_region 8, patch_store_u8
@@ -2196,25 +2309,25 @@ execute_store_iwram_u16:
 
 execute_store_io_u16:
   region_check 4, patch_store_u16
-  andi $5, $5, 0xFFFF             # make value 16bit
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $5, $5, 0xFFFF             # make value 16bit (delay)
   andi $4, $4, 0x3FE              # wrap around/align address
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register16         # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 execute_store_palette_u16:
-  region_check 5, patch_store_u16
-  lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
-  andi $4, $4, 0x3FE              # wrap/align palette address
-  addu $2, $2, $4
-
-  jr $ra                          # return
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  translate_region 5, patch_store_u16, palette_ram, 0x3FE
+  store_u16 palette_ram
 
 execute_store_vram_u16:
   translate_region_vram_store_align16 patch_store_u16
@@ -2222,7 +2335,7 @@ execute_store_vram_u16:
 
 execute_store_oam_u16:
   translate_region 7, patch_store_u16, oam_ram, 0x3FE
-  lui $1, %hi(oam_update)         # write non-zero to oam_update
+  lui $1, %hi(oam_update)         # write non-zero to oam_update (delay)
   sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
   store_u16 oam_ram
 
@@ -2250,6 +2363,7 @@ execute_store_ignoreE_u16:
 execute_store_ignoreF_u16:
   ignore_high patch_store_u16
 
+
 store_u16_ftable:
   .long execute_store_ignore0_u16 # 0x00 BIOS
   .long execute_store_ignore1_u16 # 0x01 open address
@@ -2268,11 +2382,8 @@ store_u16_ftable:
   .long execute_store_ignoreE_u16 # 0x0E Flash ROM/SRAM
   .long execute_store_ignoreF_u16 # 0x0F open address
 
-
 patch_store_u16:
   patch_handler store_u16_ftable, 0x0F
-
-
 
 
 # Unsigned 32bit store handlers
@@ -2294,25 +2405,24 @@ execute_store_iwram_u32:
 
 execute_store_io_u32:
   region_check 4, patch_store_u32
-  nop
-  andi $4, $4, 0x3FC              # wrap around/align address
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $4, $4, 0x3FC              # wrap around/align address (delay)
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register32         # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 execute_store_palette_u32:
-  region_check 5, patch_store_u32
-  lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
-  andi $4, $4, 0x3FC              # wrap/align palette address
-  addu $2, $2, $4
-
-  jr $ra                          # return
-  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  translate_region 5, patch_store_u32, palette_ram, 0x3FC
+  store_u32 palette_ram
 
 execute_store_vram_u32:
   translate_region_vram_store_align32 patch_store_u32
@@ -2391,31 +2501,26 @@ execute_store_iwram_u32a:
 
 execute_store_io_u32a:
   region_check 4, patch_store_u32a
-  nop
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18 (delay)
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  sw $ra, REG_SAVE2($16)          # save ra (delay)
   sw $6, REG_SAVE($16)            # save a2
-  sw $ra, REG_SAVE2($16)          # save ra
-
-  andi $4, $4, 0x3FC              # wrap around/align address
 
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register32         # write the value out
-  nop
+  andi $4, $4, 0x3FC              # wrap around/align address (delay)
 
   restore_registers
+  lw $30, REG_R14($16)
 
   lw $ra, REG_SAVE2($16)          # restore ra
   jr $ra
   lw $6, REG_SAVE($16)            # restore a2 (delay)
 
 execute_store_palette_u32a:
-  region_check 5, patch_store_u32a
-  lui $2, %hi(palette_ram)        # start loading palette_ram address (delay)
-  andi $4, $4, 0x3FC              # wrap/align palette address
-  addu $2, $2, $4
-  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-
-  jr $ra                          # return
-  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  translate_region 5, patch_store_u32a, palette_ram, 0x3FC
+  store_u32 palette_ram
 
 execute_store_vram_u32a:
   translate_region_vram_store_align32 patch_store_u32a
@@ -2491,10 +2596,13 @@ execute_load_full_u8:
 ext_load_u8:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)                   # store return address
+
   save_registers
   jal read_memory8                # read the value
-  nop
+  lw $28, GP_SAVE($16)
+
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
   addiu $sp, $sp, 4               # fix stack (delay slot)
@@ -2518,8 +2626,9 @@ ext_load_s8:
   sw $ra, ($sp)                   # store return address
   save_registers
   jal read_memory8                # read the value
-  nop
+  lw $28, GP_SAVE($16)
   restore_registers
+  lw $30, REG_R14($16)
   seb $2, $2                      # sign extend the read value
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
@@ -2545,8 +2654,9 @@ ext_load_u16:
   sw $ra, ($sp)                   # store return address
   save_registers
   jal read_memory16               # read the value
-  nop
+  lw $28, GP_SAVE($16)
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
   addiu $sp, $sp, 4               # fix stack (delay slot)
@@ -2571,8 +2681,9 @@ ext_load_s16:
   sw $ra, ($sp)                   # store return address
   save_registers
   jal read_memory16_signed        # read the value
-  nop
+  lw $28, GP_SAVE($16)
   restore_registers
+  lw $30, REG_R14($16)
   seh $2, $2                      # sign extend the return value
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
@@ -2598,24 +2709,25 @@ ext_load_u32:
   sw $ra, ($sp)                   # store return address
   save_registers
   jal read_memory32               # read the value
-  nop
+  lw $28, GP_SAVE($16)
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
   addiu $sp, $sp, 4               # fix stack (delay slot)
 
 #execute_aligned_load32:
-#  srl $2, $4, 28                  # check if the address is out of range
-#  bne $2, $0, ext_aligned_load32  # if it is, perform an extended load
-#  srl $1, $4, 15                  # $1 = page number of address (delay)
-#  sll $1, $1, 2                   # adjust to word index
-#  addu $1, $1, $16                # $1 = memory_map_read[address >> 15]
-#  lw $1, -32768($1)
-#  beq $1, $0, ext_aligned_load32  # if it's NULL perform an extended read
-#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-#  addu $1, $1, $2                 # add the memory map offset
-#  jr $ra                          # return
-#  lw $2, ($1)                     # read the value (delay)
+  srl $2, $4, 28                  # check if the address is out of range
+  bne $2, $0, ext_aligned_load32  # if it is, perform an extended load
+  srl $1, $4, 15                  # $1 = page number of address (delay)
+  sll $1, $1, 2                   # adjust to word index
+  addu $1, $1, $16                # $1 = memory_map_read[address >> 15]
+  lw $1, -32768($1)
+  beq $1, $0, ext_aligned_load32  # if it's NULL perform an extended read
+  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+  addu $1, $1, $2                 # add the memory map offset
+  jr $ra                          # return
+  lw $2, ($1)                     # read the value (delay)
 
 ext_aligned_load32:
   addiu $sp, $sp, -8              # make room on the stack for $ra
@@ -2623,8 +2735,9 @@ ext_aligned_load32:
   sw $ra, ($sp)                   # store return address
   save_registers
   jal read_memory32               # read the value
-  nop
+  lw $28, GP_SAVE($16)
   restore_registers
+  lw $30, REG_R14($16)
   lw $6, 4($sp)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # return
@@ -2638,40 +2751,28 @@ ext_store_ignore:
 
 write_io_epilogue:
   beq $2, $0, no_alert            # 0 means nothing happened
-  addiu $4, $2, -2                # see if return value is 2 (delay slot)
-  beq $4, $0, smc_dma             # is it an SMC alert? (return value = 2)
+  andi $4, $2, 0x01               # see if return value is bit0 enable (delay)
+  bne $4, $0, smc_dma             # is it an SMC alert? (return value = bit0 'H')
+  addiu $sp, $sp, 4               # fix the stack (delay)
+  andi $4, $2, 0x02               # see if return value is bit1 enable
+  bne $4, $0, lookup_pc           # is it an IRQ alert? (return value = bit1 'H')
   nop
-  addiu $4, $2, -3                # see if return value is 3
-  beq $4, $0, irq_alert           # is it an IRQ alert? (return value = 3)
-  nop
+                                  # halt mode (return value = bit2 'H')
   collapse_flags                  # make sure flags are good for update_gba
-
-alert_loop:
   jal update_gba                  # process the next event
   nop
-  lw $1, CPU_HALT_STATE($16)      # check if CPU is sleeping
-  bne $1, $0, alert_loop          # see if it hasn't changed
-  nop
 
-  addu $17, $2, $0                # $17 = new cycle counter
-  lw $4, REG_PC($16)              # $4 = new PC
-
-  j lookup_pc
-  addiu $sp, $sp, 4               # fix the stack (delay slot)
-
-irq_alert:
-  restore_registers
   j lookup_pc                     # PC has changed, get a new one
-  addiu $sp, $sp, 4               # fix the stack (delay)
+  addu $17, $2, $0                # $17 = new cycle counter (delay)
 
 no_alert:
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # we can return
   addiu $sp, $sp, 4               # fix the stack (delay)
 
 smc_dma:
-  addiu $sp, $sp, 4               # fix the stack
   jal flush_translation_cache_ram # flush translation cache
   nop
   j lookup_pc
@@ -2681,66 +2782,88 @@ smc_dma:
 ext_store_eeprom:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_eeprom                # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # we can return
   addiu $sp, $sp, 4               # fix the stack (delay)
 
+
 # 8bit ext memory routines
 
 ext_store_io8:
-  andi $5, $5, 0xFF               # make value 8bit
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $5, $5, 0xFF               # make value 8bit (delay)
   andi $4, $4, 0x3FF              # wrap around address
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register8          # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 ext_store_palette8:
-  j ext_store_palette16b          # perform 16bit palette write
-  andi $4, $4, 0x3FE              # wrap + align (delay)
+  ins $5, $5, 8, 8                # value = (value << 8) | value
+  andi $4, $4, 0x3FE              # wrap + align
+
+  lui $2, %hi(palette_ram)
+  addu $2, $2, $4
+  jr $ra                          # return
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value (delay)
 
 ext_store_vram8:
-  ins $5, $5, 8, 8                # value = (value << 8) | value
-  ext $4, $4, 0, 17               # address = adress & 0x1FFFF
-  ins $4, $0, 0, 1                # align out bottom bit
-  lui $1, %hi(0x18000)            # $1 = 0x18000
-  sltu $1, $4, $1                 # if $4 >= $1 then $1 = 0 else $1 = 1
-  bne $1, $0, ext_store_vram8b    # if $1 != 0 then j ext_store_vram8b
-  lui $2, %hi(vram)               # start loading vram address (delay)
+  lui $2, %hi(io_registers)
+  addu $2, $2, $0                 # REG_DISPCNT = 0x00
+  lhu $1, %lo(io_registers)($2)   # $1 = io_registers[REG_DISPCNT]
 
-  addiu $4, $4, -0x8000           # move address into VRAM region
+  lui $2, %hi(obj_address)
+  addi $1, $1, 0x01
+  andi $1, $1, 0x04               # ((DISPCNT + 1) >> 2) & 0x01 << word offset
+  addu $2, $2, $1
+  lw $2, %lo(obj_address)($2)     # $2 = OBJ Tile address
+
+  ext $4, $4, 0, 17               # address = adress & 0x1FFFF
+  sltu $1, $4, $2                 # if(address < OBJ Tile address) $1 = 1
+  beq $1, $0, ext_store_ignore    # byte writes to OBJ are ignored
+
+  ext $2, $4, 16, 1               # $2 = bit 16 of address (delay)
+  ins $4, $0, 0, 1                # align out bottom bit
+  bnel $2, $0, ext_store_vram8b   # if address >= 0x10000
+  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
 
 ext_store_vram8b:
+  lui $2, %hi(vram)               # start loading vram address
   addu $2, $2, $4                 # $2 = (hi)vram + address
+  ins $5, $5, 8, 8                # value = (value << 8) | value
   jr $ra                          # return
   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
-
-ext_store_oam8:
-  lui $1, %hi(oam_update)         # write non-zero to oam_update
-  sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
-  andi $4, $4, 0x3FE              # wrap around address and align to 16bits
-  ins $5, $5, 8, 8                # value = (value << 8) | value
-  lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
-  addu $1, $1, $4                 # $1 = (hi)oam_ram + address
-  jr $ra                          # return
-  sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
 
 ext_store_backup:
   andi $5, $5, 0xFF               # make value 8bit
   andi $4, $4, 0xFFFF             # mask value
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_backup                # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # we can return
   addiu $sp, $sp, 4               # fix the stack (delay)
@@ -2753,7 +2876,7 @@ ext_store_u8_jtable:
   .long ext_store_io8       # 0x04 I/O registers
   .long ext_store_palette8  # 0x05 Palette RAM
   .long ext_store_vram8     # 0x06 VRAM
-  .long ext_store_oam8      # 0x07 OAM RAM
+  .long ext_store_ignore    # 0x07 OAM RAM
   .long ext_store_ignore    # 0x08 gamepak (no RTC accepted in 8bit)
   .long ext_store_ignore    # 0x09 gamepak, ignore
   .long ext_store_ignore    # 0x0A gamepak, ignore
@@ -2782,55 +2905,55 @@ ext_store_u8:
 # $6: current PC
 
 #execute_store_u8:
-#  srl $1, $4, 28                  # check if the address is out of range
-#  bne $1, $0, ext_store_u8        # if it is, perform an extended write
-#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-#  sll $2, $2, 2                   # adjust to word index
-#  addu $2, $2, $16
-#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-#  beq $1, $0, ext_store_u8        # if it's NULL perform an extended write
-#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-#  addu $1, $1, $2                 # add the memory map offset
-#  lb $2, -32768($1)               # load the SMC status
-#  bne $2, $0, smc_write           # is there code there?
-#  sb $5, ($1)                     # store the value (delay slot)
-#  jr $ra                          # return
-#  nop
+  srl $1, $4, 28                  # check if the address is out of range
+  bne $1, $0, ext_store_u8        # if it is, perform an extended write
+  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+  sll $2, $2, 2                   # adjust to word index
+  addu $2, $2, $16
+  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+  beq $1, $0, ext_store_u8        # if it's NULL perform an extended write
+  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+  addu $1, $1, $2                 # add the memory map offset
+  lb $2, -32768($1)               # load the SMC status
+  bne $2, $0, smc_write           # is there code there?
+  sb $5, ($1)                     # store the value (delay slot)
+  jr $ra                          # return
+  nop
 
 # 16bit ext memory routines
 
 ext_store_io16:
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $5, $5, 0xFFFF             # make value 16bit (delay)
   andi $4, $4, 0x3FF              # wrap around address
-  andi $5, $5, 0xFFFF             # make value 16bit
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register16         # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 ext_store_palette16:
-  andi $4, 0x3FF                  # wrap address
-
-ext_store_palette16b:
   lui $2, %hi(palette_ram)
+  andi $4, $4, 0x3FF              # wrap address
   addu $2, $2, $4
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-
   jr $ra                          # return
-  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value (delay)
 
 ext_store_vram16:
+  ext $1, $4, 16, 1               # $1 = bit 16 of address
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
-  lui $1, %hi(0x18000)            # $1 = 0x18000
-  sltu $1, $4, $1                 # see if address < 0x18000
-  bne $1, $0, ext_store_vram16b
-  lui $2, %hi(vram)               # start loading vram address (delay)
-
-  addiu $4, $4, -0x8000           # move address into VRAM region
+  bnel $1, $0, ext_store_vram16b  # if address >= 0x10000
+  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
 
 ext_store_vram16b:
+  lui $2, %hi(vram)               # start loading vram address
   addu $2, $2, $4                 # $2 = (hi)vram + address
   jr $ra                          # return
   sh $5, %lo(vram)($2)            # vram[address] = value (delay)
@@ -2838,20 +2961,26 @@ ext_store_vram16b:
 ext_store_oam16:
   lui $1, %hi(oam_update)         # write non-zero to oam_update
   sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+
   andi $4, $4, 0x3FF              # wrap around address
-  lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
-  addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+  lui $2, %hi(oam_ram)            # $1 = (hi)oam_ram
+  addu $2, $2, $4                 # $1 = (hi)oam_ram + address
   jr $ra                          # return
-  sh $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
+  sh $5, %lo(oam_ram)($2)         # oam_ram[address] = value (delay)
 
 ext_store_rtc:
-  andi $5, $5, 0xFFFF             # make value 16bit
+  andi $4, $4, 0xFF               # wrap address
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_rtc                   # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # restore return address
   jr $ra                          # we can return
   addiu $sp, $sp, 4               # fix the stack (delay)
@@ -2887,54 +3016,56 @@ ext_store_u16:
 
 
 #execute_store_u16:
-#  srl $1, $4, 28                  # check if the address is out of range
-#  bne $1, $0, ext_store_u16       # if it is, perform an extended write
-#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-#  sll $2, $2, 2                   # adjust to word index
-#  addu $2, $2, $16
-#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-#  beq $1, $0, ext_store_u16       # if it's NULL perform an extended write
-#  andi $2, $4, 0x7FFE             # $2 = low 15bits of address (delay slot)
-#  addu $1, $1, $2                 # add the memory map offset
-#  lh $2, -32768($1)               # load the SMC status
-#  bne $2, $0, smc_write           # is there code there?
-#  sh $5, ($1)                     # store the value (delay slot)
-#  jr $ra                          # return
-#  nop
+  srl $1, $4, 28                  # check if the address is out of range
+  bne $1, $0, ext_store_u16       # if it is, perform an extended write
+  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+  sll $2, $2, 2                   # adjust to word index
+  addu $2, $2, $16
+  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+  beq $1, $0, ext_store_u16       # if it's NULL perform an extended write
+  andi $2, $4, 0x7FFE             # $2 = low 15bits of address (delay slot)
+  addu $1, $1, $2                 # add the memory map offset
+  lh $2, -32768($1)               # load the SMC status
+  bne $2, $0, smc_write           # is there code there?
+  sh $5, ($1)                     # store the value (delay slot)
+  jr $ra                          # return
+  nop
 
 
 
 # 32bit ext memory routines
 
 ext_store_io32:
-  andi $4, $4, 0x3FF              # wrap around address
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $4, $4, 0x3FF              # wrap around address (delay)
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register32         # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
+
   j write_io_epilogue             # handle any state changes
   nop
 
 ext_store_palette32:
-  addu $6, $ra, $0                # save return address in $6
-  jal ext_store_palette16b        # write out palette entry
-  andi $4, 0x3FF                  # wrap address (delay)
-  addiu $4, $4, 2                 # go to next location
-  srl $5, $5, 16                  # shift to next 16bit value
-  j ext_store_palette16b          # write out next palette entry
-  addu $ra, $6, $0                # restore return address (delay)
+  lui $2, %hi(palette_ram)
+  andi $4, $4, 0x3FF              # wrap address
+  addu $2, $2, $4
+  jr $ra                          # return
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value (delay)
 
 ext_store_vram32:
+  ext $1, $4, 16, 1               # $1 = bit 16 of address
   ext $4, $4, 0, 17               # address = adress & 0x1FFFF
-  lui $1, %hi(0x18000)            # $1 = 0x18000
-  sltu $1, $4, $1                 # see if address < 0x18000
-  bne $1, $0, ext_store_vram32b
-  lui $2, %hi(vram)               # start loading vram address (delay)
-
-  addiu $4, $4, -0x8000           # move address into VRAM region
+  bnel $1, $0, ext_store_vram32b  # if address >= 0x10000
+  ins $4, $0, 15, 1               # mask out bit 15 of address (delay)
 
 ext_store_vram32b:
+  lui $2, %hi(vram)               # start loading vram address
   addu $2, $2, $4                 # $2 = (hi)vram + address
   jr $ra                          # return
   sw $5, %lo(vram)($2)            # vram[address] = value (delay)
@@ -2942,11 +3073,12 @@ ext_store_vram32b:
 ext_store_oam32:
   lui $1, %hi(oam_update)         # write non-zero to oam_update
   sw $1, %lo(oam_update)($1)      # cheap, but the address is non-zero
+
+  lui $2, %hi(oam_ram)            # $1 = (hi)oam_ram
   andi $4, $4, 0x3FF              # wrap around address
-  lui $1, %hi(oam_ram)            # $1 = (hi)oam_ram
-  addu $1, $1, $4                 # $1 = (hi)oam_ram + address
+  addu $2, $2, $4                 # $1 = (hi)oam_ram + address
   jr $ra                          # return
-  sw $5, %lo(oam_ram)($1)         # oam_ram[address] = value (delay)
+  sw $5, %lo(oam_ram)($2)         # oam_ram[address] = value (delay)
 
 ext_store_u32_jtable:
   .long ext_store_ignore          # 0x00 BIOS, ignore
@@ -2978,43 +3110,47 @@ ext_store_u32:
   nop
 
 #execute_store_u32:
-#  srl $1, $4, 28                  # check if the address is out of range
-#  bne $1, $0, ext_store_u32       # if it is, perform an extended write
-#  srl $2, $4, 15                  # $1 = page number of address (delay slot)
-#  sll $2, $2, 2                   # adjust to word index
-#  addu $2, $2, $16
-#  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
-#  beq $1, $0, ext_store_u32       # if it's NULL perform an extended write
-#  andi $2, $4, 0x7FFC             # $2 = low 15bits of address (delay slot)
-#  addu $1, $1, $2                 # add the memory map offset
-#  lw $2, -32768($1)               # load the SMC status
-#  bne $2, $0, smc_write           # is there code there?
-#  sw $5, ($1)                     # store the value (delay slot)
-#  jr $ra                          # return
-#  nop
+execute_store_full_u32:
+  srl $1, $4, 28                  # check if the address is out of range
+  bne $1, $0, ext_store_u32       # if it is, perform an extended write
+  srl $2, $4, 15                  # $1 = page number of address (delay slot)
+  sll $2, $2, 2                   # adjust to word index
+  addu $2, $2, $16
+  lw $1, 256($2)                  # $1 = memory_map_write[address >> 15]
+  beq $1, $0, ext_store_u32       # if it's NULL perform an extended write
+  andi $2, $4, 0x7FFC             # $2 = low 15bits of address (delay slot)
+  addu $1, $1, $2                 # add the memory map offset
+  lw $2, -32768($1)               # load the SMC status
+  bne $2, $0, smc_write           # is there code there?
+  sw $5, ($1)                     # store the value (delay slot)
+  jr $ra                          # return
+  nop
 
 
 # 32bit ext aligned, non a2 destroying routines
 
 ext_store_io32a:
-  andi $4, $4, 0x3FF              # wrap around address
+  ext $2, $4, 10, 14              # $2 = (address << 8) >> 18
+  bne $2, $0, ext_store_ignore    # if not, unwritable
+  andi $4, $4, 0x3FF              # wrap around address (delay)
+
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal write_io_register32         # write the value out
   sw $6, REG_SAVE($16)            # save a2 (delay)
-  lw $6, REG_SAVE($16)            # restore a2 (delay)
+
   j write_io_epilogue             # handle any state changes
-  nop
+  lw $6, REG_SAVE($16)            # restore a2 (delay)
 
 ext_store_palette32a:
-  sw $ra, REG_SAVE($16)           # save return address
-  jal ext_store_palette16b        # write out palette entry
-  andi $4, 0x3FF                  # wrap address (delay)
-  addiu $4, $4, 2                 # go to next location
-  srl $5, $5, 16                  # shift to next 16bit value
-  j ext_store_palette16b          # write out next palette entry
-  lw $ra, REG_SAVE($16)           # restore return address (delay)
+  lui $2, %hi(palette_ram)
+  andi $4, $4, 0x3FF              # wrap address
+  addu $2, $2, $4
+  jr $ra                          # return
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value (delay)
 
 ext_store_u32a_jtable:
   .long ext_store_ignore          # 0x00 BIOS, ignore
@@ -3046,20 +3182,21 @@ ext_aligned_store32:
   nop
 
 #execute_aligned_store32:
-#  srl $2, $4, 28                  # check if the address is out of range
-#  bne $2, $0, ext_aligned_store32 # if it is, perform an extended load
-#  srl $1, $4, 15                  # $1 = page number of address (delay)
-#  sll $1, $1, 2                   # adjust to word index
-#  addu $1, $1, $16                # $1 = memory_map_write[address >> 15]
-#  lw $1, 256($1)
-#  beq $1, $0, ext_aligned_store32 # if it's NULL perform an extended write
-#  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
-#  addu $1, $1, $2                 # add the memory map offset
-#  jr $ra                          # return
-#  sw $5, ($1)                     # write the value
+  srl $2, $4, 28                  # check if the address is out of range
+  bne $2, $0, ext_aligned_store32 # if it is, perform an extended load
+  srl $1, $4, 15                  # $1 = page number of address (delay)
+  sll $1, $1, 2                   # adjust to word index
+  addu $1, $1, $16                # $1 = memory_map_write[address >> 15]
+  lw $1, 256($1)
+  beq $1, $0, ext_aligned_store32 # if it's NULL perform an extended write
+  andi $2, $4, 0x7FFF             # $2 = low 15bits of address (delay slot)
+  addu $1, $1, $2                 # add the memory map offset
+  jr $ra                          # return
+  sw $5, ($1)                     # write the value
 
 smc_write:
   save_registers
+  lw $28, GP_SAVE($16)
   jal flush_translation_cache_ram # flush translation cache
   sw $6, REG_PC($16)              # save PC (delay slot)
 
@@ -3074,14 +3211,14 @@ lookup_pc_thumb:
   lw $4, REG_PC($16)              # load PC as arg 0 (delay slot)
   restore_registers
   jr $2                           # jump to result
-  nop
+  lw $30, REG_R14($16)
 
 lookup_pc_arm:
   jal block_lookup_address_arm    # get ARM address
   lw $4, REG_PC($16)              # load PC as arg 0 (delay slot)
   restore_registers
   jr $2                           # jump to result
-  nop
+  lw $30, REG_R14($16)
 
 # Return the current cpsr
 
@@ -3096,28 +3233,35 @@ execute_read_spsr:
   lw $1, CPU_MODE($16)            # $1 = cpu_mode
   lui $2, %hi(spsr)
   sll $1, $1, 2                   # adjust to word offset size
-  addu $2, $2, $1
+  addu $1, $2, $1
   jr $ra                          # return
-  lw $2, %lo(spsr)($2)            # $2 = spsr[cpu_mode] (delay slot)
+  lw $2, %lo(spsr)($1)            # $2 = spsr[cpu_mode] (delay slot)
 
 # Switch into SWI, has to collapse flags
 # $4: Current pc
 
 execute_swi:
-  addiu $sp, $sp, -4              # push $ra
-  sw $ra, ($sp)
   lui $1, %hi(SUPERVISOR_LR)
   sw $4, %lo(SUPERVISOR_LR)($1)   # store next PC in the supervisor's LR
   collapse_flags                  # get cpsr in $2
   lui $5, %hi(SUPERVISOR_SPSR)
   sw $2, %lo(SUPERVISOR_SPSR)($5) # save cpsr in SUPERVISOR_CPSR
-  ins $2, $0, 0, 6                # zero out bottom 6 bits of CPSR
-  ori $2, 0x13                    # set mode to supervisor
+
+  addiu $sp, $sp, -4              # push $ra
+  sw $ra, ($sp)
+
+  ins $2, $0, 0, 8                # zero out bottom 8 bits of CPSR
+  ori $2, 0xD3                    # set mode to supervisor, disable Interrupt
   sw $2, REG_CPSR($16)            # write back CPSR
+
   save_registers
+  jal bios_region_read_allow
+  lw $28, GP_SAVE($16)
   jal set_cpu_mode                # set the CPU mode to supervisor
   li $4, 3                        # 3 is supervisor mode (delay slot)
+
   restore_registers
+  lw $30, REG_R14($16)
   lw $ra, ($sp)                   # pop $ra
   jr $ra                          # return
   addiu $sp, $sp, 4               # fix stack (delay slot)
@@ -3130,18 +3274,21 @@ execute_spsr_restore:
 
   beq $1, $0, no_spsr_restore     # only restore if the cpu isn't usermode
   lui $2, %hi(spsr)               # start loading SPSR (delay)
-
   sll $1, $1, 2                   # adjust to word offset size
   addu $2, $2, $1
   lw $1, %lo(spsr)($2)            # $1 = spsr[cpu_mode]
-  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
-  extract_flags_body              # extract flags from $1
+
   addiu $sp, $sp, -4
   sw $ra, ($sp)
+
+  sw $1, REG_CPSR($16)            # cpsr = spsr[cpu_mode]
+  extract_flags_body              # extract flags from $1
   save_registers
   jal execute_spsr_restore_body   # do the dirty work in this C function
-  nop
+  lw $28, GP_SAVE($16)
+
   restore_registers
+  lw $30, REG_R14($16)
   addu $4, $2, $0                 # move return value to $4
   lw $ra, ($sp)
   jr $ra
@@ -3162,9 +3309,12 @@ execute_store_cpsr:
   and $2, $2, $4                  # $2 = (cpsr & (~store_mask))
   or $1, $1, $2                   # $1 = new cpsr combined with old
   extract_flags_body              # extract flags from $1
+
   addiu $sp, $sp, -4
   sw $ra, ($sp)
+
   save_registers
+  lw $28, GP_SAVE($16)
   jal execute_store_cpsr_body     # do the dirty work in this C function
   addu $4, $1, $0                 # load the new CPSR (delay slot)
 
@@ -3172,7 +3322,7 @@ execute_store_cpsr:
   nop
 
   restore_registers
-
+  lw $30, REG_R14($16)
   lw $ra, ($sp)
   jr $ra
   addiu $sp, $sp, 4
@@ -3180,7 +3330,9 @@ execute_store_cpsr:
 changed_pc_cpsr:
   jal block_lookup_address_arm    # GBA address is in $4
   addu $4, $2, $0                 # load new address in $4 (delay slot)
+
   restore_registers               # restore registers
+  lw $30, REG_R14($16)
   jr $2                           # jump to the new address
   addiu $sp, $sp, 4               # get rid of the old ra (delay slot)
 
@@ -3219,11 +3371,11 @@ lsl_shift_zero:
   sllv $4, $4, $5                 # return (value << shift) (delay)
 
 lsl_shift_high:
-  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
-  bne $1, $0, lsl_shift_done      # jump if shift == 32
-  andi $22, $4, 1                 # c flag = value & 0x01 (delay)
+  sltiu $1, $5, 33                # $1 = (shift < 33)
+  andi $22, $4, 1                 # c flag = value & 0x01
 
-  add $22, $0, $0                 # c flag = 0 otherwise
+  beql $1, $0, lsl_shift_done     # jump if shift == 32
+  add $22, $0, $0                 # c flag = 0 otherwise (delay)
 
 lsl_shift_done:
   jr $ra                          # return
@@ -3244,11 +3396,11 @@ lsr_shift_zero:
   srlv $4, $4, $5                 # return (value >> shift) (delay)
 
 lsr_shift_high:
-  sltiu $1, $5, 33                # $1 = (shift < 33) (delay)
-  bne $1, $0, lsr_shift_done      # jump if shift == 32
-  srl $22, $4, 31                 # c flag = value >> 31 (delay)
+  sltiu $1, $5, 33                # $1 = (shift < 33)
+  srl $22, $4, 31                 # c flag = value >> 31
 
-  add $22, $0, $0                 # c flag = 0 otherwise
+  beql $1, $0, lsr_shift_done     # jump if shift == 32
+  add $22, $0, $0                 # c flag = 0 otherwise (delay)
 
 lsr_shift_done:
   jr $ra                          # return
@@ -3285,31 +3437,20 @@ ror_zero_shift:
   jr $ra                          # return
   rotrv $4, $4, $5                # return (value ror shift) delay
 
-# エミュレートの開始
-# 入力 $4: cycle counter
+# $4: cycle counter argument
+
 execute_arm_translate:
-  addu $17, $4, $0                # $17 = cycle counter
-  lui $16, %hi(reg)               # $16 = &reg
-  addiu $16, %lo(reg)
-  extract_flags                   # $1にCPSR,ステータスフラグを$28~$31に展開
-
-  and $1, $1, 0x20                # $1 = $1 & 0x20
-
-  bne $1, $0, 1f                  # $1 != 0(THUMBビットがON)ならば1:へ
-  lw $4, REG_PC($16)              # $4 = PC (delay)
+  lui $16, %hi(reg)               # load base register
+  addiu $16, $16, %lo(reg)
+  addu $17, $4, $0                # load cycle counter register
 
   jal block_lookup_address_arm    # lookup initial jump address
-  nop
-  restore_registers               # load initial register values
-  jr $2                           # jump to return
-  nop
+  lw $4, REG_PC($16)              # load PC into $4 (delay)
 
-1:
-  jal block_lookup_address_thumb  # lookup initial jump address
-  nop
   restore_registers               # load initial register values
   jr $2                           # jump to return
-  nop
+  lw $30, REG_R14($16)
+
 
 # sceKernelInvalidateIcacheRange gives me problems, trying this instead
 # Invalidates an n byte region starting at the start address
@@ -3317,11 +3458,10 @@ execute_arm_translate:
 # $5: length
 
 invalidate_icache_region:
-  ins $4, $0, 0, 6                # align to 64 bytes
   addiu $2, $5, 63                # align up to 64 bytes
   srl $2, $2, 6                   # divide by 64
   beq $2, $0, done                # exit early on 0
-  nop
+  ins $4, $0, 0, 6                # align to 64 bytes (delay)
 
 iir_loop:
   cache 0x08, ($4)                # invalidate icache line

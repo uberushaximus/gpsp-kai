@@ -222,22 +222,10 @@ SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *commo
   {
     // サスペンド時の処理
     power_flag = 1;
-
-    // 新型PSPの場合、増設メモリの一部をメインメモリに待避
-    if(psp_model == psp_2000_new)
-    {
-      memcpy(gamepak_rom_resume,(void *)(PSP2K_MEM_TOP + 0x1c00000), 0x400000);
-    }
   }
   else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
   {
     power_flag = 0;
-
-    // 新型PSPの場合、メインメモリから増設メモリへ内容を復旧
-    if(psp_model == psp_2000_new)
-    {
-      memcpy((void *)(PSP2K_MEM_TOP + 0x1c00000),gamepak_rom_resume, 0x400000);
-    }
   }
   return 0;
 }
@@ -279,14 +267,16 @@ void quit()
 
   update_backup_force();
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
   adhoc_exit();
 #endif
 
   sound_exit();
   fbm_freeall();
 
+#ifdef USE_DEBUG
   fclose(g_dbg_file);
+#endif
 
   set_cpu_clock(10);
 
@@ -311,7 +301,7 @@ int main(int argc, char *argv[])
   }
 
   // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む
-  if(psp_model == psp_2000_new)
+  if(psp_model == psp_2000)
   {
     if(pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
       error_msg("Error in load/start TV OUT module.\n");
@@ -324,13 +314,15 @@ int main(int argc, char *argv[])
   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
+#ifdef USE_DEBUG
   // デバッグ出力ファイルのオープン
   g_dbg_file = fopen(DBG_FILE_NAME, "awb");
+  DBGOUT("\nStart gpSP\n");
+#endif
 
   getcwd(main_path, 512);
-  DBGOUT("argv[0] %s\n",argv[0]);
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
   // adhoc用モジュールのロード
   if (load_adhoc_modules() != 0)
     error_msg("not load adhoc modules!!\n");
@@ -485,8 +477,16 @@ int main(int argc, char *argv[])
   virtual_frame_count = 0;
 
   // エミュレートの開始
-  execute_arm_translate(execute_cycles);
+#ifdef USE_C_CORE
+  if(gpsp_config.emulate_core == ASM_CORE)
+    execute_arm_translate(execute_cycles);
+  else
+    execute_arm(execute_cycles);
   return 0;
+#else
+  execute_arm_translate(execute_cycles);
+#endif
+
 }
 
 u32 check_power()
@@ -527,13 +527,13 @@ u32 update_gba()
       u32 vcount = io_registers[REG_VCOUNT];
       u32 dispstat = io_registers[REG_DISPSTAT];
 
-      if((dispstat & 0x02) == 0)
+      if((dispstat & 0x02) == 0) // HBLANKでないとき
       {
         // Transition from hrefresh to hblank
         video_count += 272;
         dispstat |= 0x02;
 
-        if((dispstat & 0x01) == 0)
+        if((dispstat & 0x01) == 0) // VBLANKでないとき
         {
           // フレームスキップ時は描画しない
           if(!skip_next_frame_flag)
@@ -548,12 +548,13 @@ u32 update_gba()
             dma_transfer(dma + 2);
           if(dma[3].start_type == DMA_START_HBLANK)
             dma_transfer(dma + 3);
+
+          if(dispstat & 0x10)
+            irq_raised |= IRQ_HBLANK; // HBLANK割込みはVBLANK中は発生しない
         }
 
-        if(dispstat & 0x10)
-          irq_raised |= IRQ_HBLANK;
       }
-      else
+      else // HBLANK
       {
         // Transition from hblank to next line
         video_count += 960;
@@ -675,7 +676,7 @@ void vblank_interrupt_handler(u32 sub, u32 *parg)
   vblank_count++;
 }
 
-// TODO:最適化/タイマー使った方が良いかも
+// TODO:最適化/タイマー使ったものに変更
 void synchronize()
 {
 //  char char_buffer[64];
@@ -689,17 +690,6 @@ void synchronize()
     char print_buffer[256];
     sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
-
-//    sprintf(print_buffer, "0x128:%04X", ADDRESS16(io_registers, 0x128));
-//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 10);
-//    sprintf(print_buffer, "0x120:%04X", ADDRESS16(io_registers, 0x120));
-//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 20);
-//    sprintf(print_buffer, "0x122:%04X", ADDRESS16(io_registers, 0x122));
-//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 30);
-//    sprintf(print_buffer, "0x124:%04X", ADDRESS16(io_registers, 0x124));
-//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 40);
-//    sprintf(print_buffer, "0x126:%04X", ADDRESS16(io_registers, 0x126));
-//    PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 50);
   }
 
   // フレームスキップ フラグの初期化
@@ -918,7 +908,7 @@ void raise_interrupt(IRQ_TYPE irq_raised)
   // and it must be on in the flags.
   io_registers[REG_IF] |= irq_raised;
 
-  if((io_registers[REG_IE] & irq_raised) && io_registers[REG_IME] &&
+  if((io_registers[REG_IE] & io_registers[REG_IF]) && io_registers[REG_IME] &&
    ((reg[REG_CPSR] & 0x80) == 0))
   {
     bios_read_protect = 0xe55ec002;
@@ -926,7 +916,7 @@ void raise_interrupt(IRQ_TYPE irq_raised)
     // Interrupt handler in BIOS
     reg_mode[MODE_IRQ][6] = reg[REG_PC] + 4;
     spsr[MODE_IRQ] = reg[REG_CPSR];
-    reg[REG_CPSR] = 0xD2;
+    reg[REG_CPSR] = (reg[REG_CPSR] & ~0xFF) | 0xD2;
     reg[REG_PC] = 0x00000018;
     bios_region_read_allow();
     set_cpu_mode(MODE_IRQ);
@@ -938,19 +928,17 @@ void raise_interrupt(IRQ_TYPE irq_raised)
 
 MODEL_TYPE get_model()
 {
-//  return psp_1000;
-  
   if(kuKernelGetModel() != 1 /*PSP_MODEL_SLIM_AND_LITE*/)
   {
     return psp_1000;
   }
   else
-    if(sceKernelDevkitVersion() < 0x03070110)
+    if(sceKernelDevkitVersion() < 0x03070110 || sctrlSEGetVersion() < 0x00001012)
     {
-      return psp_2000_old;
+      return psp_1000;
     }
     else
     {
-      return psp_2000_new;
+      return psp_2000;
     }
 }

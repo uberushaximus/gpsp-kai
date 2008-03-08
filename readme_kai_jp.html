@@ -1,10 +1,20 @@
+<head> <meta content="text/html; charset=utf-8" http-equiv="Content-Type"></head>
 <pre>
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
--UnOfficial gpSP kai 3.3 test 1.0 svn rev.
-	MULTIモードの通信に対応(現状では2台のみ)
+-UnOfficial gpSP kai 3.3 test 1 svn rev.???
+	MULTIモードの通信に対応(現状では2台のみ)（現在修正中）
 	R連打が有効になっていなかったのを修正
+	ビルド番号を追加
+	ロードステート時に音ズレが起こるのを修正
+	デバッグ用にCコアARMエミュを復活
+	チートとその他のオプションを分離
+	CコアとASMコアのARMエミュを切替えられる様にした
+	CFW3.71 M33-3以下の場合はPSP-2000でもTV出力/追加メモリには対応しない様にしました
+	
+	一時的にROMキャッシュを１MBに減らす
+	TODO:ASMコアのthumb BLの修正（Cコアでは正常）
 
 -UnOfficial gpSP kai 3.2 test 9.0 svn rev.
 	メッセージ画面 タイトルのバッファオーバーを修正

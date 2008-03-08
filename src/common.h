@@ -53,11 +53,12 @@
 #include <psppower.h>
 #include <pspsdk.h>
 #include <pspkernel.h>
+#include <systemctrl_se.h>
 #include <psputility.h>
 #include <kubridge.h>
 #include <pspimpose_driver.h>
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
 #include <pspnet.h>
 #include <pspnet_adhoc.h>
 #include <pspnet_adhocctl.h>
@@ -167,7 +168,7 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
   ((value) & 0xFFFF)                                                        \
 
 #define FIXED_DIV(numerator, denominator, bits)                             \
-  ((((numerator) * (1 << (bits))) + ((denominator) >> 1)) / (denominator))  \
+  ((((numerator) * (1 << (bits))) + ((denominator) / 2)) / (denominator))   \
 
 #define ADDRESS8(base, offset)                                              \
   *((u8 *)((u8 *)(base) + (offset)))                                        \
@@ -186,9 +187,10 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define NO  0
 #define YES 1
 
+#ifdef USE_DEBUG
 // デバッグ用の設定
 #define DBG_FILE_NAME "dbg_msg.txt"
-#define DBGOUT(...) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT(...) if(gpsp_config.debug_flag == YES) fprintf(g_dbg_file, __VA_ARGS__)
 FILE *g_dbg_file;
 
 u64 dbg_time_1;
@@ -196,6 +198,10 @@ u64 dbg_time_2;
 #define GET_TIME_1() sceRtcGetCurrentTick(&dbg_time_1);
 #define GET_TIME_2() sceRtcGetCurrentTick(&dbg_time_2);
 #define WRITE_TIME() DBGOUT("%d ms\n",(int)(dbg_time_2 - dbg_time_1));
+#else
+#define DBGOUT(...)
+#endif
+
 
 /******************************************************************************
  * ローカルなヘッダファイルの読込み
@@ -218,7 +224,7 @@ u64 dbg_time_2;
 #include "gu.h"
 #include "unicode.h"
 
-#ifdef ADHOC_MODE
+#ifdef USE_ADHOC
 #include "adhoc.h"
 #endif
 

@@ -27,6 +27,8 @@
 
 #define MAX_GAMEPAD_CONFIG_MAP 16
 
+
+// 
 typedef struct
 {
   u32 screen_scale;
@@ -39,7 +41,9 @@ typedef struct
   u32 enable_home;
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
   u32 language;
-} GPSP_CONFIG_V10;
+  u32 emulate_core;
+  u32 debug_flag;
+} GPSP_CONFIG;
 
 typedef struct
 {
@@ -53,7 +57,10 @@ typedef struct
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
   u32 use_default_gamepad_map;
   u32 allocate_sensor;
-} GAME_CONFIG_V10;
+} GAME_CONFIG;
+
+#define ASM_CORE 0
+#define C_CORE   1
 
 /******************************************************************************
  * グローバル変数の宣言
@@ -65,14 +72,14 @@ extern char DEFAULT_CFG_DIR[MAX_PATH];
 extern char DEFAULT_SS_DIR[MAX_PATH];
 extern char DEFAULT_CHEAT_DIR[MAX_PATH];
 
-extern GPSP_CONFIG_V10 gpsp_config;
-extern GAME_CONFIG_V10 game_config;
+extern GPSP_CONFIG gpsp_config;
+extern GAME_CONFIG game_config;
 
 /******************************************************************************
  * グローバル関数の宣言
  ******************************************************************************/
 s32 load_file(char **wildcards, char *result, char *default_dir_name);
-s32 load_game_config_file();
+void load_game_config_file(void);
 s32 load_config_file();
 s32 save_game_config_file();
 s32 save_config_file();

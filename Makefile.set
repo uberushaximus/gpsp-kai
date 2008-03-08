@@ -1,6 +1,5 @@
 # -x assembler-with-cpp
 # gpSP makefile
-# Gilead Kutnick - Exophase
 
 # Global definitions
 
@@ -12,5 +11,13 @@ VERSION_BUILD = 1
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定
 TEST_MODE = 1
 
+USE_DEBUG= 1
+
 # WLANのON/OFF
-ADHOC_MODE = 1
+USE_ADHOC = 1
+
+#最大52MBのメモリを使用する
+PSP_LARGE_MEMORY = 1
+
+#CPUコアのARMエミュレータを使用する
+USE_C_CORE = 1

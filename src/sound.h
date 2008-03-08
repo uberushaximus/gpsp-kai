@@ -96,7 +96,7 @@ typedef struct
   s8 *sample_data;
 } GBC_SOUND_STRUCT;
 
-#define BUFFER_SIZE  65536                        // バッファのバイト数。変更しないこと
+#define BUFFER_SIZE (0xffff)                        // バッファのバイト数。変更しないこと
 
 #define SOUND_FREQUENCY (44100.0)
 
