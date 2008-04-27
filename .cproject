@@ -30,7 +30,7 @@
 <folderInfo id="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720." name="/" resourcePath="">
 <toolChain id="org.eclipse.cdt.build.core.prefbase.toolchain.1186717359" name="No ToolChain" resourceTypeBasedDiscovery="false" superClass="org.eclipse.cdt.build.core.prefbase.toolchain">
 <targetPlatform id="org.eclipse.cdt.build.core.prefbase.toolchain.1186717359.2030688212" name=""/>
-<builder arguments="" autoBuildTarget="all" buildPath="${workspace_loc:/gpsp-kai-test/}" cleanBuildTarget="clean" command="make" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="org.eclipse.cdt.build.core.settings.default.builder.208209003" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="false" parallelizationNumber="-1" stopOnErr="false" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
+<builder autoBuildTarget="all" buildPath="${workspace_loc:/gpsp-kai-test/}" cleanBuildTarget="clean" command="make" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="org.eclipse.cdt.build.core.settings.default.builder.208209003" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" name="Gnu Make ビルダー" parallelBuildOn="false" parallelizationNumber="-1" stopOnErr="false" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
 <tool id="org.eclipse.cdt.build.core.settings.holder.libs.951750073" name="holder for library settings" superClass="org.eclipse.cdt.build.core.settings.holder.libs"/>
 <tool id="org.eclipse.cdt.build.core.settings.holder.255569855" name="アセンブリー" superClass="org.eclipse.cdt.build.core.settings.holder">
 <option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.25781341" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath">
@@ -53,12 +53,7 @@
 <inputType id="org.eclipse.cdt.build.core.settings.holder.inType.228150206" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 </tool>
 <tool id="org.eclipse.cdt.build.core.settings.holder.623787208" name="GNU C" superClass="org.eclipse.cdt.build.core.settings.holder">
-<option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.573901348" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath">
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/lib/gcc/i686-pc-cygwin/3.4.4/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include/w32api"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/local/include"/>
-</option>
+<option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.573901348" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath"/>
 <option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1637274786" name="インクルード・パス" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;C:\cygwin\usr\local\pspdev\psp\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\cygwin\usr\local\pspdev\psp\sdk\include&quot;"/>
@@ -78,7 +73,20 @@
 
 
 
-<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+
+
+<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
+<buildTargets>
+<target name="PSP" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>make</buildCommand>
+<buildArguments>-k</buildArguments>
+<buildTarget>PSP</buildTarget>
+<stopOnError>false</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+</buildTargets>
+</storageModule>
 <storageModule moduleId="scannerConfiguration">
 <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
 <profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
@@ -659,8 +667,8 @@
 </scannerInfoProvider>
 </profile>
 </scannerConfigBuildInfo>
-<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cygwin.lib.release.1641491269.1681866202;cdt.managedbuild.config.gnu.cygwin.lib.release.1641491269.1681866202.;cdt.managedbuild.tool.gnu.c.compiler.mingw.base.1825344529;cdt.managedbuild.tool.gnu.c.compiler.input.556135765">
-<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720">
+<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
 <profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 <buildOutputProvider>
 <openAction enabled="true" filePath=""/>
@@ -742,8 +750,8 @@
 </scannerInfoProvider>
 </profile>
 </scannerConfigBuildInfo>
-<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720">
-<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
+<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cygwin.lib.release.1641491269.1681866202;cdt.managedbuild.config.gnu.cygwin.lib.release.1641491269.1681866202.;cdt.managedbuild.tool.gnu.c.compiler.mingw.base.1825344529;cdt.managedbuild.tool.gnu.c.compiler.input.556135765">
+<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 <profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 <buildOutputProvider>
 <openAction enabled="true" filePath=""/>
