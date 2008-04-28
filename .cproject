@@ -18,49 +18,54 @@
 </externalSetting>
 </externalSettings>
 <extensions>
+<extension id="org.eclipse.cdt.core.Cygwin_PE" point="org.eclipse.cdt.core.BinaryParser"/>
 <extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 <extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 <extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 </extensions>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
 <configuration artifactExtension="a" artifactName="gpsp-kai-test" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib" cleanCommand="rm -rf" description="PSP" id="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720" name="PSP" parent="cdt.managedbuild.config.gnu.cygwin.lib.release">
 <folderInfo id="cdt.managedbuild.config.gnu.cygwin.lib.release.1343965720." name="/" resourcePath="">
-<toolChain id="org.eclipse.cdt.build.core.prefbase.toolchain.1186717359" name="No ToolChain" resourceTypeBasedDiscovery="false" superClass="org.eclipse.cdt.build.core.prefbase.toolchain">
-<targetPlatform id="org.eclipse.cdt.build.core.prefbase.toolchain.1186717359.2030688212" name=""/>
-<builder autoBuildTarget="all" buildPath="${workspace_loc:/gpsp-kai-test/}" cleanBuildTarget="clean" command="make" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="org.eclipse.cdt.build.core.settings.default.builder.208209003" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" name="Gnu Make ビルダー" parallelBuildOn="false" parallelizationNumber="-1" stopOnErr="false" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
-<tool id="org.eclipse.cdt.build.core.settings.holder.libs.951750073" name="holder for library settings" superClass="org.eclipse.cdt.build.core.settings.holder.libs"/>
-<tool id="org.eclipse.cdt.build.core.settings.holder.255569855" name="アセンブリー" superClass="org.eclipse.cdt.build.core.settings.holder">
-<option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.25781341" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath">
-<listOptionValue builtIn="false" value="C:/cygwin/usr/local/pspdev/psp/include/SDL"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/lib/gcc/i686-pc-cygwin/3.4.4/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include/w32api"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/local/include"/>
-</option>
-<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.796665763" languageId="org.eclipse.cdt.core.assembly" languageName="アセンブリー" sourceContentType="org.eclipse.cdt.core.asmSource" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
+<toolChain id="cdt.managedbuild.toolchain.gnu.cygwin.base.815862840" name="Cygwin GCC" superClass="cdt.managedbuild.toolchain.gnu.cygwin.base">
+<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.Cygwin_PE" id="cdt.managedbuild.target.gnu.platform.cygwin.base.436397910" name="デバッグ・プラットフォーム" osList="win32" superClass="cdt.managedbuild.target.gnu.platform.cygwin.base"/>
+<builder buildPath="${workspace_loc:/gpsp-kai-test}" command="make" id="cdt.managedbuild.target.gnu.builder.cygwin.base.140182458" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make ビルダー" parallelizationNumber="-1" stopOnErr="false" superClass="cdt.managedbuild.target.gnu.builder.cygwin.base"/>
+<tool id="cdt.managedbuild.tool.gnu.assembler.cygwin.base.1595792388" name="GCC アセンブラー" superClass="cdt.managedbuild.tool.gnu.assembler.cygwin.base">
+<inputType id="cdt.managedbuild.tool.gnu.assembler.input.462463902" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
-<tool id="org.eclipse.cdt.build.core.settings.holder.250291869" name="GNU C++" superClass="org.eclipse.cdt.build.core.settings.holder">
-<option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.909318924" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath">
-<listOptionValue builtIn="false" value="C:/cygwin/usr/local/pspdev/psp/include/SDL"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/lib/gcc/i686-pc-cygwin/3.4.4/include"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/include/w32api"/>
-<listOptionValue builtIn="false" value="C:/cygwin/usr/local/include"/>
-</option>
-<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.228150206" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
+<tool id="cdt.managedbuild.tool.gnu.archiver.cygwin.base.820466966" name="GCC アーカイバー" superClass="cdt.managedbuild.tool.gnu.archiver.cygwin.base">
+<option id="gnu.both.lib.option.flags.247781286" name="アーカイバー・フラグ" superClass="gnu.both.lib.option.flags"/>
 </tool>
-<tool id="org.eclipse.cdt.build.core.settings.holder.623787208" name="GNU C" superClass="org.eclipse.cdt.build.core.settings.holder">
-<option id="org.eclipse.cdt.build.core.settings.holder.undef.incpaths.573901348" name="Undefined Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.undef.incpaths" valueType="undefIncludePath"/>
-<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1637274786" name="インクルード・パス" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
+<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base.130753676" name="Cygwin C++ コンパイラー" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base"/>
+<tool id="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.377259613" name="Cygwin C コンパイラー" superClass="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base">
+<option id="gnu.c.compiler.option.include.paths.1594776915" name="インクルード・パス (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;C:\cygwin\usr\local\pspdev\psp\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\cygwin\usr\local\pspdev\psp\sdk\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\cygwin\usr\local\pspdev\lib\gcc\psp\4.1.0\include&quot;"/>
 </option>
-<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.1770417190" languageId="org.eclipse.cdt.core.gcc" languageName="GNU C" sourceContentType="org.eclipse.cdt.core.cSource,org.eclipse.cdt.core.cHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
+<option id="gnu.c.compiler.option.preprocessor.nostdinc.1782685959" name="システム・ディレクトリーを検索しない (-nostdinc)" superClass="gnu.c.compiler.option.preprocessor.nostdinc"/>
+<option id="gnu.c.compiler.option.preprocessor.preprocess.591420959" name="プリプロセスのみ (-E)" superClass="gnu.c.compiler.option.preprocessor.preprocess"/>
+<option id="gnu.c.compiler.option.preprocessor.def.symbols.1942419196" name="定義済みシンボル (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols"/>
+<option id="gnu.c.compiler.option.preprocessor.undef.symbol.1408822088" name="未定義シンボル (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol"/>
+<option id="gnu.c.compiler.option.optimization.level.202022990" name="最適化レベル" superClass="gnu.c.compiler.option.optimization.level"/>
+<option id="gnu.c.compiler.option.optimization.flags.411370123" name="その他の最適化フラグ" superClass="gnu.c.compiler.option.optimization.flags"/>
+<option id="gnu.c.compiler.option.debugging.level.1377379101" name="デバッグ・レベル" superClass="gnu.c.compiler.option.debugging.level"/>
+<option id="gnu.c.compiler.option.debugging.other.2002080558" name="その他のデバッグ・フラグ" superClass="gnu.c.compiler.option.debugging.other"/>
+<option id="gnu.c.compiler.option.debugging.gprof.638918707" name="gprof 情報の生成 (-pg)" superClass="gnu.c.compiler.option.debugging.gprof"/>
+<option id="gnu.c.compiler.option.debugging.prof.1180087862" name="prof 情報の生成 (-p)" superClass="gnu.c.compiler.option.debugging.prof"/>
+<option id="gnu.c.compiler.option.warnings.syntax.999471007" name="構文のみ検査 (-fsyntax-only)" superClass="gnu.c.compiler.option.warnings.syntax"/>
+<option id="gnu.c.compiler.option.warnings.pedantic.206451107" name="ペダンティック (-pedantic)" superClass="gnu.c.compiler.option.warnings.pedantic"/>
+<option id="gnu.c.compiler.option.warnings.pedantic.error.2006447137" name="エラーとしてのペダンティック警告 (-pedantic-errors)" superClass="gnu.c.compiler.option.warnings.pedantic.error"/>
+<option id="gnu.c.compiler.option.warnings.nowarn.137487486" name="すべての警告を禁止 (-w)" superClass="gnu.c.compiler.option.warnings.nowarn"/>
+<option id="gnu.c.compiler.option.warnings.allwarn.1203599427" name="すべての警告 (-Wall)" superClass="gnu.c.compiler.option.warnings.allwarn"/>
+<option id="gnu.c.compiler.option.warnings.toerrors.1045613884" name="エラーとしての警告 (-Werror)" superClass="gnu.c.compiler.option.warnings.toerrors"/>
+<option id="gnu.c.compiler.option.misc.other.790271732" name="その他のフラグ" superClass="gnu.c.compiler.option.misc.other"/>
+<option id="gnu.c.compiler.option.misc.verbose.128471250" name="詳細 (-v)" superClass="gnu.c.compiler.option.misc.verbose"/>
+<option id="gnu.c.compiler.option.misc.ansi.934734440" name="ANSI プログラムのサポート (-ansi)" superClass="gnu.c.compiler.option.misc.ansi"/>
+<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1622630176" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 </tool>
+<tool id="cdt.managedbuild.tool.gnu.c.linker.cygwin.base.523566564" name="Cygwin C リンカー" superClass="cdt.managedbuild.tool.gnu.c.linker.cygwin.base"/>
+<tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base.1499898660" name="Cygwin C++ リンカー" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base"/>
 </toolChain>
 </folderInfo>
 </configuration>
