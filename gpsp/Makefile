@@ -97,26 +97,26 @@ UI_COMMON_FILE  = ${SRC_DIR}fbm_print.h \
                                  ${SRC_DIR}draw.h \
                                  ${SRC_DIR}message.h
 
-main.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
-cpu_common.o						: ${COMMON_FILE} ${SRC_DIR}cpu_common.c
-cpu_asm.o						: ${COMMON_FILE} ${SRC_DIR}cpu_asm.c
-cpu_c.o						: ${COMMON_FILE} ${SRC_DIR}cpu_c.c
-video.o					: ${COMMON_FILE} ${SRC_DIR}video.c 
-gu.o						: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}gu.c 
-memory.o				: ${COMMON_FILE} ${SRC_DIR}memory.c
-sound.o					: ${COMMON_FILE} ${SRC_DIR}sound.c
-input.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c
-gui.o						: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}gui.c
-zip.o						: ${COMMON_FILE} ${SRC_DIR}zip.c
-cheats.o				: ${COMMON_FILE} ${SRC_DIR}cheats.c
-mips_stub.o			: ${SRC_DIR}mips_stub.S
-fbm_print.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}fbm_print.c
-bios.o					: ${COMMON_FILE} ${SRC_DIR}bios.c ${SRC_DIR}bios.h
-draw.o					: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}draw.c ${SRC_DIR}draw.h
-pspDveManager.o  : ${SRC_DIR}pspDveManager.S
-homehook.o			: ${SRC_DIR}homehook.S
-video_setting.o		: ${COMMON_FILE} ${SRC_DIR}video_setting.c
-unicode.o				: ${COMMON_FILE} ${SRC_DIR}unicode.c
+main.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}main.c
+cpu_common.o	: ${COMMON_FILE} ${SRC_DIR}cpu_common.c
+cpu_asm.o		: ${COMMON_FILE} ${SRC_DIR}cpu_asm.c
+cpu_c.o			: ${COMMON_FILE} ${SRC_DIR}cpu_c.c
+video.o			: ${COMMON_FILE} ${SRC_DIR}video.c 
+gu.o			: ${COMMON_FILE} ${SRC_DIR}dvemgr.h ${SRC_DIR}gu.c 
+memory.o		: ${COMMON_FILE} ${SRC_DIR}memory.c
+sound.o			: ${COMMON_FILE} ${SRC_DIR}sound.c
+input.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}input.c
+gui.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}homehook.h ${SRC_DIR}gui.c
+zip.o			: ${COMMON_FILE} ${SRC_DIR}zip.c
+cheats.o		: ${COMMON_FILE} ${SRC_DIR}cheats.c
+mips_stub.o		: ${SRC_DIR}mips_stub.S
+fbm_print.o		: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}fbm_print.c
+bios.o			: ${COMMON_FILE} ${SRC_DIR}bios.c ${SRC_DIR}bios.h
+draw.o			: ${COMMON_FILE} ${UI_COMMON_FILE} ${SRC_DIR}draw.c ${SRC_DIR}draw.h
+pspDveManager.o : ${SRC_DIR}pspDveManager.S
+homehook.o		: ${SRC_DIR}homehook.S
+video_setting.o	: ${COMMON_FILE} ${SRC_DIR}video_setting.c
+unicode.o		: ${COMMON_FILE} ${SRC_DIR}unicode.c
 
 ifdef USE_ADHOC
 adhoc.o					: ${COMMON_FILE} ${SRC_DIR}adhoc.c ${SRC_DIR}adhoc.h

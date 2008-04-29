@@ -40,26 +40,24 @@ TIMER_TYPE timer[4];                              // タイマー
  ******************************************************************************/
 
 u32 global_cycles_per_instruction = 1;
-u64 frame_count_initial_timestamp = 0;
-u64 last_frame_interval_timestamp;
+//u64 frame_count_initial_timestamp = 0;
+//u64 last_frame_interval_timestamp;
 u32 psp_fps_debug = 0;
 u32 skip_next_frame_flag = 0;
-u32 frameskip_counter = 0;
+//u32 frameskip_counter = 0;
 
 u32 cpu_ticks = 0;
 u32 frame_ticks = 0;
 
 u32 execute_cycles = 960;
 s32 video_count = 960;
-u32 ticks;
+//u32 ticks;
 
-u32 arm_frame = 0;
-u32 thumb_frame = 0;
+//u32 arm_frame = 0;
+//u32 thumb_frame = 0;
 u32 last_frame = 0;
 
 u32 synchronize_flag = 1;
-
-u32 hold_state = 0;
 
 char main_path[MAX_PATH];
 char rom_path[MAX_PATH];
@@ -239,7 +237,7 @@ int CallbackThread(SceSize args, void *argp)
   sceKernelRegisterExitCallback(id);
 
   // 電源周りのコールバック
-  id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL); 
+  id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL);
   scePowerRegisterCallback(0, id);
 
   sceKernelSleepThreadCB();
@@ -306,7 +304,7 @@ int main(int argc, char *argv[])
     if(pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
       error_msg("Error in load/start TV OUT module.\n");
   }
-  
+
 //  quit_flag = 0;
   power_flag = 0;
   SetupCallbacks();
@@ -489,9 +487,10 @@ int main(int argc, char *argv[])
 
 }
 
+// サスペンド時にメニューに入る処理
 u32 check_power()
 {
-  if (power_flag == 0) return 0;
+  if (power_flag == 0) return 0; // TODO この処理はupdate_gba()側に移動
   FILE_CLOSE(gamepak_file_large);
   u16 *screen_copy = copy_screen();
   u32 ret_val = menu(screen_copy);
@@ -616,7 +615,7 @@ u32 update_gba()
           if(!skip_next_frame_flag)
             flip_screen();
 
-          if(game_config.update_backup_flag)
+          if(game_config.update_backup_]flag)
             update_backup();
 
           process_cheats();
@@ -644,7 +643,7 @@ u32 update_gba()
 
     if(irq_raised)
       raise_interrupt(irq_raised);
-      
+
     execute_cycles = video_count;
 
     CHECK_TIMER(0);

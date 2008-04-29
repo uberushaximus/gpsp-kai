@@ -183,7 +183,6 @@ extern u32 flush_ram_count;
 extern u64 base_timestamp;
 extern char main_path[MAX_PATH];
 extern char rom_path[MAX_PATH];
-extern u32 hold_state;
 //extern vu32 quit_flag;
 extern vu32 power_flag;
 extern volatile u32 real_frame_count;
