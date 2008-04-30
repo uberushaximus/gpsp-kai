@@ -602,7 +602,7 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
 
-          if(game_config.update_backup_flag == ON)
+          if(game_config.update_backup_flag == 1)
             update_backup();
 
           process_cheats();
@@ -659,18 +659,11 @@ u32 update_gba()
   return execute_cycles;
 }
 
-u64 last_screen_timestamp = 0;
-u32 frame_speed = 15000;
-
-volatile u32 real_frame_count = 0;
+vu32 real_frame_count = 0;
 u32 virtual_frame_count = 0;
-volatile u32 vblank_count = 0;
+vu32 vblank_count = 0;
 u32 num_skipped_frames = 0;
-u32 interval_skipped_frames;
 u32 frames;
-u32 skipped_frames = 0;
-u32 ticks_needed_total = 0;
-const u32 frame_interval = 60;
 
 void vblank_interrupt_handler(u32 sub, u32 *parg)
 {
