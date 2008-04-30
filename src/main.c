@@ -160,7 +160,7 @@ void vblank_interrupt_handler(u32 sub, u32 *parg);
 void init_main();
 int main(int argc, char *argv[]);
 void print_memory_stats(u32 *counter, u32 *region_stats, u8 *stats_str);
-u32 check_power();
+u32 into_suspend();
 int exit_callback(int arg1, int arg2, void *common);
 SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *common);
 int CallbackThread(SceSize args, void *argp);
@@ -488,9 +488,9 @@ int main(int argc, char *argv[])
 }
 
 // サスペンド時にメニューに入る処理
-u32 check_power()
+u32 into_suspend()
 {
-  if (power_flag == 0) return 0; // TODO この処理はupdate_gba()側に移動
+//  if (power_flag == 0) return 0; // TODO この処理はupdate_gba()側に移動
   FILE_CLOSE(gamepak_file_large);
   u16 *screen_copy = copy_screen();
   u32 ret_val = menu(screen_copy);
@@ -594,13 +594,20 @@ u32 update_gba()
 
           sceKernelDelayThread(10);
 
-          if (update_input())
+          if(update_input() != 0)
             continue;
 
-          if (check_power())
+          if((power_flag == 1) && (into_suspend() != 0))
             continue;
 
           update_gbc_sound(cpu_ticks);
+
+          if(game_config.update_backup_flag == ON)
+            update_backup();
+
+          process_cheats();
+
+          vcount = 0; // TODO vcountを0にするタイミングを検討
 
           //TODO 調整必要
           if((gpsp_config.screen_interlace == PROGRESSIVE) || (video_out_mode == 0))
@@ -614,15 +621,9 @@ u32 update_gba()
 
           if(!skip_next_frame_flag)
             flip_screen();
+        } //(vcount == 228)
 
-          if(game_config.update_backup_]flag)
-            update_backup();
-
-          process_cheats();
-
-          vcount = 0;
-        }
-
+        // vcountによる割込
         if(vcount == (dispstat >> 8)) {
           // vcount trigger
           dispstat |= 0x04;
@@ -650,6 +651,8 @@ u32 update_gba()
     CHECK_TIMER(1);
     CHECK_TIMER(2);
     CHECK_TIMER(3);
+
+    // vcountを0にするのと、画面のシンクロ・フリップ・ウェイト処理はここで行うべきでは？
 
   } while(reg[CPU_HALT_STATE] != CPU_ACTIVE);
 

@@ -67,7 +67,7 @@ typedef enum
   auto_frameskip,
   manual_frameskip,
   no_frameskip
-} frameskip_type;
+} FRAMESKIP_TYPE;
 
 // PSPの種類
 typedef enum
