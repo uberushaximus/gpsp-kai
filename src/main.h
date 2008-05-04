@@ -164,32 +164,31 @@ typedef enum
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/
-extern u32 cpu_ticks;
-extern u32 frame_ticks;
+//extern u32 cpu_ticks;
+//extern u32 frame_ticks;
 extern u32 execute_cycles;
 extern u32 global_cycles_per_instruction;
 extern u32 synchronize_flag;
 extern u32 skip_next_frame_flag;
 extern TIMER_TYPE timer[4];
 extern u32 prescale_table[];
-extern u32 cycle_pc_relative_access;
-extern u32 cycle_sp_relative_access;
-extern u32 cycle_block_memory_access;
-extern u32 cycle_block_memory_sp_access;
-extern u32 cycle_block_memory_words;
-extern u32 cycle_dma16_words;
-extern u32 cycle_dma32_words;
-extern u32 flush_ram_count;
-extern u64 base_timestamp;
+//extern u32 cycle_pc_relative_access;
+//extern u32 cycle_sp_relative_access;
+//extern u32 cycle_block_memory_access;
+//extern u32 cycle_block_memory_sp_access;
+//extern u32 cycle_block_memory_words;
+//extern u32 cycle_dma16_words;
+//extern u32 cycle_dma32_words;
+//extern u32 flush_ram_count;
+//extern u64 base_timestamp;
 extern char main_path[MAX_PATH];
 extern char rom_path[MAX_PATH];
-//extern vu32 quit_flag;
-extern vu32 power_flag;
+//extern vu32 power_flag;
 extern volatile u32 real_frame_count;
 extern u32 virtual_frame_count;
-extern u32 max_frameskip;
-extern u32 num_skipped_frames;
-extern u64 frame_count_initial_timestamp;
+//extern u32 max_frameskip;
+//extern u32 num_skipped_frames;
+//extern u64 frame_count_initial_timestamp;
 extern int date_format;
 extern MODEL_TYPE psp_model;
 extern char *lang[12];

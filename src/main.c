@@ -65,6 +65,12 @@ char rom_path[MAX_PATH];
 //vu32 quit_flag;
 vu32 power_flag;
 
+vu32 real_frame_count = 0;
+u32 virtual_frame_count = 0;
+vu32 vblank_count = 0;
+u32 num_skipped_frames = 0;
+u32 frames;
+
 char *lang[12] =
   { "japanese",                // 0
     "english",                 // 1
@@ -658,12 +664,6 @@ u32 update_gba()
 
   return execute_cycles;
 }
-
-vu32 real_frame_count = 0;
-u32 virtual_frame_count = 0;
-vu32 vblank_count = 0;
-u32 num_skipped_frames = 0;
-u32 frames;
 
 void vblank_interrupt_handler(u32 sub, u32 *parg)
 {
