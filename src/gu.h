@@ -33,7 +33,6 @@
 #define FRAME_GAME 0
 #define FRAME_MENU 1
 
-void update_screen();
 void init_video();
 void video_resolution(u32 mode);
 void clear_screen(u16 color);

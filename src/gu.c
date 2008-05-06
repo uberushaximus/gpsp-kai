@@ -65,13 +65,13 @@ u32 screen_height = 160;
 u32 screen_width2 = 240 / 2;
 u32 screen_height2 = 160 / 2;
 
-u32 flip_address[2][2] = 
+u32 flip_address[2][2] =
 {
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, 0x04000000 + PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
 };
 
-u32 flip_offset_address[2][2] = 
+u32 flip_offset_address[2][2] =
 {
   { PSP_DISPLAY_BUFFER_SIZE, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE },
   { PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2, PSP_DISPLAY_BUFFER_SIZE + GBA_BUFFER_SIZE * 2 + MENU_BUFFER_SIZE }
@@ -113,12 +113,6 @@ u32 screen_flip = 0;
 u32 video_out_mode;
 
 u32 use_video_out;
-
-void update_screen()
-{
-  if(!skip_next_frame_flag)
-    flip_screen();
-}
 
 #define PSP_OUT     0
 #define ANALOG_OUT  1
