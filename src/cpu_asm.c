@@ -2,7 +2,6 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
- * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -3461,8 +3460,9 @@ void flush_translation_cache_ram()
 
   ram_translation_ptr = ram_translation_cache;
   ram_block_tag_top = 0x0101;
+
   if(iwram_code_min != 0xFFFFFFFF)
-  {
+  { // iwramのキャッシュを使用していた場合
     iwram_code_min &= 0x7FFF;
     iwram_code_max &= 0x7FFF;
     memset(iwram + iwram_code_min, 0, iwram_code_max - iwram_code_min + 1);

@@ -2,7 +2,6 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
- * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -2009,6 +2008,7 @@ render_scanline_obj_builder(copy, copy_bitmap, 2D, no_partial_alpha);
 
 // TODO 高速化
 // 前回のレジスタの内容と比較して、変更無し時は処理をスキップすれば高速化できるかも
+// オブジェクトを優先順位にあわせて並べ替える。
 void order_obj(u32 video_mode)
 {
   s32 obj_num, row;
@@ -2031,7 +2031,7 @@ void order_obj(u32 video_mode)
     obj_size = obj_attribute_0 & 0xC000;
     obj_mode = (obj_attribute_0 >> 10) & 0x03;
 
-//    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) && 
+//    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) &&
 //        !((video_mode >= 3) && ((obj_attribute_2 & 0x3FF) < 512)))
     if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
        (obj_mode != 3) && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
@@ -3104,20 +3104,15 @@ void update_scanline()
   u16 *screen_offset = screen_address + (vcount * pitch); // 左端ピクセルのアドレス
   u32 video_mode = dispcnt & 0x07;                        // VIDEO MODE(0~5)
 
-  // If OAM has been modified since the last scanline has been updated then
-  // reorder and reprofile the OBJ lists.
+  // OAMに変更があった場合、オブジェクトを並べ替える
   if(oam_update)
   {
-    // OAMに変更があった場合、オブジェクトを並べ替える
     order_obj(video_mode);
     oam_update = 0;
   }
 
   // レイヤーの並べ替え
   order_layers((dispcnt >> 8) & active_layers[video_mode]);
-
-//  if(skip_next_frame_flag)
-//    return;
 
   if(dispcnt & 0x80)
   {

@@ -430,8 +430,8 @@ s32 load_video_config()
   SCREEN_PARAMETER parameter[LOAD_PARAMETER_NUMBER];
 
   // 設定の初期化
-  memcpy(&screen_parameter_psp_menu,  &screen_parameter_psp_menu_init,     sizeof(SCREEN_PARAMETER));
-  memcpy(&screen_parameter_psp_game,  &screen_parameter_psp_game_init,     sizeof(SCREEN_PARAMETER)*5);
+  memcpy(&screen_parameter_psp_menu, &screen_parameter_psp_menu_init, sizeof(SCREEN_PARAMETER));
+  memcpy(&screen_parameter_psp_game, &screen_parameter_psp_game_init, sizeof(SCREEN_PARAMETER)*5);
 
   // video configファイルのオープン
   video_file = fopen(GPSP_CONFIG_FILENAME, "r");

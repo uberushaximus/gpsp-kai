@@ -507,8 +507,22 @@ u32 into_suspend()
 
 u32 sync_flag = 0;
 
+#define V_BLANK   (0x01)
+#define H_BLANK   (0x02)
+#define V_COUNTER (0x04)
+
+// video_countの初期値は960(水平表示クロック)
+
+/*
+
+----+-+----+-+----
+
+
+*/
+
 u32 update_gba()
 {
+  // TODO このあたりのログをとる必要があるかも
   IRQ_TYPE irq_raised = IRQ_NONE;
 
   do {
@@ -527,19 +541,22 @@ u32 update_gba()
     update_timer(3);
 
     video_count -= execute_cycles;
+    DBGOUT("%d\n",video_count);
 
-    if(video_count <= 0) {
+    // TODO ここでvideo_countの値により分岐すれば、最適化できるかも
+    if(video_count <= 0)
+    { // 状態移行の発生
       u32 vcount = io_registers[REG_VCOUNT];
       u32 dispstat = io_registers[REG_DISPSTAT];
 
-      if((dispstat & 0x02) == 0) // HBLANKでないとき
-      {
-        // Transition from hrefresh to hblank
+      if(!(dispstat & H_BLANK))
+      { // H BLANKでないとき
+        // H BLANKに移行
         video_count += 272;
-        dispstat |= 0x02;
+        dispstat |= H_BLANK; // H BLANKに設定
 
-        if((dispstat & 0x01) == 0) // VBLANKでないとき
-        {
+        if((dispstat & 0x01) == 0)
+        {  // VBLANKでないとき
           // フレームスキップ時は描画しない
           if(!skip_next_frame_flag)
             update_scanline();
@@ -558,12 +575,12 @@ u32 update_gba()
             irq_raised |= IRQ_HBLANK; // HBLANK割込みはVBLANK中は発生しない
         }
 
-      }
-      else // HBLANK
-      {
-        // Transition from hblank to next line
+      } // HBLANKでないとき
+      else
+      { // HBLANKのとき
+        // 次のラインに移行
         video_count += 960;
-        dispstat &= ~0x02;
+        dispstat &= ~H_BLANK;
 
         vcount++;
 
@@ -598,7 +615,7 @@ u32 update_gba()
           dispstat &= ~0x01;
           frame_ticks++;
 
-          sceKernelDelayThread(10);
+//          sceKernelDelayThread(10);
 
           if(update_input() != 0)
             continue;
@@ -630,7 +647,8 @@ u32 update_gba()
         } //(vcount == 228)
 
         // vcountによる割込
-        if(vcount == (dispstat >> 8)) {
+        if(vcount == (dispstat >> 8))
+        {
           // vcount trigger
           dispstat |= 0x04;
           if(dispstat & 0x20)
@@ -658,7 +676,7 @@ u32 update_gba()
     CHECK_TIMER(2);
     CHECK_TIMER(3);
 
-    // vcountを0にするのと、画面のシンクロ・フリップ・ウェイト処理はここで行うべきでは？
+    // 画面のシンクロ・フリップ・ウェイト処理はここで行うべきでは？
 
   } while(reg[CPU_HALT_STATE] != CPU_ACTIVE);
 
@@ -672,6 +690,7 @@ void vblank_interrupt_handler(u32 sub, u32 *parg)
 }
 
 // TODO:最適化/タイマー使ったものに変更
+// GBAの描画サイクルは 16.743 ms, 280896 cycles(16.78MHz) 59.737 Hz
 void synchronize()
 {
 //  char char_buffer[64];
