@@ -28,7 +28,7 @@
 #define MAX_GAMEPAD_CONFIG_MAP 16
 
 
-// 
+//
 typedef struct
 {
   u32 screen_scale;

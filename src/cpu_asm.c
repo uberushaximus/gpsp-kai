@@ -3528,7 +3528,8 @@ void flush_translation_cache_bios()
 
 void dump_translation_cache()
 {
-//  FILE *fp = fopen("ram_cache.bin", "wb");
+///  FILE *fp = fopen("ram_cache.bin", "wb");
+//  FILE_OPEN(FILE *fp, "ram_cache.bin", WRITE);
 //  fwrite(ram_translation_cache, ram_translation_ptr - ram_translation_cache,
 //   1, fp);
 //  fclose(fp);

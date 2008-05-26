@@ -1154,8 +1154,10 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
 
     case 0x128:
       DBGOUT("Write 0x128(8) %04X\n",value);
+#ifdef USE_ADHOC
       if(g_adhoc_link_flag == NO)
         ADDRESS8(io_registers, 0x128) |= 0x0C;
+#endif
       break;
 
     case 0x129:
@@ -2411,7 +2413,7 @@ s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_make
 
   sprintf(config_path, "%s/%s", main_path, CONFIG_FILENAME);
 
-  config_file = fopen(config_path, "r");
+  config_file = fopen(config_path, "rb");
 
   if(config_file)
   {
@@ -2565,7 +2567,7 @@ s32 load_gamepak(char *name)
 
   if(!strcasecmp(dot_position, ".zip"))
   {
-    set_cpu_clock(9); 
+    set_cpu_clock(9);
     // プログレスバーの表示
     init_progress(5, "Load ZIP ROM.");  // TODO エラーチェック
     file_size = load_file_zip(name);

@@ -442,7 +442,7 @@ s32 load_video_config()
     loop = 0;
     while(fgets(current_line, 256, video_file))
     {
-      if((current_line[0] !='#') && (current_line[0] !='\n'))
+      if((current_line[0] !='#') && (current_line[0] != '\n') && (current_line[0] != '\r'))
       {
         switch(i)
         {
