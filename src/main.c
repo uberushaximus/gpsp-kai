@@ -226,10 +226,28 @@ SceKernelCallbackFunction power_callback(int unknown, int powerInfo, void *commo
   {
     // サスペンド時の処理
     power_flag = 1;
+
+#ifdef USE_EXT_MEM
+    // 新型PSPの場合、増設メモリの一部をメインメモリに待避
+    if(psp_model == PSP_2000)
+    {
+      memcpy(gamepak_rom_resume,(void *)(PSP2K_MEM_TOP + 0x1c00000), 0x400000);
+    }
+#endif
+
   }
   else if (powerInfo & PSP_POWER_CB_RESUME_COMPLETE)
   {
     power_flag = 0;
+
+#ifdef USE_EXT_MEM
+    // 新型PSPの場合、メインメモリから増設メモリへ内容を復旧
+    if(psp_model == PSP_2000)
+    {
+      memcpy((void *)(PSP2K_MEM_TOP + 0x1c00000),gamepak_rom_resume, 0x400000);
+    }
+#endif
+
   }
   return 0;
 }
@@ -305,7 +323,7 @@ int main(int argc, char *argv[])
   }
 
   // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む
-  if(psp_model == psp_2000)
+  if(psp_model == PSP_2000)
   {
     if(pspSdkLoadStartModule("dvemgr.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
       error_msg("Error in load/start TV OUT module.\n");
@@ -615,7 +633,7 @@ u32 update_gba()
           dispstat &= ~0x01;
           frame_ticks++;
 
-//          sceKernelDelayThread(10);
+          sceKernelDelayThread(10);
 
           if(update_input() != 0)
             continue;
@@ -666,10 +684,10 @@ u32 update_gba()
       io_registers[REG_DISPSTAT] = dispstat;
     }
 
+    execute_cycles = video_count;
+
     if(irq_raised)
       raise_interrupt(irq_raised);
-
-    execute_cycles = video_count;
 
     CHECK_TIMER(0);
     CHECK_TIMER(1);
@@ -944,15 +962,15 @@ MODEL_TYPE get_model()
 {
   if(kuKernelGetModel() != 1 /*PSP_MODEL_SLIM_AND_LITE*/)
   {
-    return psp_1000;
+    return PSP_1000;
   }
   else
     if(sceKernelDevkitVersion() < 0x03070110 || sctrlSEGetVersion() < 0x00001012)
     {
-      return psp_1000;
+      return PSP_1000;
     }
     else
     {
-      return psp_2000;
+      return PSP_2000;
     }
 }

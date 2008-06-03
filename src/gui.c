@@ -1269,23 +1269,23 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_0], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
-    /* 01 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_1], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
-    /* 02 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_9], ratio_options, &gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
-    /* 03 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_10], interlace_options, &gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),
+    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SCALE], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
+    /* 01 */ STRING_SELECTION_OPTION(NULL, msg[MSG_FILTER], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
+    /* 02 */ STRING_SELECTION_OPTION(NULL, msg[MSG_RATIO], ratio_options, &gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
+    /* 03 */ STRING_SELECTION_OPTION(NULL, msg[MSG_INTERLACE], interlace_options, &gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),
     /* 04 */
-    /* 05 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_2], frameskip_options, &game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
-    /* 06 */ NUMERIC_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_3], &game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
-    /* 07 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_4], frameskip_variation_options, &game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
+    /* 05 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_TYPE], frameskip_options, &game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
+    /* 06 */ NUMERIC_SELECTION_OPTION(NULL, msg[MSG_SKIP_VALUE], &game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
+    /* 07 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_RANDOM], frameskip_variation_options, &game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
     /* 08 */
-    /* 09 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_5], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
-    /* 10 */ STRING_SELECTION_OPTION(NULL, msg[MSG_G_S_MENU_6], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
+    /* 09 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_ENABLE], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
+    /* 10 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_BUFFER], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
     /* 11 */
-    /* 12 */ ACTION_OPTION(menu_save_ss, NULL, msg[MSG_G_S_MENU_7], msg[MSG_G_S_MENU_HELP_7], 12),
+    /* 12 */ ACTION_OPTION(menu_save_ss, NULL, msg[MSG_SCREEN_SHOT], msg[MSG_G_S_MENU_HELP_7], 12),
     /* 13 */
     /* 14 */
     /* 15 */
-    /* 16 */ SUBMENU_OPTION(NULL, msg[MSG_G_S_MENU_8], msg[MSG_G_S_MENU_HELP_8], 16)
+    /* 16 */ SUBMENU_OPTION(NULL, msg[MSG_MENU_RETURN_MAIN], msg[MSG_G_S_MENU_HELP_8], 16)
   };
 
   MAKE_MENU(graphics_sound, submenu_graphics_sound, NULL);

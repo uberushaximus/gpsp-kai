@@ -71,8 +71,8 @@ typedef enum
 // PSPの種類
 typedef enum
 {
-  psp_1000, /* PSP-1000 all CFW or PSP-2000*/
-  psp_2000, /* PSP-2000 CFW 3.71 M33-3 or higher */
+  PSP_1000, /* PSP-1000 all CFW or PSP-2000*/
+  PSP_2000, /* PSP-2000 CFW 3.71 M33-3 or higher */
 } MODEL_TYPE;
 
 // TODO:タイマーカウンタ周りの処理は再検討

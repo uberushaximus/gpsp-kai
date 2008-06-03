@@ -17,7 +17,7 @@ USE_DEBUG= 0
 USE_ADHOC = 0
 
 #最大52MBのメモリを使用する
-PSP_LARGE_MEMORY = 1
+PSP_LARGE_MEMORY = 0
 
 #CPUコアのARMエミュレータを使用する
 USE_C_CORE = 0

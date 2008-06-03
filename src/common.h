@@ -190,7 +190,12 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #ifdef USE_DEBUG
 // デバッグ用の設定
 #define DBG_FILE_NAME "dbg_msg.txt"
-#define DBGOUT(...) if(gpsp_config.debug_flag == YES) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT(...) if(gpsp_config.debug_flag != NO) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT_1(...) if(gpsp_config.debug_flag >= 1) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT_2(...) if(gpsp_config.debug_flag >= 2) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT_3(...) if(gpsp_config.debug_flag >= 3) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT_4(...) if(gpsp_config.debug_flag >= 4) fprintf(g_dbg_file, __VA_ARGS__)
+#define DBGOUT_5(...) if(gpsp_config.debug_flag >= 5) fprintf(g_dbg_file, __VA_ARGS__)
 FILE *g_dbg_file;
 
 u64 dbg_time_1;

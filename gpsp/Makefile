@@ -64,6 +64,9 @@ ifeq ($(USE_C_CORE), 1)
 CFLAGS          += -DUSE_C_CORE
 endif
 
+ifeq ($(PSP_LARGE_MEMORY), 0)
+CFLAGS          += -DUSE_EXT_MEM
+endif
 
 ASFLAGS         = ${CFLAGS}
 EXTRA_TARGETS   = EBOOT.PBP

@@ -1,4 +1,4 @@
-×# messege file
+# messege file
 # Japanese
 
 # MSG_RETURN_MENU
