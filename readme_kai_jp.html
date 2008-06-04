@@ -1,5 +1,6 @@
 <head> <meta content="text/html; charset=utf-8" http-equiv="Content-Type"></head>
 <pre>
+UnOfficial gpSP kai
 -- gameplaySP  Gameboy Advance emulator for Playstation Portable --
 
 -- Release log --
@@ -9,9 +10,10 @@
 	ロードステート時に音ズレが起こるのを修正
 	CFW3.71 M33-3以下の場合はPSP-2000でもTV出力/追加メモリには対応しない様にした
 	video.cfgの改行コードをLF+CRにも対応
+	CFW3.95GENに対応するために、追加メモリは以前のように自前で管理するようにした
+
 	（現在修正中）HBLANK割込の処理を修正
 	（現在修正中）メッセージの変更
-
 	（現在修正中）MULTIモードの通信に対応(現状では2台のみ)
 	（現在修正中）デバッグ用にCコアARMエミュを復活
 	（現在修正中）チートとその他のオプションを分離
@@ -546,7 +548,9 @@
 	設定したsound buffer sizeをgpSP CFGファイルに保存されるようにした。
 		gpSP CFGファイルのサイズが56byte -> 72byteに変更。
 
-takka takka@tfact.net
-http://sourceforge.jp/projects/gpsp-kai
+takka
+takka@tfact.net
+blog http://takka.tfact.jp/blog/
+svn  http://sourceforge.jp/projects/gpsp-kai
 
 </pre>

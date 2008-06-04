@@ -1,3 +1,6 @@
+UnOfficial gpSP kai
+-- gameplaySP Gameboy Advance emulator for Playstation Portable --
+
 frame skipについての考察
 なるべく正確なオートフレームスキップと、まともなターボモード実装を検討してみる
 現在の図は画面表示周りだけだが、サウンドの流れも追加する予定

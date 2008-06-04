@@ -1,3 +1,6 @@
+UnOfficial gpSP kai
+-- gameplaySP Gameboy Advance emulator for Playstation Portable --
+
 gpSPのconfig fileの技術資料
 すべてuo gpSP kai 3.2 test 06での仕様です
 現在は一部変更あります
@@ -34,7 +37,7 @@ dir.cfg
 	サブフォントのグリフを優先的に使用する
 
 *.msg
-	各種メッセージのファイル	
+	各種メッセージのファイル
 	行頭が!以外は全てコメントとして無視される
 	各種メッセージの順番は決まっているので、順番を入替えると正常に動作しない
 	コメントの英文を参考に変更すること
@@ -48,18 +51,18 @@ gpsp.cfg
 	gpSP本体の設定ファイル
 	存在しない場合、自動で作成される
 	内容は以下
-		1word			ヘッダ
-		2word			バージョン番号
-		3word			screen_scale
-		4word			screen_filter
-		5word			video_interlace
-		6word			video_ratio
-		7word			enable_audio
-		8word			enable_analog
-		9word			analog_sensitivity_level
+		1word		ヘッダ
+		2word		バージョン番号
+		3word		screen_scale
+		4word		screen_filter
+		5word		video_interlace
+		6word		video_ratio
+		7word		enable_audio
+		8word		enable_analog
+		9word		analog_sensitivity_level
 		10~25word	gamepad_config_map[16]
 
-	ヘッダ 
+	ヘッダ
 		'gpSP'をASCIIコードで格納
 		0x67705250
 
@@ -106,23 +109,23 @@ gpsp.cfg
 	gamepad_config_map[16]
 		キーコンフィグの設定
 
-	
+
 ROMファイル名.cfg
 	ROMファイルごとの設定ファイル
 	存在しない場合、自動で作成される
 	内容は以下
-		1word			ヘッダ
-		2word			バージョン番号
-		3word			frameskip_type
-		4word			frameskip_value
-		5word			random_skip
-		6word			clock_speed
-		7word			audio_buffer_size_number
-		8word			update_backup_flag
-		9~38word		cheat_flag[30]
+		1word		ヘッダ
+		2word		バージョン番号
+		3word		frameskip_type
+		4word		frameskip_value
+		5word		random_skip
+		6word		clock_speed
+		7word		audio_buffer_size_number
+		8word		update_backup_flag
+		9~38word	cheat_flag[30]
 		39~54word	gamepad_config_map[16]
 
-	ヘッダ 
+	ヘッダ
 		'gcfg'をASCIIコードで格納
 		0x
 
@@ -159,3 +162,15 @@ ROMファイル名.cfg
 
 	gamepad_config_map[16]
 		キーコンフィグの設定
+
+
+video.cfg
+
+pspDveMgrSetVideoOut() parameter
+Filter parameter
+Texture size
+Texture size bit
+Frame buffer size
+screen size
+Splite data 1
+Splite data 2 (for interlace)
