@@ -69,7 +69,7 @@ s32 load_file_zip(char *filename)
   else
     {
       zip_buffer_size = ZIP_BUFFER_SIZE;
-      cbuffer = 0x441A5C00; // 汎用フレームバッファを使用
+      cbuffer = (u8 *)0x441A5C00; // 汎用フレームバッファを使用
     }
 
   chdir(rom_path);
