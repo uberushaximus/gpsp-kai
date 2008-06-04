@@ -3,7 +3,6 @@
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2006 SiberianSTAR
  * Copyright (C) 2007 takka <takka@tfact.net>
- * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,7 +21,7 @@
 
 #include "common.h"
 
-#define ZIP_BUFFER_SIZE (256 * 1024)
+#define ZIP_BUFFER_SIZE (256 * 1024) // 256KB
 
 struct SZIPFileDataDescriptor
 {
@@ -53,7 +52,25 @@ s32 load_file_zip(char *filename)
   u8 *cbuffer;
   char *ext;
   FILE_ID fd;
-  u32 zip_buffer_size = ZIP_BUFFER_SIZE;
+  u32 zip_buffer_size;
+
+  if(psp_model == PSP_2000)
+    {
+      zip_buffer_size = 16 * 1024 * 1024;
+      cbuffer = malloc(zip_buffer_size);
+
+      while(cbuffer == NULL)
+        {
+          zip_buffer_size -= (1 * 1024 * 1024);
+          cbuffer = malloc(zip_buffer_size);
+        }
+      zip_buffer_size = zip_buffer_size;
+    }
+  else
+    {
+      zip_buffer_size = ZIP_BUFFER_SIZE;
+      cbuffer = 0x441A5C00; // 汎用フレームバッファを使用
+    }
 
   chdir(rom_path);
   FILE_OPEN(fd, filename, READ);
@@ -109,8 +126,6 @@ s32 load_file_zip(char *filename)
           z_stream stream;
           s32 err;
 
-          cbuffer = 0x441A5C00; // 汎用フレームバッファを使用 TODO
-
           stream.next_in = (Bytef*)cbuffer;
           stream.avail_in = (u32)zip_buffer_size;
 
@@ -151,6 +166,9 @@ s32 load_file_zip(char *filename)
 
 outcode:
   FILE_CLOSE(fd);
+
+  if(psp_model == PSP_2000)
+    free(cbuffer);
 
   chdir(main_path);
   return retval;
