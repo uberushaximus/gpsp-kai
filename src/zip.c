@@ -53,6 +53,7 @@ s32 load_file_zip(char *filename)
   char *ext;
   FILE_ID fd;
   u32 zip_buffer_size;
+  u32 write_tmp_flag;
 
   if(psp_model == PSP_2000)
     {
@@ -82,7 +83,7 @@ s32 load_file_zip(char *filename)
     FILE_READ(fd, &data, sizeof(struct SZIPFileHeader));
 
     // EDIT: Check if this is a zip file without worrying about endian
-	// It checks for the following: 0x50 0x4B 0x03 0x04 (PK..)
+    // It checks for the following: 0x50 0x4B 0x03 0x04 (PK..)
     // Used to be: if(data.Sig != 0x04034b50) break;
 	if( data.Sig[0] != 0x50 || data.Sig[1] != 0x4B ||
 		data.Sig[2] != 0x03 || data.Sig[3] != 0x04 )
@@ -106,7 +107,12 @@ s32 load_file_zip(char *filename)
 
     // file is too big
     if(data.DataDescriptor.UncompressedSize > gamepak_ram_buffer_size)
-      goto outcode;
+      {
+        write_tmp_flag = YES; // テンポラリを使用するフラグをONに
+        goto outcode;
+      }
+    else
+      write_tmp_flag = NO;
 
     if(!strcasecmp(ext, "bin") || !strcasecmp(ext, "gba"))
     {
@@ -139,7 +145,7 @@ s32 load_file_zip(char *filename)
           stream.zfree = (free_func)0;
           stream.opaque = (voidpf)0;
 
-          err = inflateInit2(&stream, -MAX_WBITS);
+          err = inflateInit2(&stream, MAX_WBITS);
 
           FILE_READ(fd, cbuffer, zip_buffer_size);
 

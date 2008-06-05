@@ -2007,69 +2007,69 @@ s32 save_config_file()
  * ローカル関数の定義
  ******************************************************************************/
 static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
-{
-  u16 snapshot_buffer[240 * 160];
-  char savestate_timestamp_string[80];
-  char savestate_path[1024];
-  FILE_ID savestate_file;
-  u64 savestate_time_flat;
-  u64 local_time;
-  int wday;
-  pspTime current_time;
-  u32 valid_flag = 0;
-
-  if (DEFAULT_SAVE_DIR != NULL) {
-    sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
-  }
-  else
   {
-    strcpy(savestate_path, savestate_filename);
-  }
+    u16 snapshot_buffer[240 * 160];
+    char savestate_timestamp_string[80];
+    char savestate_path[1024];
+    FILE_ID savestate_file;
+    u64 savestate_time_flat;
+    u64 local_time;
+    int wday;
+    pspTime current_time;
+    u32 valid_flag = 0;
 
-  if (slot_num != MEM_STATE_NUM)
-  {
-    FILE_OPEN(savestate_file, savestate_path, READ);
-    if(FILE_CHECK_VALID(savestate_file))
-    {
-      FILE_READ_ARRAY(savestate_file, snapshot_buffer);
-      FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
-      FILE_CLOSE(savestate_file);
-      valid_flag = 1;
+    if (DEFAULT_SAVE_DIR != NULL) {
+      sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
     }
-  }
-  else
-  {
-    if (mem_save_flag == 1)
-    {
-      g_state_buffer_ptr = savestate_write_buffer;
-      FILE_READ_MEM_ARRAY(g_state_buffer_ptr, snapshot_buffer);
-      FILE_READ_MEM_VARIABLE(g_state_buffer_ptr, savestate_time_flat);
-      valid_flag = 1;
-    }
-  }
+    else
+      {
+        strcpy(savestate_path, savestate_filename);
+      }
 
-  if (valid_flag == 1)
-  {
-    sceRtcConvertUtcToLocalTime(&savestate_time_flat, &local_time);
+    if (slot_num != MEM_STATE_NUM)
+      {
+        FILE_OPEN(savestate_file, savestate_path, READ);
+        if(FILE_CHECK_VALID(savestate_file))
+          {
+            FILE_READ_ARRAY(savestate_file, snapshot_buffer);
+            FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
+            FILE_CLOSE(savestate_file);
+            valid_flag = 1;
+          }
+      }
+    else
+      {
+        if (mem_save_flag == 1)
+          {
+            g_state_buffer_ptr = savestate_write_buffer;
+            FILE_READ_MEM_ARRAY(g_state_buffer_ptr, snapshot_buffer);
+            FILE_READ_MEM_VARIABLE(g_state_buffer_ptr, savestate_time_flat);
+            valid_flag = 1;
+          }
+      }
 
-    sceRtcSetTick(&current_time, &local_time);
-    wday = sceRtcGetDayOfWeek(current_time.year, current_time.month, current_time.day);
-    get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_FMT_0, current_time.year, current_time.month, current_time.day,
-      wday, current_time.hour, current_time.minutes, current_time.seconds, 0);
+    if (valid_flag == 1)
+      {
+        sceRtcConvertUtcToLocalTime(&savestate_time_flat, &local_time);
 
-    savestate_timestamp_string[40] = 0;
+        sceRtcSetTick(&current_time, &local_time);
+        wday = sceRtcGetDayOfWeek(current_time.year, current_time.month, current_time.day);
+        get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_FMT_0, current_time.year, current_time.month, current_time.day,
+            wday, current_time.hour, current_time.minutes, current_time.seconds, 0);
 
-    PRINT_STRING_BG(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
+        savestate_timestamp_string[40] = 0;
+
+        PRINT_STRING_BG(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
+      }
+    else
+      {
+        memset(snapshot_buffer, 0, 240 * 160 * 2);
+        PRINT_STRING_EXT_BG(msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, 15, 75, snapshot_buffer, 240);
+        get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_NONE_0, 0, 0, 0, 0, 0, 0, 0, 0);
+        PRINT_STRING_BG(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
+      }
+    blit_to_screen(snapshot_buffer, 240, 160, 230, 40);
   }
-  else
-  {
-    memset(snapshot_buffer, 0, 240 * 160 * 2);
-    PRINT_STRING_EXT_BG(msg[MSG_STATE_MENU_STATE_NONE], 0xFFFF, 0x0000, 15, 75, snapshot_buffer, 240);
-    get_timestamp_string(savestate_timestamp_string, MSG_STATE_MENU_DATE_NONE_0, 0, 0, 0, 0, 0, 0, 0, 0);
-    PRINT_STRING_BG(savestate_timestamp_string, COLOR_HELP_TEXT, COLOR_BG, 10, 40);
-  }
-  blit_to_screen(snapshot_buffer, 240, 160, 230, 40);
-}
 
 static void get_savestate_filename(u32 slot, char *name_buffer)
 {
