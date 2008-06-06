@@ -1,14 +1,12 @@
-�t�H���g�֌W�̃c�[���Q�ł�
+フォント関係のツール群です
 
-bdf2fbm���o�E���_��BOX�̐ݒ�𖳎�����̂ŁAbdf2bmp��bmp2bdf�̗��p���������߂��܂�
+手順としては
 
-�菇�Ƃ��Ă�
+any2ucs.plでucsのマッピングに変更
+	sjis対応のフォントの場合付属のsjis.mapが使えます
 
-any2ucs.pl��ucs�̃}�b�s���O�ɕύX
-	sjis�Ή��̃t�H���g�̏ꍇ�t����sjis.map���g���܂�
+bdf2fbmでfbmファイルの作成
 
-bdf2bmp��bmp2bdf���g���Abdf2fbm�Ή��̃f�[�^�ɕϊ�
+となります
 
-bdf2fbm��fbm�t�@�C���̍쐬
-
-�ƂȂ�܂�
+必要に応じてbdf2bmpとbmp2bdfを利用してください
