@@ -31,7 +31,7 @@ void set_video_out();
 #define GBA_LINE_SIZE   240
 #define FRAME_LINE_SIZE 768
 
-#define GPSP_CONFIG_FILENAME "cfg/video.cfg"
+#define VIDEO_CONFIG_FILENAME "cfg/video.cfg"
 
 // VRAM メモリマップ(VRAM割当てのAPIを使用しないで全て自前で管理)
 // 0x000000～0x0BFFFF(0xC0000 768.0kb) 表示用フレームバッファ
@@ -50,7 +50,7 @@ static u16 *psp_gu_vram_base = (u16 *)(0x44000000);
 static u32 *ge_cmd_ptr = (u32 *)0x441FC000;
 static u32 gecbid;
 float *temp_vertex = (float *)0x441FC200;
-u16 *vram_data = (u16 *)0x441A5C00;
+u16 *vram_data = (u16 *)UNIVERSAL_VRAM_ADDR;
 
 u32 video_draw_frame = FRAME_GAME;
 
@@ -434,7 +434,7 @@ s32 load_video_config()
   memcpy(&screen_parameter_psp_game, &screen_parameter_psp_game_init, sizeof(SCREEN_PARAMETER)*5);
 
   // video configファイルのオープン
-  video_file = fopen(GPSP_CONFIG_FILENAME, "r");
+  video_file = fopen(VIDEO_CONFIG_FILENAME, "r");
 
   if(video_file)
   {

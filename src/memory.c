@@ -150,9 +150,9 @@ u16 palette_ram[512];
 u16 oam_ram[512];
 // IOレジスタ 32kb
 u16 io_registers[1024 * 16];
-// ExtワークRAM 512kb
+// ExtワークRAM 256KB x2
 u8 ewram[1024 * 256 * 2];
-// IntワークRAM 64kb
+// IntワークRAM 32KB x2
 u8 iwram[1024 * 32 * 2];
 // VRAM 192kb
 u8 vram[1024 * 96 * 2];
@@ -2570,8 +2570,8 @@ s32 load_gamepak(char *name)
 
   if(!strcasecmp(dot_position, ".zip"))
   {
-    set_cpu_clock(9);
     // プログレスバーの表示
+    set_cpu_clock(9); // 一時的に333MHzに
     init_progress(5, "Load ZIP ROM.");  // TODO エラーチェック
     file_size = load_file_zip(name);
   }
@@ -3679,7 +3679,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
       }
       else
       {
-        quit();
+        quit(0);
       }
 
       real_frame_count = 0;

@@ -10,8 +10,10 @@ include ../build_count.inc
 PSPSDK          = ${shell psp-config --pspsdk-path}
 PREFIX          = ${shell psp-config --psp-prefix}
 
-PSP_EBOOT_ICON  = ../image/icon1.png
+PSP_EBOOT_ICON  = ../image/up_gbsp_kai_logo01_trim.png
+#PSP_EBOOT_ICON  = ../image/icon1.png
 #文字列が表示されないので保留
+PSP_EBOOT_PIC1  = ../image/up_gbsp_kai_launch01_s.png
 #PSP_EBOOT_PIC1  = ../image/pic1.png 
 
 OBJS            = main.o cpu_common.o cpu_asm.o cpu_c.o video.o memory.o sound.o input.o gu.o

@@ -2876,7 +2876,7 @@ u32 translation_flush_count = 0;
         PRINT_STRING_BG(buffer, COLOR_WHITE, COLOR_BLACK, 0, 10);             \
         flip_screen();                                                        \
         error_msg("");                                                        \
-        quit();                                                               \
+        quit(0);                                                              \
       }                                                                       \
       block_address = (u8 *)(-1);                                             \
       break;                                                                  \

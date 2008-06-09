@@ -256,12 +256,10 @@
 
 #define sound_savestate_body(type)                                            \
 {                                                                             \
-  u32 temp_sound_read_offset = sound_read_offset;                             \
-  u32 temp_gbc_sound_buffer_index = gbc_sound_buffer_index;                   \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_on);                       \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, /*temp_*/sound_read_offset);         \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_read_offset);              \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_last_cpu_ticks);           \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, /*temp_*/gbc_sound_buffer_index);    \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_buffer_index);         \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_last_cpu_ticks);       \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_partial_ticks);        \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_left);   \
@@ -409,7 +407,7 @@ s8 square_pattern_duty[4][8] =
     { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0xF8, 0xF8, 0xF8 },
     { 0xF8, 0xF8, 0xF8, 0xF8, 0x07, 0x07, 0xF8, 0xF8 },
     { 0xF8, 0xF8, 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8 },
-    { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 }, 
+    { 0x07, 0x07, 0x07, 0x07, 0xF8, 0xF8, 0x07, 0x07 },
   };
 
 s8 wave_samples[64];
@@ -420,32 +418,32 @@ u32 noise_table7[4];
 u32 gbc_sound_master_volume_table[4] = { 1, 2, 4, 0 };
 
 u32 gbc_sound_channel_volume_table[8] =
-  { FIXED_DIV(0, 7, 12), 
-    FIXED_DIV(1, 7, 12), 
-    FIXED_DIV(2, 7, 12), 
-    FIXED_DIV(3, 7, 12), 
-    FIXED_DIV(4, 7, 12), 
-    FIXED_DIV(5, 7, 12), 
-    FIXED_DIV(6, 7, 12), 
+  { FIXED_DIV(0, 7, 12),
+    FIXED_DIV(1, 7, 12),
+    FIXED_DIV(2, 7, 12),
+    FIXED_DIV(3, 7, 12),
+    FIXED_DIV(4, 7, 12),
+    FIXED_DIV(5, 7, 12),
+    FIXED_DIV(6, 7, 12),
     FIXED_DIV(7, 7, 12)
   };
 
 u32 gbc_sound_envelope_volume_table[16] =
-  { FIXED_DIV(0, 15, 14), 
-    FIXED_DIV(1, 15, 14), 
-    FIXED_DIV(2, 15, 14), 
-    FIXED_DIV(3, 15, 14), 
-    FIXED_DIV(4, 15, 14), 
-    FIXED_DIV(5, 15, 14), 
-    FIXED_DIV(6, 15, 14), 
-    FIXED_DIV(7, 15, 14), 
-    FIXED_DIV(8, 15, 14), 
-    FIXED_DIV(9, 15, 14), 
-    FIXED_DIV(10, 15, 14), 
-    FIXED_DIV(11, 15, 14), 
-    FIXED_DIV(12, 15, 14), 
-    FIXED_DIV(13, 15, 14), 
-    FIXED_DIV(14, 15, 14), 
+  { FIXED_DIV(0, 15, 14),
+    FIXED_DIV(1, 15, 14),
+    FIXED_DIV(2, 15, 14),
+    FIXED_DIV(3, 15, 14),
+    FIXED_DIV(4, 15, 14),
+    FIXED_DIV(5, 15, 14),
+    FIXED_DIV(6, 15, 14),
+    FIXED_DIV(7, 15, 14),
+    FIXED_DIV(8, 15, 14),
+    FIXED_DIV(9, 15, 14),
+    FIXED_DIV(10, 15, 14),
+    FIXED_DIV(11, 15, 14),
+    FIXED_DIV(12, 15, 14),
+    FIXED_DIV(13, 15, 14),
+    FIXED_DIV(14, 15, 14),
     FIXED_DIV(15, 15, 14) };
 
 volatile /*static*/ u32 gbc_sound_buffer_index = 0;
@@ -571,7 +569,7 @@ void init_sound()
     sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 0x1000, 0, NULL);
     if (sound_thread < 0)
     {
-      quit();
+      quit(1);
     }
 
     //スレッドの開始

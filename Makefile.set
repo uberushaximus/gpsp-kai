@@ -11,7 +11,7 @@ VERSION_BUILD = 2
 # バージョン表記にtestとBUILD番号を含めるかどうかの設定
 TEST_MODE = 1
 
-USE_DEBUG= 0
+USE_DEBUG = 0
 
 # WLANのON/OFF
 USE_ADHOC = 0
@@ -20,4 +20,4 @@ USE_ADHOC = 0
 PSP_LARGE_MEMORY = 0
 
 #CPUコアのARMエミュレータを使用する
-USE_C_CORE = 0
+USE_C_CORE = 1

@@ -43,6 +43,7 @@ typedef struct
   u32 language;
   u32 emulate_core;
   u32 debug_flag;
+  u32 fake_fat;
 } GPSP_CONFIG;
 
 typedef struct

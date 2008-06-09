@@ -93,7 +93,7 @@ gui_action_type get_gui_input()
   sceKernelDelayThread(25000);
 
 //  if (quit_flag == 1)
-//    quit();
+//    quit(0);
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
   ctrl_buttons = readHomeButton();

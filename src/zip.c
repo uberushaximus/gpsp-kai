@@ -21,7 +21,7 @@
 
 #include "common.h"
 
-#define ZIP_BUFFER_SIZE (256 * 1024) // 256KB
+#define ZIP_BUFFER_SIZE (320 * 1024) // 320KB
 
 struct SZIPFileDataDescriptor
 {
@@ -65,12 +65,11 @@ s32 load_file_zip(char *filename)
           zip_buffer_size -= (1 * 1024 * 1024);
           cbuffer = malloc(zip_buffer_size);
         }
-      zip_buffer_size = zip_buffer_size;
     }
   else
     {
       zip_buffer_size = ZIP_BUFFER_SIZE;
-      cbuffer = (u8 *)0x441A5C00; // 汎用フレームバッファを使用
+      cbuffer = (u8 *)UNIVERSAL_VRAM_ADDR; // 汎用フレームバッファを使用
     }
 
   chdir(rom_path);
@@ -145,7 +144,7 @@ s32 load_file_zip(char *filename)
           stream.zfree = (free_func)0;
           stream.opaque = (voidpf)0;
 
-          err = inflateInit2(&stream, MAX_WBITS);
+          err = inflateInit2(&stream, -MAX_WBITS);
 
           FILE_READ(fd, cbuffer, zip_buffer_size);
 

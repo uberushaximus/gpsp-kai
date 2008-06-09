@@ -324,7 +324,7 @@ void *fbm_malloc(size_t size)
 
   if (size == 0) return NULL;
 
-  h_block = malloc(size);
+  h_block = (int)malloc(size);
 
   if (h_block < 0) return NULL;
 

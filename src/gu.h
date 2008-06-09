@@ -145,7 +145,6 @@ typedef struct
 extern float *temp_vertex;
 extern u16 *vram_data;
 
-
 extern u16 *screen_address;
 extern u32 screen_pitch;
 extern u32 screen_width;
@@ -169,5 +168,7 @@ extern SCREEN_PARAMETER *current_parameter;
 
 void set_resolution_parameter_game(video_scale_type scale);
 void set_resolution_parameter_menu();
+
+#define UNIVERSAL_VRAM_ADDR (0x441A5C00)
 
 #endif

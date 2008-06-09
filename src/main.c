@@ -213,7 +213,7 @@ void init_main()
 
 int exit_callback(int arg1, int arg2, void *common)
 {
-  quit();
+  quit(0);
 //  quit_flag = 1; // TODO
   return 0;
 }
@@ -281,19 +281,25 @@ int SetupCallbacks()
   return callback_thread_id;
 }
 
-void quit()
+// mode = 0 NORMAL
+// mode = 1 INIT ERROR
+// mode = 2 FONT INIT ERROR
+void quit(u32 mode)
 {
-  save_game_config_file();
-  save_config_file();
+  if(mode == 0)
+    {
+      save_game_config_file();
+      save_config_file();
 
-  update_backup_force();
-
+      update_backup_force();
+    }
 #ifdef USE_ADHOC
   adhoc_exit();
 #endif
 
   sound_exit();
-  fbm_freeall();
+  if(mode != 2)
+    fbm_freeall();
 
 #ifdef USE_DEBUG
   fclose(g_dbg_file);
@@ -312,13 +318,20 @@ int main(int argc, char *argv[])
   sceDisplaySetMode(0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
   pspDebugScreenInit();
 
+  // Copy the directory path of the executable into main_path
+  getcwd(main_path, MAX_FILE);
+  chdir(main_path);
+
+  // 設定ファイルの読込み
+  load_config_file();
+
   psp_model = get_model();
 
   // HOMEボタンを読取り可能にする
   if(pspSdkLoadStartModule("homehook.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
   {
     error_msg("Error in load/start homehook module.\n");
-    quit();
+    quit(1);
   }
 
   // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む
@@ -341,19 +354,13 @@ int main(int argc, char *argv[])
   DBGOUT("\nStart gpSP\n");
 #endif
 
-  getcwd(main_path, 512);
-
 #ifdef USE_ADHOC
   // adhoc用モジュールのロード
   if (load_adhoc_modules() != 0)
     error_msg("not load adhoc modules!!\n");
 #endif
 
-  // Copy the directory path of the executable into main_path
-  chdir(main_path);
-
-  // 設定ファイルの読込み
-  load_config_file();
+  // 初期化
   init_game_config();
 
   init_main();
@@ -379,7 +386,7 @@ int main(int argc, char *argv[])
   {
     pspDebugScreenInit();
     error_msg("dir.cfg Error!!");
-    quit();
+    quit(1);
   }
   update_progress();
 
@@ -389,7 +396,7 @@ int main(int argc, char *argv[])
   {
     pspDebugScreenInit();
     error_msg("font.cfg Error!!");
-    quit();
+    quit(1);
   }
   update_progress();
 
@@ -399,7 +406,7 @@ int main(int argc, char *argv[])
   {
     pspDebugScreenInit();
     error_msg("message.cfg Error!!");
-    quit();
+    quit(1);
   }
   update_progress();
 
@@ -408,7 +415,7 @@ int main(int argc, char *argv[])
   {
     pspDebugScreenInit();
     error_msg("font init Error!!");
-    quit();
+    quit(2);
   }
   update_progress();
 
@@ -429,7 +436,7 @@ int main(int argc, char *argv[])
     PRINT_STRING_BG(msg[MSG_ERR_BIOS_2], 0xFFFF, 0x0000, 0, 60);
     flip_screen();
     error_msg("");
-    quit();
+    quit(1);
   }
   update_progress();
   if(bios_ret == -2) // MD5が違う場合
@@ -447,7 +454,7 @@ int main(int argc, char *argv[])
     if(load_gamepak((char *)argv[1]) == -1)
     {
       printf("Failed to load gamepak %s, exiting.\n", load_filename);
-      exit(-1);
+      quit(1);
     }
 
     clear_screen(0);
@@ -475,7 +482,7 @@ int main(int argc, char *argv[])
         video_resolution(FRAME_MENU);
         printf("Failed to load gamepak %s, exiting.\n", load_filename);
         sceKernelDelayThread(5000000);
-        quit();
+        quit(1);
       }
 
       clear_screen(0);
@@ -503,11 +510,11 @@ int main(int argc, char *argv[])
     execute_arm_translate(execute_cycles);
   else
     execute_arm(execute_cycles);
-  return 0;
 #else
   execute_arm_translate(execute_cycles);
 #endif
 
+  return 0;
 }
 
 // サスペンド時にメニューに入る処理
@@ -530,27 +537,22 @@ u32 sync_flag = 0;
 
 // video_countの初期値は960(水平表示クロック)
 
-/*
-
-----+-+----+-+----
-
-
-*/
-
 u32 update_gba()
 {
   // TODO このあたりのログをとる必要があるかも
   IRQ_TYPE irq_raised = IRQ_NONE;
 
-  do {
-    cpu_ticks += execute_cycles;
+  do
+    {
+      cpu_ticks += execute_cycles;
 
-    reg[CHANGED_PC_STATUS] = 0;
+      reg[CHANGED_PC_STATUS] = 0;
 
-    if(gbc_sound_update) {
-      update_gbc_sound(cpu_ticks);
-      gbc_sound_update = 0;
-    }
+      if(gbc_sound_update)
+        {
+          update_gbc_sound(cpu_ticks);
+          gbc_sound_update = 0;
+        }
 
     update_timer(0);
     update_timer(1);
@@ -558,7 +560,7 @@ u32 update_gba()
     update_timer(3);
 
     video_count -= execute_cycles;
-    DBGOUT("%d\n",video_count);
+    DBGOUT("%d %d\n",video_count, io_registers[REG_VCOUNT]);
 
     // TODO ここでvideo_countの値により分岐すれば、最適化できるかも
     if(video_count <= 0)
@@ -607,9 +609,7 @@ u32 update_gba()
 
           dispstat |= 0x01;
           if(dispstat & 0x8)
-          {
             irq_raised |= IRQ_VBLANK;
-          }
 
           affine_reference_x[0] = (s32)(ADDRESS32(io_registers, 0x28) << 4) >> 4;
           affine_reference_y[0] = (s32)(ADDRESS32(io_registers, 0x2C) << 4) >> 4;
@@ -624,7 +624,8 @@ u32 update_gba()
             dma_transfer(dma + 2);
           if(dma[3].start_type == DMA_START_VBLANK)
             dma_transfer(dma + 3);
-        }
+
+       }
         else
 
         if(vcount == 228) {
@@ -650,7 +651,7 @@ u32 update_gba()
           vcount = 0; // TODO vcountを0にするタイミングを検討
 
           //TODO 調整必要
-          if((gpsp_config.screen_interlace == PROGRESSIVE) || (video_out_mode == 0))
+          if((video_out_mode == 0) || (gpsp_config.screen_interlace == PROGRESSIVE))
             synchronize();
           else
           {
@@ -719,7 +720,7 @@ void synchronize()
   if(psp_fps_debug)
   {
     char print_buffer[256];
-    sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d", (int)fps, (int)frames_drawn, (int)left_buffer);
+    sprintf(print_buffer, "FPS:%02d DRAW:(%02d) S_BUF:%02d PC:%08X", (int)fps, (int)frames_drawn, (int)left_buffer, (int)reg[REG_PC]);
     PRINT_STRING_BG(print_buffer, 0xFFFF, 0x000, 0, 0);
   }
 
@@ -939,15 +940,14 @@ void raise_interrupt(IRQ_TYPE irq_raised)
   // and it must be on in the flags.
   io_registers[REG_IF] |= irq_raised;
 
-  if((io_registers[REG_IE] & io_registers[REG_IF]) && io_registers[REG_IME] &&
-   ((reg[REG_CPSR] & 0x80) == 0))
+  if((io_registers[REG_IME] & 0x01) && (io_registers[REG_IE] & io_registers[REG_IF]) && ((reg[REG_CPSR] & 0x80) == 0))
   {
     bios_read_protect = 0xe55ec002;
 
     // Interrupt handler in BIOS
     reg_mode[MODE_IRQ][6] = reg[REG_PC] + 4;
     spsr[MODE_IRQ] = reg[REG_CPSR];
-    reg[REG_CPSR] = (reg[REG_CPSR] & ~0xFF) | 0xD2;
+    reg[REG_CPSR] = 0xD2;
     reg[REG_PC] = 0x00000018;
     bios_region_read_allow();
     set_cpu_mode(MODE_IRQ);
@@ -959,7 +959,7 @@ void raise_interrupt(IRQ_TYPE irq_raised)
 
 MODEL_TYPE get_model()
 {
-  if(kuKernelGetModel() != 1 /*PSP_MODEL_SLIM_AND_LITE*/)
+  if((kuKernelGetModel() <= 0 /* original PSP */) || ( gpsp_config.fake_fat == YES))
   {
     return PSP_1000;
   }

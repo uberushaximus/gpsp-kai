@@ -1041,11 +1041,11 @@ u32 execute_spsr_restore_body(u32 address)
 {
   set_cpu_mode(cpu_modes[reg[REG_CPSR] & 0x1F]);
   if((io_registers[REG_IE] & io_registers[REG_IF]) &&
-   io_registers[REG_IME] && ((reg[REG_CPSR] & 0x80) == 0))
+   (io_registers[REG_IME] & 0x01) && ((reg[REG_CPSR] & 0x80) == 0))
   {
     reg_mode[MODE_IRQ][6] = address + 4;
     spsr[MODE_IRQ] = reg[REG_CPSR];
-    reg[REG_CPSR] = (reg[REG_CPSR] & ~0xFF) | 0xD2;
+    reg[REG_CPSR] = /*(reg[REG_CPSR] & ~0xFF) |*/ 0xD2;
     address = 0x00000018;
     set_cpu_mode(MODE_IRQ);
   }
@@ -1615,11 +1615,11 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   {
     set_cpu_mode(cpu_modes[_cpsr & 0x1F]);
     if((io_registers[REG_IE] & io_registers[REG_IF]) &&
-     io_registers[REG_IME] && ((_cpsr & 0x80) == 0))
+     (io_registers[REG_IME] & 0x01) && ((_cpsr & 0x80) == 0))
     {
       reg_mode[MODE_IRQ][6] = address + 4;
       spsr[MODE_IRQ] = _cpsr;
-      reg[REG_CPSR] = (reg[REG_CPSR] & ~0xFF) | 0xD2;
+      reg[REG_CPSR] = /*(reg[REG_CPSR] & ~0xFF) |*/ 0xD2;
       set_cpu_mode(MODE_IRQ);
       return 0x00000018;
     }

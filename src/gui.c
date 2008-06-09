@@ -801,6 +801,7 @@ void init_gpsp_config()
   gpsp_config.language = temp;
   gpsp_config.emulate_core = ASM_CORE;
   gpsp_config.debug_flag = NO;
+  gpsp_config.fake_fat = NO;
 }
 
 /*--------------------------------------------------------
@@ -971,7 +972,7 @@ u32 menu(u16 *original_screen)
 
   void menu_quit()
   {
-    quit();
+    quit(0);
   }
 
   void menu_load()
@@ -989,7 +990,7 @@ u32 menu(u16 *original_screen)
     {
        if(load_gamepak(load_filename) == -1)
        {
-         quit();
+         quit(0);
        }
        reset_gba();
        return_value = 1;
@@ -1317,22 +1318,24 @@ u32 menu(u16 *original_screen)
   MAKE_MENU(cheats, submenu_cheats, NULL);
 
   /*--------------------------------------------------------
-     mics オプション
+     その他 オプション
   --------------------------------------------------------*/
   MENU_OPTION_TYPE misc_options[] =
   {
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 0),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 1),
+    STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 2),
+
 #ifdef USE_C_CORE
-    STRING_SELECTION_OPTION(NULL, "Emulate Core : %s", emulate_core_options, &gpsp_config.emulate_core , 2, "Emulate Core", 1),
+    STRING_SELECTION_OPTION(NULL, "Emulate Core : %s", emulate_core_options, &gpsp_config.emulate_core , 2, "Emulate Core", 3),
 #endif
 
 #ifdef USE_DEBUG
-    STRING_SELECTION_OPTION(NULL, "Debug mode : %s", yes_no_options, &gpsp_config.debug_flag, 2, "Debug mode", 2),
+    STRING_SELECTION_OPTION(NULL, "Debug mode : %s", yes_no_options, &gpsp_config.debug_flag, 2, "Debug mode", 4),
 #endif
 
-    STRING_SELECTION_OPTION(NULL, "Lang : %s", language_options, &gpsp_config.language, 12, "Lang", 12), /* TODO */
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 13),
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 14),
-    STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 15),
+    STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &gpsp_config.language, 12, "言語", 5), /* TODO */
+    STRING_SELECTION_OPTION(NULL, "Fake Fat : %s", yes_no_options, &gpsp_config.fake_fat, 2, "Fake Fat", 6), /* TODO */
 
     SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16)
   };
@@ -1857,13 +1860,9 @@ u32 load_fontcfg(char *file_name)  // TODO:スマートな実装に書き直す
 
     fclose(msg_file);
     if (loop > 0)
-    {
       return 0;
-    }
     else
-    {
       return -1;
-    }
   }
   fclose(msg_file);
   return -1;
@@ -2179,11 +2178,11 @@ static void save_ss_bmp(u16 *image)
                                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-  char ss_filename[512];
-  char timestamp[512];
-  char save_ss_path[1024];
+  char ss_filename[MAX_FILE];
+  char timestamp[MAX_FILE];
+  char save_ss_path[MAX_PATH];
   pspTime current_time;
-  u8 rgb_data[160][240][3];
+  u8 *rgb_data = (u8 *)UNIVERSAL_VRAM_ADDR;
   u8 x,y;
   u16 col;
   u8 r,g,b;
@@ -2212,9 +2211,9 @@ static void save_ss_bmp(u16 *image)
       g = (col >> 5) & 0x1F;
       b = (col) & 0x1F;
 
-      rgb_data[159-y][x][2] = b * 255 / 31;
-      rgb_data[159-y][x][1] = g * 255 / 31;
-      rgb_data[159-y][x][0] = r * 255 / 31;
+      rgb_data[(159-y)*240*3+x*3+2] = b * 255 / 31;
+      rgb_data[(159-y)*240*3+x*3+1] = g * 255 / 31;
+      rgb_data[(159-y)*240*3+x*3+0] = r * 255 / 31;
     }
   }
 

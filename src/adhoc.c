@@ -78,7 +78,7 @@ u32 g_multi_id;
 u32 g_adhoc_transfer_flag;
 u32 g_adhoc_link_flag;
 
-static u32 s_multi_mode; 
+static u32 s_multi_mode;
 
 
 /***************************************************************************
@@ -352,7 +352,7 @@ u32 adhoc_init(const char *l_matching_data)
   network_thread = sceKernelCreateThread("Net thread", net_thread, 0x13, 0x2000, 0, NULL);
   if (network_thread < 0)
   {
-    quit();
+    quit(0);
   }
 
   //スレッドの開始
@@ -1106,7 +1106,7 @@ void adhoc_multi()
 {
   u32 value;
   u32 length;
-  u8 data1, data2; 
+  u8 data1, data2;
   u8 work[ADHOC_BUFFER_SIZE];
   switch(g_multi_id)
   {
