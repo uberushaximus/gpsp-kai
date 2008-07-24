@@ -202,7 +202,7 @@ u64 dbg_time_1;
 u64 dbg_time_2;
 #define GET_TIME_1() sceRtcGetCurrentTick(&dbg_time_1);
 #define GET_TIME_2() sceRtcGetCurrentTick(&dbg_time_2);
-#define WRITE_TIME() DBGOUT("%d ms\n",(int)(dbg_time_2 - dbg_time_1));
+#define WRITE_TIME(msg) DBGOUT("%s: %d μs\n",msg,(int)(dbg_time_2 - dbg_time_1));
 #else
 #define DBGOUT(...)
 #endif

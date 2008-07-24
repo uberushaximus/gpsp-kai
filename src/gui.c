@@ -1143,7 +1143,6 @@ u32 menu(u16 *original_screen)
 
   void adhoc_connect_menu()
   {
-    DBGOUT("CONNECT\n");
     set_cpu_clock(game_config.clock_speed_number);
     adhoc_init(gamepak_title);
     adhoc_select();
@@ -1151,7 +1150,6 @@ u32 menu(u16 *original_screen)
 
   void adhoc_disconnect_menu()
   {
-    DBGOUT("DISCONNECT\n");
     adhoc_exit();
   }
 

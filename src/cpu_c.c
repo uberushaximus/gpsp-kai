@@ -512,7 +512,7 @@ u32 high_frequency_branch_targets = 0;
 #define arm_spsr_restore()                                                    \
   if(rd == 15)                                                                \
   {                                                                           \
-    if(reg[CPU_MODE] != MODE_USER)                                            \
+    if(reg[CPU_MODE] != MODE_USR)                                            \
     {                                                                         \
       reg[REG_CPSR] = spsr[reg[CPU_MODE]];                                    \
       extract_flags();                                                        \
@@ -1432,13 +1432,13 @@ u32 spsr[6];
                                                                               \
     case 0x8:                                                                 \
       /* HI       */                                                          \
-      if((c_flag == 0) | z_flag)                                              \
+      if(!((c_flag ^ 1) || z_flag))                                              \
         arm_next_instruction();                                               \
       break;                                                                  \
                                                                               \
     case 0x9:                                                                 \
       /* LS       */                                                          \
-      if(c_flag & (z_flag ^ 1))                                               \
+      if((c_flag ^ 1) || z_flag)                                               \
         arm_next_instruction();                                               \
       break;                                                                  \
                                                                               \
@@ -2924,13 +2924,13 @@ u32 spsr[6];
       {                                                                       \
         /* Jump to BIOS SWI handler */                                        \
         case 0x00 ... 0x2b:                                                   \
-          reg_mode[MODE_SUPERVISOR][6] = pc + 4;                              \
+          reg_mode[MODE_SVC][6] = pc + 4;                              \
           collapse_flags();                                                   \
-          spsr[MODE_SUPERVISOR] = reg[REG_CPSR];                              \
+          spsr[MODE_SVC] = reg[REG_CPSR];                              \
           reg[REG_PC] = 0x00000008;                                           \
           arm_update_pc();                                                    \
           reg[REG_CPSR] = /*(reg[REG_CPSR] & ~0x3F) |*/ 0x13;                     \
-          set_cpu_mode(MODE_SUPERVISOR);                                      \
+          set_cpu_mode(MODE_SVC);                                      \
           break;                                                              \
       }                                                                       \
       break;                                                                  \
@@ -3748,12 +3748,12 @@ u32 spsr[6];
       {                                                                       \
         default:                                                              \
                                                                               \
-          reg_mode[MODE_SUPERVISOR][6] = pc + 2;                              \
-          spsr[MODE_SUPERVISOR] = reg[REG_CPSR];                              \
+          reg_mode[MODE_SVC][6] = pc + 2;                              \
+          spsr[MODE_SVC] = reg[REG_CPSR];                              \
           reg[REG_PC] = 0x00000008;                                           \
           thumb_update_pc();                                                  \
           reg[REG_CPSR] = /*(reg[REG_CPSR] & ~0x3F) |*/ 0x13;                     \
-          set_cpu_mode(MODE_SUPERVISOR);                                      \
+          set_cpu_mode(MODE_SVC);                                      \
           collapse_flags();                                                   \
           goto arm_loop;                                                      \
       }                                                                       \

@@ -604,7 +604,7 @@ u32 read_eeprom()
       }                                                                       \
       else                                                                    \
       {                                                                       \
-        value = 0;                                                            \
+        value = (address / 2) & 0xFFFF;                                       \
       }                                                                       \
       break;                                                                  \
                                                                               \
@@ -1156,7 +1156,6 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       break;
 
     case 0x128:
-      DBGOUT("Write 0x128(8) %04X\n",value);
 #ifdef USE_ADHOC
       if(g_adhoc_link_flag == NO)
         ADDRESS8(io_registers, 0x128) |= 0x0C;
@@ -1164,15 +1163,12 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
       break;
 
     case 0x129:
-      DBGOUT("Write 0x129(8) %04X\n",value);
       break;
 
     case 0x134:
-      DBGOUT("Write 0x134(8) %04X\n",value);
       break;
 
     case 0x135:
-      DBGOUT("Write 0x135(8) %04X\n",value);
       break;
 
     // P1
@@ -1465,7 +1461,6 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 //      14    IRQ Enable         (0=Disable, 1=Want IRQ upon completion)
 //      15    Not used           (Read only, always 0)
     case 0x128:
-      DBGOUT("Write 0x128 %04X\n",value);
       if(g_adhoc_link_flag == NO)
         ADDRESS16(io_registers, 0x128) |= 0x0C;
       else
@@ -1506,13 +1501,11 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // SIOMLT_SEND
     case 0x12A:
-      DBGOUT("Write 0x12A %04X\n",value);
       ADDRESS16(io_registers, 0x12A) = value;
       break;
 
     // RCNT
     case 0x134:
-      DBGOUT("Write 0x134 %04X\n",value);
       if(!value) // 0の場合
       {
         ADDRESS16(io_registers, 0x134) = 0;
@@ -2712,11 +2705,6 @@ dma_region_type dma_region_map[16] =
 
 #define dma_adjust_ptr_reload()                                               \
 
-#define dma_print(src_op, dest_op, transfer_size, wb)                         \
-  DBGOUT("dma from %x (%s) to %x (%s) for %x (%s) (%s) (%d) (pc %x) (return %d)\n",       \
-   src_ptr, #src_op, dest_ptr, #dest_op, length, #transfer_size, #wb,         \
-   dma->irq, reg[15],return_value);                                                        \
-
 #define dma_smc_vars_src()                                                    \
 
 #define dma_smc_vars_dest()                                                   \
@@ -3830,25 +3818,19 @@ u32 get_sio_mode(u16 io1, u16 io2)
     switch(io1 & 0x3000)
     {
       case 0x0000:
-        DBGOUT("SIO MODE NORMAL8\n");
         return SIO_NORMAL8;
       case 0x1000:
-        DBGOUT("SIO MODE NORMAL32\n");
         return SIO_NORMAL32;
       case 0x2000:
-        DBGOUT("SIO MODE MULTI\n");
         return SIO_MULTIPLAYER;
       case 0x3000:
-        DBGOUT("SIO MODE UART\n");
         return SIO_UART;
     }
   }
   if(io2 & 0x4000)
   {
-    DBGOUT("SIO MODE JOYBUS\n");
     return SIO_JOYBUS;
   }
-  DBGOUT("SIO MODE GP\n");
   return SIO_GP;
 }
 

@@ -27,7 +27,7 @@
 PSP_MODULE_INFO("gpSP", PSP_MODULE_USER, VERSION_MAJOR, VERSION_MINOR);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_PRIORITY(0x11);
-PSP_MAIN_THREAD_STACK_SIZE_KB(512);
+PSP_MAIN_THREAD_STACK_SIZE_KB(640);
 
 /******************************************************************************
  * グローバル変数の定義
@@ -539,6 +539,8 @@ u32 sync_flag = 0;
 
 u32 update_gba()
 {
+  GET_TIME_2();
+  WRITE_TIME("CPU処理");
   // TODO このあたりのログをとる必要があるかも
   IRQ_TYPE irq_raised = IRQ_NONE;
 
@@ -560,9 +562,7 @@ u32 update_gba()
     update_timer(3);
 
     video_count -= execute_cycles;
-    DBGOUT("%d %d\n",video_count, io_registers[REG_VCOUNT]);
 
-    // TODO ここでvideo_countの値により分岐すれば、最適化できるかも
     if(video_count <= 0)
     { // 状態移行の発生
       u32 vcount = io_registers[REG_VCOUNT];
@@ -578,7 +578,14 @@ u32 update_gba()
         {  // VBLANKでないとき
           // フレームスキップ時は描画しない
           if(!skip_next_frame_flag)
-            update_scanline();
+            {
+              GET_TIME_1();
+              update_scanline();
+              GET_TIME_2();
+              WRITE_TIME("スキャンライン処理");
+            }
+
+          GET_TIME_1();
 
           // If in visible area also fire HDMA
           if(dma[0].start_type == DMA_START_HBLANK)
@@ -589,6 +596,9 @@ u32 update_gba()
             dma_transfer(dma + 2);
           if(dma[3].start_type == DMA_START_HBLANK)
             dma_transfer(dma + 3);
+
+          GET_TIME_2();
+          WRITE_TIME("HBLANK DMA処理");
 
           if(dispstat & 0x10)
             irq_raised |= IRQ_HBLANK; // HBLANK割込みはVBLANK中は発生しない
@@ -616,6 +626,8 @@ u32 update_gba()
           affine_reference_x[1] = (s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4;
           affine_reference_y[1] = (s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4;
 
+          GET_TIME_1();
+
           if(dma[0].start_type == DMA_START_VBLANK)
             dma_transfer(dma);
           if(dma[1].start_type == DMA_START_VBLANK)
@@ -624,6 +636,9 @@ u32 update_gba()
             dma_transfer(dma + 2);
           if(dma[3].start_type == DMA_START_VBLANK)
             dma_transfer(dma + 3);
+
+          GET_TIME_2();
+          WRITE_TIME("VBLANK DMA処理");
 
        }
         else
@@ -635,13 +650,19 @@ u32 update_gba()
 
           sceKernelDelayThread(10);
 
+          GET_TIME_1();
           if(update_input() != 0)
             continue;
+          GET_TIME_2();
+          WRITE_TIME("入力処理");
 
           if((power_flag == 1) && (into_suspend() != 0))
             continue;
 
+          GET_TIME_1();
           update_gbc_sound(cpu_ticks);
+          GET_TIME_2();
+          WRITE_TIME("サウンド処理");
 
           if(game_config.update_backup_flag == 1)
             update_backup();
@@ -652,7 +673,12 @@ u32 update_gba()
 
           //TODO 調整必要
           if((video_out_mode == 0) || (gpsp_config.screen_interlace == PROGRESSIVE))
+            {
+            GET_TIME_1();
             synchronize();
+            GET_TIME_2();
+            WRITE_TIME("シンクロ処理");
+            }
           else
           {
             if(sync_flag == 0)
@@ -687,8 +713,12 @@ u32 update_gba()
     execute_cycles = video_count;
 
     if(irq_raised)
+      {
+        GET_TIME_1();
       raise_interrupt(irq_raised);
-
+      GET_TIME_2();
+      WRITE_TIME("割込処理");
+      }
     CHECK_TIMER(0);
     CHECK_TIMER(1);
     CHECK_TIMER(2);
@@ -697,7 +727,7 @@ u32 update_gba()
     // 画面のシンクロ・フリップ・ウェイト処理はここで行うべきでは？
 
   } while(reg[CPU_HALT_STATE] != CPU_ACTIVE);
-
+  GET_TIME_1();
   return execute_cycles;
 }
 
