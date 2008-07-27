@@ -22,6 +22,8 @@
 #ifndef ZIP_H
 #define ZIP_H
 
+#define ZIP_TMP "ZIP_TMP.gba"
+
 s32 load_file_zip(char *filename);
 
 #endif

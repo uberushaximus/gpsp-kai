@@ -151,7 +151,7 @@ extern char gamepak_title[13];
 extern char gamepak_code[5];
 extern char gamepak_maker[3];
 extern char gamepak_filename[MAX_FILE];
-extern char gamepak_filename_raw[MAX_PATH];
+extern char gamepak_filename_full_path[MAX_PATH];
 extern u32 gamepak_crc32;
 
 extern u8 *gamepak_rom;

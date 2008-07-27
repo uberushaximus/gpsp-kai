@@ -1097,12 +1097,14 @@ typedef enum
   mips_emit_b_filler(bne, reg_v_cache, reg_zero, backpatch_address);          \
   generate_cycle_update_force()                                               \
 
+//(C != 1 or Z) != 0 で次の命令へ
 #define generate_condition_hi()                                               \
-  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
+  mips_emit_xori(reg_temp, reg_c_cache, 1); /* C != 1 */                      \
   mips_emit_or(reg_temp, reg_temp, reg_z_cache);                              \
   mips_emit_b_filler(bne, reg_temp, reg_zero, backpatch_address);             \
   generate_cycle_update_force()                                               \
 
+//  (C != 1 or Z)  == 0 で次の命令へ
 #define generate_condition_ls()                                               \
   mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
   mips_emit_or(reg_temp, reg_temp, reg_z_cache);                              \
@@ -1117,14 +1119,16 @@ typedef enum
   mips_emit_b_filler(beq, reg_n_cache, reg_v_cache, backpatch_address);       \
   generate_cycle_update_force()                                               \
 
+//  (N != V or Z)  != 0 で次の命令へ
 #define generate_condition_gt()                                               \
-  mips_emit_xor(reg_temp, reg_n_cache, reg_v_cache);                          \
+  mips_emit_xor(reg_temp, reg_n_cache, reg_v_cache); /* N != V  */            \
   mips_emit_or(reg_temp, reg_temp, reg_z_cache);                              \
   mips_emit_b_filler(bne, reg_temp, reg_zero, backpatch_address);             \
   generate_cycle_update_force()                                               \
 
+//  (N != V or Z)  == 0 で次の命令へ
 #define generate_condition_le()                                               \
-  mips_emit_xor(reg_temp, reg_n_cache, reg_v_cache);                          \
+  mips_emit_xor(reg_temp, reg_n_cache, reg_v_cache); /* N != V  */            \
   mips_emit_or(reg_temp, reg_temp, reg_z_cache);                              \
   mips_emit_b_filler(beq, reg_temp, reg_zero, backpatch_address);             \
   generate_cycle_update_force()                                               \
@@ -1309,9 +1313,6 @@ typedef enum
 #define generate_op_mvn_imm(_rd, _rn)                                         \
   generate_load_imm(_rd, (~imm))                                              \
 
-// フラグの変更 TODO
-// 論理演算
-// Vフラグは変化しない
 #define generate_op_logic_flags(_rd)                                          \
   if(check_generate_n_flag)                                                   \
   {                                                                           \
@@ -1319,29 +1320,27 @@ typedef enum
   }                                                                           \
   if(check_generate_z_flag)                                                   \
   {                                                                           \
-    mips_emit_sltiu(reg_z_cache, _rd, 1);                                     \
+    mips_emit_sltiu(reg_z_cache, _rd, 1); /* if(_rd >= 1) reg_z_cache = 0 */ \
   }                                                                           \
 
 #define generate_op_sub_flags_prologue(_rn, _rm)                              \
   if(check_generate_c_flag)                                                   \
   {                                                                           \
-    mips_emit_sltu(reg_c_cache, _rn, _rm);                                    \
-    mips_emit_xori(reg_c_cache, reg_c_cache, 1);                              \
+    mips_emit_sltu(reg_c_cache, _rn, _rm); /* if(_rn >= _rm) reg_c_cache = 0 */\
+    mips_emit_xori(reg_c_cache, reg_c_cache, 1); /* reg_c_cache ^= 1 */       \
   }                                                                           \
   if(check_generate_v_flag)                                                   \
   {                                                                           \
-    mips_emit_slt(reg_v_cache, _rn, _rm);                                     \
+    mips_emit_nor(reg_v_cache, reg_v_cache, _rn);      \
+    mips_emit_and(reg_v_cache, reg_v_cache, _rm);       \
   }                                                                           \
 
 #define generate_op_sub_flags_epilogue(_rd)                                   \
   generate_op_logic_flags(_rd);                                               \
   if(check_generate_v_flag)                                                   \
   {                                                                           \
-    if(!check_generate_n_flag)                                                \
-    {                                                                         \
-      mips_emit_srl(reg_n_cache, _rd, 31);                                    \
-    }                                                                         \
-    mips_emit_xor(reg_v_cache, reg_v_cache, reg_n_cache);                     \
+    mips_emit_and(reg_v_cache, reg_v_cache, _rd);       \
+    mips_emit_srl(reg_n_cache, _rd, 31);                                    \
   }                                                                           \
 
 #define generate_add_flags_prologue(_rn, _rm)                                 \
@@ -1351,10 +1350,12 @@ typedef enum
   }                                                                           \
   if(check_generate_v_flag)                                                   \
   {                                                                           \
-    mips_emit_slt(reg_v_cache, _rm, reg_zero);                                \
+    mips_emit_or(reg_v_cache, reg_v_cache, _rm);       \
+    mips_emit_nor(reg_v_cache, reg_v_cache, _rn);      \
   }                                                                           \
 
 #define generate_add_flags_epilogue(_rd)                                      \
+  generate_op_logic_flags(_rd)                                                \
   if(check_generate_v_flag)                                                   \
   {                                                                           \
     mips_emit_slt(reg_a0, _rd, reg_c_cache);                                  \
@@ -1364,7 +1365,6 @@ typedef enum
   {                                                                           \
     mips_emit_sltu(reg_c_cache, _rd, reg_c_cache);                            \
   }                                                                           \
-  generate_op_logic_flags(_rd)                                                \
 
 #define generate_op_ands_reg(_rd, _rn, _rm)                                   \
   mips_emit_and(_rd, _rn, _rm);                                               \

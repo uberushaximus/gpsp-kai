@@ -43,6 +43,10 @@ struct SZIPFileHeader
   s16 ExtraFieldLength;
 }  __attribute__((packed));
 
+
+// ZIPで圧縮されたRONのロード
+// 返り値:-2=一時ファイルを作成/-1=エラー/その他=ROMのサイズ
+// もし、ROMのサイズ>ROMバッファのサイズ の場合は一時ファイルを作成
 s32 load_file_zip(char *filename)
 {
   struct SZIPFileHeader data;
@@ -52,8 +56,9 @@ s32 load_file_zip(char *filename)
   u8 *cbuffer;
   char *ext;
   FILE_ID fd;
+  FILE_ID tmp_fd;
   u32 zip_buffer_size;
-  u32 write_tmp_flag;
+  u32 write_tmp_flag = NO;
 
   if(psp_model == PSP_2000)
     {
@@ -108,7 +113,7 @@ s32 load_file_zip(char *filename)
     if(data.DataDescriptor.UncompressedSize > gamepak_ram_buffer_size)
       {
         write_tmp_flag = YES; // テンポラリを使用するフラグをONに
-        goto outcode;
+        FILE_OPEN(tmp_fd, ZIP_TMP, WRITE);
       }
     else
       write_tmp_flag = NO;
@@ -120,25 +125,39 @@ s32 load_file_zip(char *filename)
       // ok, found
       switch(data.CompressionMethod)
       {
-        case 0:
+        case 0: //無圧縮
           retval = data.DataDescriptor.UncompressedSize;
           FILE_READ(fd, buffer, retval);
 
           goto outcode;
 
-        case 8:
+        case 8: //圧縮
         {
-          z_stream stream;
+          z_stream stream = {0};
           s32 err;
+
+          /*
+           *   z.next_in = 入力ポインタ;
+           *   z.avail_in = 入力データの残量;
+           *   z.next_out = 出力ポインタ;
+           *   z.avail_out = 出力バッファの残量;
+           */
 
           stream.next_in = (Bytef*)cbuffer;
           stream.avail_in = (u32)zip_buffer_size;
 
           stream.next_out = (Bytef*)buffer;
 
-          // EDIT: Now uses proper conversion of data types for retval.
-          retval = (u32)data.DataDescriptor.UncompressedSize;
-          stream.avail_out = data.DataDescriptor.UncompressedSize;
+          if(write_tmp_flag == NO)
+            {
+              stream.avail_out = data.DataDescriptor.UncompressedSize;
+              retval = (u32)data.DataDescriptor.UncompressedSize;
+            }
+          else
+            {
+              stream.avail_out = gamepak_ram_buffer_size;
+              retval = -2;
+            }
 
           stream.zalloc = (alloc_func)0;
           stream.zfree = (free_func)0;
@@ -155,11 +174,24 @@ s32 load_file_zip(char *filename)
               err = inflate(&stream, Z_SYNC_FLUSH);
               if(err == Z_BUF_ERROR)
               {
-                stream.avail_in = zip_buffer_size;
+                stream.avail_in = (u32)zip_buffer_size;
                 stream.next_in = (Bytef*)cbuffer;
                 FILE_READ(fd, cbuffer, zip_buffer_size);
               }
+
+              if((write_tmp_flag == YES) && (stream.avail_out == 0)) /* 出力バッファが尽きれば */
+                {
+                  /* まとめて書き出す */
+                  FILE_WRITE(tmp_fd, buffer, gamepak_ram_buffer_size);
+                  stream.next_out = buffer; /* 出力ポインタを元に戻す */
+                  stream.avail_out = gamepak_ram_buffer_size; /* 出力バッファ残量を元に戻す */
+                }
             }
+
+            /* 残りを吐き出す */
+            if((write_tmp_flag == YES) && ((gamepak_ram_buffer_size - stream.avail_out) != 0))
+                FILE_WRITE(tmp_fd, buffer, gamepak_ram_buffer_size - stream.avail_out);
+
             err = Z_OK;
             inflateEnd(&stream);
           }
@@ -171,6 +203,9 @@ s32 load_file_zip(char *filename)
 
 outcode:
   FILE_CLOSE(fd);
+
+  if(write_tmp_flag == YES)
+    FILE_CLOSE(tmp_fd);
 
   if(psp_model == PSP_2000)
     free(cbuffer);

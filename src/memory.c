@@ -2,7 +2,6 @@
  *
  * Copyright (C) 2006 Exophase <exophase@gmail.com>
  * Copyright (C) 2007 takka <takka@tfact.net>
- * Copyright (C) 2007 ????? <?????>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,6 +22,7 @@
 
 #define SAVESTATE_SIZE 506951
 #define SAVESTATE_SIZE_OLD 506947
+// TODO:PSP-1000はフレームバッファは256KBあれば足りるので、VRAMを使用する
 u8 savestate_write_buffer[SAVESTATE_SIZE];
 u8 *g_state_buffer_ptr;
 
@@ -190,7 +190,7 @@ char gamepak_title[13];
 char gamepak_code[5];
 char gamepak_maker[3];
 char gamepak_filename[MAX_FILE];
-char gamepak_filename_raw[MAX_PATH];
+char gamepak_filename_full_path[MAX_PATH];
 u32 gamepak_crc32;
 
 u32 mem_save_flag;
@@ -2539,7 +2539,7 @@ s32 load_gamepak_raw(char *name)
       // ファイルが読めなくなるので、フルパス指定
       char temp_path[MAX_PATH];
       getcwd(temp_path, MAX_PATH);
-      sprintf(gamepak_filename_raw, "%s/%s", temp_path, name);
+      sprintf(gamepak_filename_full_path, "%s/%s", temp_path, name);
     }
 
     chdir(main_path);
@@ -2567,6 +2567,8 @@ s32 load_gamepak(char *name)
     set_cpu_clock(9); // 一時的に333MHzに
     init_progress(5, "Load ZIP ROM.");  // TODO エラーチェック
     file_size = load_file_zip(name);
+    if(file_size == -2)
+      file_size = load_gamepak_raw(ZIP_TMP);
   }
   else
   {  // プログレスバーの表示
@@ -2579,8 +2581,8 @@ s32 load_gamepak(char *name)
   {
     gamepak_size = (file_size + 0x7FFF) & ~0x7FFF;
 
-    strcpy(backup_filename, name);
-    strncpy(gamepak_filename, name, MAX_FILE);
+    strcpy(gamepak_filename, name);
+//    strncpy(backup_filename, name, MAX_FILE);
     change_ext(gamepak_filename, backup_filename, ".sav");
 
     load_backup(backup_filename);
@@ -3347,7 +3349,7 @@ u8 *load_gamepak_page(u32 physical_index)
   gamepak_memory_map[page_index].physical_index = physical_index;
   page_time++;
 
-//  FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
+//  FILE_OPEN(gamepak_file_large, gamepak_filename_full_path, READ);
 
   FILE_SEEK(gamepak_file_large, physical_index * (32 * 1024), SEEK_SET);
   FILE_READ(gamepak_file_large, swap_location, (32 * 1024));
