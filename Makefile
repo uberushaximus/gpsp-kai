@@ -4,9 +4,9 @@
 
 # Global definitions
 
-clean: systembuttons_prx_clean  dvemgr_clean homehookprx_clean main_clean
-
 all: systembuttons_prx dvemgr homehookprx main
+
+clean: systembuttons_prx_clean  dvemgr_clean homehookprx_clean main_clean
 
 dvemgr:
 	make -C ./prx/dvemgr/
