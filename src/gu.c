@@ -289,22 +289,22 @@ void video_resolution(u32 frame)
     switch(((video_out_mode << 1) | frame))
     {
       case ((PSP_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_psp_game[gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_psp_game[g_gpsp_config.screen_scale];
         break;
       case ((PSP_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_psp_menu;
         break;
       case ((ANALOG_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_composite_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_composite_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_scale];
         break;
       case ((ANALOG_OUT << 1) | FRAME_MENU):
-        current_parameter = &screen_parameter_composite_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
+        current_parameter = &screen_parameter_composite_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_component_game[gpsp_config.screen_ratio][gpsp_config.screen_interlace][gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_component_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_scale];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_MENU):
-        current_parameter = &screen_parameter_component_menu[gpsp_config.screen_ratio][gpsp_config.screen_interlace];
+        current_parameter = &screen_parameter_component_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
         break;
     }
 
@@ -349,7 +349,7 @@ void video_resolution(u32 frame)
     sceGuViewport(2048, 2048, current_parameter->screen_size.width, current_parameter->screen_size.height);
     sceGuScissor(current_parameter->view.x, current_parameter->view.y, current_parameter->view.width, current_parameter->view.height);
     sceGuEnable(GU_SCISSOR_TEST);
-    sceGuTexFilter(current_parameter->filter[gpsp_config.screen_filter], current_parameter->filter[gpsp_config.screen_filter]);
+    sceGuTexFilter(current_parameter->filter[g_gpsp_config.screen_filter], current_parameter->filter[g_gpsp_config.screen_filter]);
     sceGuTexWrap(GU_CLAMP, GU_CLAMP);
     sceGuEnable(GU_TEXTURE_2D);
     sceGuFinish();

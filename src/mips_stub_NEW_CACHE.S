@@ -2258,7 +2258,7 @@ execute_store_oam_u16:
   store_u16 oam_ram
 
 execute_store_rtc_u16:
-  store_function write_rtc, 8, patch_store_u16, 0xFE
+  store_function write_cart_io, 8, patch_store_u16, 0xFE
 
 execute_store_ignore9_u16:
   ignore_region 9, patch_store_u16
@@ -2858,7 +2858,7 @@ ext_store_rtc:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
   save_registers
-  jal write_rtc                   # write the value out
+  jal write_cart_io               # write the value out
   sw $6, REG_PC($16)              # save the PC (delay slot)
   restore_registers
   lw $ra, ($sp)                   # restore return address

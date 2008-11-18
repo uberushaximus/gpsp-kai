@@ -87,7 +87,7 @@ gui_action_type get_gui_input()
   unsigned int ctrl_buttons;
   gui_action_type new_button = CURSOR_NONE;
   u32 new_buttons;
-  u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
+  u32 analog_sensitivity = 92 - (g_gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
 
   sceKernelDelayThread(25000);
@@ -99,7 +99,7 @@ gui_action_type get_gui_input()
   ctrl_buttons = readHomeButton();
   ctrl_data.Buttons |= ctrl_buttons;
 
-  if((gpsp_config.enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
+  if((g_gpsp_config.enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
     if(ctrl_data.Lx < analog_sensitivity)
       ctrl_data.Buttons = PSP_CTRL_LEFT;
@@ -259,7 +259,7 @@ u32 update_input()
   u32 button_id = 0;
   u32 i;
   u32 new_key = 0;
-  u32 analog_sensitivity = 92 - (gpsp_config.analog_sensitivity_level * 4);
+  u32 analog_sensitivity = 92 - (g_gpsp_config.analog_sensitivity_level * 4);
   u32 inv_analog_sensitivity = 256 - analog_sensitivity;
 //  tilt_sensor_x = 0x800;
 //  tilt_sensor_y = 0x800;
@@ -269,9 +269,9 @@ u32 update_input()
   ctrl_buttons = readHomeButton();
   buttons = ctrl_data.Buttons | ctrl_buttons;
 
-  if((gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
+  if((g_gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
-    if(game_config.allocate_sensor == NO)
+    if(g_game_config.allocate_sensor == NO)
     {
       if(ctrl_data.Lx < analog_sensitivity)
         buttons |= PSP_CTRL_ANALOG_LEFT;
@@ -317,8 +317,8 @@ u32 update_input()
       case BUTTON_ID_LOADSTATE:
       {
         char current_savestate_filename[MAX_FILE];
-        get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        if (load_state(current_savestate_filename, SAVESTATE_SLOT) == 1)
+        get_savestate_filename_noshot(g_savestate_slot_num, current_savestate_filename);
+        if (load_state(current_savestate_filename, g_savestate_slot_num) == 1)
           return 1;
         else
         {
@@ -332,8 +332,8 @@ u32 update_input()
         char current_savestate_filename[MAX_FILE];
         u16 *current_screen = copy_screen();
         u32 ret;
-        get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-        ret = save_state(current_savestate_filename, current_screen, SAVESTATE_SLOT);
+        get_savestate_filename_noshot(g_savestate_slot_num, current_savestate_filename);
+        ret = save_state(current_savestate_filename, current_screen, g_savestate_slot_num);
         free(current_screen);
         if (ret == 1)
           return 0;

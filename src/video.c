@@ -1188,7 +1188,7 @@ void render_scanline_affine_##combine_op##_##alpha_op(u32 layer,              \
   u32 bg_control = io_registers[REG_BG0CNT + layer];                          \
   u32 current_pixel;                                                          \
   s32 source_x, source_y;                                                     \
-  /*u32 vcount = io_registers[REG_VCOUNT];*/                                      \
+  u32 vcount = io_registers[REG_VCOUNT];                                      \
   u32 pixel_x, pixel_y;                                                       \
   u32 layer_offset = (layer - 2) * 8;                                         \
   s32 dx, dy;                                                                 \
@@ -1898,7 +1898,7 @@ u32 obj_alpha_count[160];
 #define render_scanline_obj_partial_alpha(combine_op, alpha_op, map_space)    \
   if((obj_attribute_0 >> 10) & 0x03)                                          \
   {                                                                           \
-    pixel_combine = 0x00000300;        /*todo*/                                       \
+    pixel_combine = 0x00000300;        /* TODO */                                       \
     render_scanline_obj_main(combine_op, alpha_obj, map_space);               \
   }                                                                           \
   else                                                                        \
@@ -2033,8 +2033,8 @@ void order_obj(u32 video_mode)
 
 //    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3) &&
 //        !((video_mode >= 3) && ((obj_attribute_2 & 0x3FF) < 512)))
-    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) &&
-       (obj_mode != 3) && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
+    if(((obj_attribute_0 & 0x0300) != 0x0200) && (obj_size != 0xC000) && (obj_mode != 3)
+        && ((video_mode < 3) || ((obj_attribute_2 & 0x3FF) >= 512)))
     {
       obj_y = obj_attribute_0 & 0xFF;
       if(obj_y > 160)
@@ -2314,11 +2314,13 @@ void expand_darken(u16 *screen_src_ptr, u16 *screen_dest_ptr,
 {
   u32 pixel_top;
   s32 blend = 16 - (io_registers[REG_BLDY] & 0x1F);
+  u32 upper;
   u32 i;
 
   if(blend < 0)
     blend = 0;
 
+  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
   expand_loop(darken, effect_condition_fade(pixel_top), pixel_top);
 }
 
@@ -2356,7 +2358,10 @@ void expand_darken_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
   u32 bldalpha = io_registers[REG_BLDALPHA];
   u32 blend_a = bldalpha & 0x1F;
   u32 blend_b = (bldalpha >> 8) & 0x1F;
+  u32 upper;
   u32 i;
+
+  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
 
   if(blend < 0)
     blend = 0;
@@ -2472,7 +2477,6 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
       {                                                                       \
         /* Alpha blend */                                                     \
         case 0x01:                                                            \
-        {                                                                     \
           if(alpha_condition)                                                 \
           {                                                                   \
             renderer(alpha, alpha_obj, screen_buffer);                        \
@@ -2480,11 +2484,9 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
                                                                               \
         /* Fade to white */                                                   \
         case 0x02:                                                            \
-        {                                                                     \
           if(fade_condition)                                                  \
           {                                                                   \
             renderer(color32, partial_alpha, screen_buffer);                  \
@@ -2493,11 +2495,9 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
                                                                               \
         /* Fade to black */                                                   \
         case 0x03:                                                            \
-        {                                                                     \
           if(fade_condition)                                                  \
           {                                                                   \
             renderer(color32, partial_alpha, screen_buffer);                  \
@@ -2506,20 +2506,18 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
       }                                                                       \
                                                                               \
       renderer(color32, partial_alpha, screen_buffer);                        \
       expand_blend(screen_buffer, scanline, _start, _end);                    \
     }                                                                         \
-    else                                                                      \
+    else /* if(obj_alpha_count[io_registers[REG_VCOUNT]] > 0) */              \
     {                                                                         \
       /* Render based on special effects mode. */                             \
       switch((bldcnt >> 6) & 0x03)                                            \
       {                                                                       \
         /* Alpha blend */                                                     \
         case 0x01:                                                            \
-        {                                                                     \
           if(alpha_condition)                                                 \
           {                                                                   \
             u32 screen_buffer[240];                                           \
@@ -2528,11 +2526,9 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
                                                                               \
         /* Fade to white */                                                   \
         case 0x02:                                                            \
-        {                                                                     \
           if(fade_condition)                                                  \
           {                                                                   \
             renderer(color16, color16, scanline);                             \
@@ -2540,11 +2536,9 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
                                                                               \
         /* Fade to black */                                                   \
         case 0x03:                                                            \
-        {                                                                     \
           if(fade_condition)                                                  \
           {                                                                   \
             renderer(color16, color16, scanline);                             \
@@ -2552,21 +2546,19 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
             return;                                                           \
           }                                                                   \
           break;                                                              \
-        }                                                                     \
       }                                                                       \
                                                                               \
       renderer(normal, normal, scanline);                                     \
       expand_normal(scanline, _start, _end);                                  \
     }                                                                         \
   }                                                                           \
-  else                                                                        \
+  else /* if(layer_condition) */                                              \
   {                                                                           \
-    u32 pixel_top = palette_ram[0];                                 \
+    u32 pixel_top = palette_ram[0];                                           \
     switch((bldcnt >> 6) & 0x03)                                              \
     {                                                                         \
       /* Fade to white */                                                     \
       case 0x02:                                                              \
-      {                                                                       \
         if(color_combine_mask_a(5))                                           \
         {                                                                     \
           u32 blend = io_registers[REG_BLDY] & 0x1F;                          \
@@ -2581,22 +2573,21 @@ void expand_brighten_partial_alpha(u32 *screen_src_ptr, u16 *screen_dest_ptr,
           expand_pixel_no_dest(brighten, pixel_top);                          \
         }                                                                     \
         break;                                                                \
-      }                                                                       \
                                                                               \
       /* Fade to black */                                                     \
       case 0x03:                                                              \
-      {                                                                       \
         if(color_combine_mask_a(5))                                           \
         {                                                                     \
           s32 blend = 16 - (io_registers[REG_BLDY] & 0x1F);                   \
+          u32 upper;                                                          \
                                                                               \
           if(blend < 0)                                                       \
             blend = 0;                                                        \
+            upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;                   \
                                                                               \
           expand_pixel_no_dest(darken, pixel_top);                            \
         }                                                                     \
         break;                                                                \
-      }                                                                       \
     }                                                                         \
     fill_line_color16(pixel_top, scanline, _start, _end);                     \
   }                                                                           \
@@ -2795,7 +2786,7 @@ void render_scanline_conditional_bitmap(u32 start, u32 end, u16 *scanline,
     window_##window_number##_x1 = 240;                                        \
                                                                               \
   if(window_##window_number##_x2 > 240)                                       \
-    window_##window_number##_x2 = 240                                         \
+    window_##window_number##_x2 = 240;                                        \
 
 #define window_coords(window_number)                                          \
   u32 window_##window_number##_x1, window_##window_number##_x2;               \

@@ -56,7 +56,7 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value);
 CPU_ALERT_TYPE write_io_register32(u32 address, u32 value);
 void write_backup(u32 address, u32 value);
 u32 encode_bcd(u8 value);
-void write_rtc(u32 address, u32 value);
+void write_cart_io(u32 address, u32 value);
 u32 save_backup(char *name);
 s32 parse_config_line(char *current_line, char *current_variable, char *current_value);
 s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_maker);
@@ -1812,11 +1812,14 @@ typedef enum
 
 typedef enum
 {
-  RTC_COMMAND_RESET            = 0x60,
+  RTC_COMMAND_RESET_1          = 0x60,
+  RTC_COMMAND_RESET_2          = 0x61,
   RTC_COMMAND_WRITE_STATUS     = 0x62,
   RTC_COMMAND_READ_STATUS      = 0x63,
-  RTC_COMMAND_OUTPUT_TIME_FULL = 0x65,
-  RTC_COMMAND_OUTPUT_TIME      = 0x67
+  RTC_COMMAND_WRITE_TIME_FULL  = 0x64,
+  RTC_COMMAND_READ_TIME_FULL   = 0x65,
+  RTC_COMMAND_WRITE_TIME       = 0x66,
+  RTC_COMMAND_READ_TIME        = 0x67
 } rtc_command_type;
 
 typedef enum
@@ -1831,16 +1834,18 @@ rtc_write_mode_type rtc_write_mode;
 u8 rtc_registers[3];
 u32 rtc_command;
 u32 rtc_data[12];
-u32 rtc_status = 0x40;
+u32 rtc_status = 0x42;
 u32 rtc_data_bytes;
 s32 rtc_bit_count;
+u32 solar_counter = 0;
+u32 solar_status = 0;
 
 u32 encode_bcd(u8 value)
 {
   return ((value / 10) << 4) | (value % 10);
 }
 
-#define write_rtc_register(index, _value)                                     \
+#define write_cart_io_register(index, _value)                                 \
   update_address = 0x80000C4 + (index * 2);                                   \
   rtc_registers[index] = _value;                                              \
   rtc_page_index = update_address >> 15;                                      \
@@ -1851,12 +1856,16 @@ u32 encode_bcd(u8 value)
                                                                               \
   ADDRESS16(map, update_address & 0x7FFF) = _value                            \
 
-void write_rtc(u32 address, u32 value)
+void write_cart_io(u32 address, u32 value)
 {
   u32 rtc_page_index;
   u32 update_address;
   u8 *map;
 
+  if((value & 0x04) == 0)
+  {
+  DBGOUT("PC %X : %X : %X\n",reg[REG_PC],address,value);
+  }
   value &= 0xFFFF;
 
   switch(address)
@@ -1865,202 +1874,236 @@ void write_rtc(u32 address, u32 value)
     // Bit 0: SCHK, perform action
     // Bit 1: IO, input/output command data
     // Bit 2: CS, select input/output? If high make I/O write only
-    case 0xC4:
-      if(rtc_state == RTC_DISABLED)
-        rtc_state = RTC_IDLE;
-      if(!(rtc_registers[0] & 0x04))
-        value = (rtc_registers[0] & 0x02) | (value & ~0x02);
-      if(rtc_registers[2] & 0x01)
+  case 0xC4:
+    if((value & 0x04) == 0)
+      {
+        value &= 0x07;
+        if(value & 0x02)
+          {
+            solar_counter = 0;
+            solar_status = 0;
+          }
+        else
+          {
+            if((value & 0x01) == 1)
+              {
+                solar_status = 1;
+              }
+            if((value & 0x01) == 0)
+              {
+                if(solar_status == 1)
+                  {
+                    solar_counter++;
+                    if(solar_counter == 256)
+                      solar_counter = 0;
+                    if((g_gpsp_config.solar_level * 10) <= solar_counter)
+                      value = 0x80;
+                    else
+                      value = 0x00;
+                    write_cart_io_register(0, ~rtc_registers[1] & value);
+                  }
+                solar_status = 0;
+              }
+          }
+      }
+    DBGOUT("OUT : %X\n\n", rtc_registers[0]);
+#if 0
+    if(rtc_state == RTC_DISABLED)
+      rtc_state = RTC_IDLE;
+    if(!(rtc_registers[0] & 0x04))
+      value = (rtc_registers[0] & 0x02) | (value & ~0x02);
+    if(rtc_registers[2] & 0x01)
       {
         // To begin writing a command 1, 5 must be written to the command
         // registers.
-        if((rtc_state == RTC_IDLE) && (rtc_registers[0] == 0x01) &&
-         (value == 0x05))
-        {
-          // We're now ready to begin receiving a command.
-          write_rtc_register(0, value);
-          rtc_state = RTC_COMMAND;
-          rtc_command = 0;
-          rtc_bit_count = 7;
-        }
-        else
-        {
-          write_rtc_register(0, value);
-          switch(rtc_state)
+        if((rtc_state == RTC_IDLE) && (rtc_registers[0] == 0x01) && (value == 0x05))
           {
-            // Accumulate RTC command by receiving the next bit, and if we
-            // have accumulated enough bits to form a complete command
-            // execute it.
+            // We're now ready to begin receiving a command.
+            write_cart_io_register(0, value);
+            rtc_state = RTC_COMMAND;
+            rtc_command = 0;
+            rtc_bit_count = 7;
+          }
+        else
+          {
+            write_cart_io_register(0, value);
+            switch(rtc_state)
+            {
+              // Accumulate RTC command by receiving the next bit, and if we
+              // have accumulated enough bits to form a complete command
+              // execute it.
             case RTC_COMMAND:
               if(rtc_registers[0] & 0x01)
-              {
-                rtc_command |= ((value & 0x02) >> 1) << rtc_bit_count;
-                rtc_bit_count--;
-              }
+                {
+                  rtc_command |= ((value & 0x02) >> 1) << rtc_bit_count;
+                  rtc_bit_count--;
+                }
 
               // Have we received a full RTC command? If so execute it.
               if(rtc_bit_count < 0)
-              {
-                switch(rtc_command)
                 {
-                  // Resets RTC
-                  case RTC_COMMAND_RESET:
+                  DBGOUT("%X\n",rtc_command);
+                  switch(rtc_command)
+                  {
+                    // Resets RTC
+                  case RTC_COMMAND_RESET_1:
+                  case RTC_COMMAND_RESET_2:
                     rtc_state = RTC_IDLE;
                     memset(rtc_registers, 0, sizeof(rtc_registers));
                     break;
 
-                  // Sets status of RTC
+                    // Sets status of RTC
                   case RTC_COMMAND_WRITE_STATUS:
                     rtc_state = RTC_INPUT_DATA;
                     rtc_data_bytes = 1;
                     rtc_write_mode = RTC_WRITE_STATUS;
                     break;
 
-                  // Outputs current status of RTC
+                    // Outputs current status of RTC
                   case RTC_COMMAND_READ_STATUS:
                     rtc_state = RTC_OUTPUT_DATA;
                     rtc_data_bytes = 1;
                     rtc_data[0] = rtc_status;
                     break;
 
-                  // Actually outputs the time, all of it
-                  // 0x65
-                  case RTC_COMMAND_OUTPUT_TIME_FULL:
-                  {
-                    pspTime current_time;
-                    sceRtcGetCurrentClockLocalTime(&current_time);
+                    // Actually outputs the time, all of it
+                    // 0x65
+                  case RTC_COMMAND_READ_TIME_FULL:
+                    {
+                      pspTime current_time;
+                      sceRtcGetCurrentClockLocalTime(&current_time);
 
-                    int day_of_week = sceRtcGetDayOfWeek(current_time.year, current_time.month , current_time.day);
-                    if(day_of_week == 0)
-                      day_of_week = 6;
-                    else
-                      day_of_week--;
+                      int day_of_week = sceRtcGetDayOfWeek(current_time.year, current_time.month , current_time.day);
+                      if(day_of_week == 0)
+                        day_of_week = 6;
+                      else
+                        day_of_week--;
 
-                    rtc_state = RTC_OUTPUT_DATA;
-                    rtc_data_bytes = 7;
-                    rtc_data[0] = encode_bcd(current_time.year % 100);
-                    rtc_data[1] = encode_bcd(current_time.month);
-                    rtc_data[2] = encode_bcd(current_time.day);
-                    rtc_data[3] = encode_bcd(day_of_week);
-                    rtc_data[4] = encode_bcd(current_time.hour);
-                    rtc_data[5] = encode_bcd(current_time.minutes);
-                    rtc_data[6] = encode_bcd(current_time.seconds);
-                    break;
+                      rtc_state = RTC_OUTPUT_DATA;
+                      rtc_data_bytes = 7;
+                      rtc_data[0] = encode_bcd(current_time.year % 100);
+                      rtc_data[1] = encode_bcd(current_time.month);
+                      rtc_data[2] = encode_bcd(current_time.day);
+                      rtc_data[3] = encode_bcd(day_of_week);
+                      rtc_data[4] = encode_bcd(current_time.hour);
+                      rtc_data[5] = encode_bcd(current_time.minutes);
+                      rtc_data[6] = encode_bcd(current_time.seconds);
+                      break;
+                    }
+
+                    // Only outputs the current time of day.
+                    // 0x67
+                  case RTC_COMMAND_READ_TIME:
+                    {
+                      pspTime current_time;
+                      sceRtcGetCurrentClockLocalTime(&current_time);
+
+                      rtc_state = RTC_OUTPUT_DATA;
+                      rtc_data_bytes = 3;
+                      rtc_data[0] = encode_bcd(current_time.hour);
+                      rtc_data[1] = encode_bcd(current_time.minutes);
+                      rtc_data[2] = encode_bcd(current_time.seconds);
+                      break;
+                    }
                   }
-
-                  // Only outputs the current time of day.
-                  // 0x67
-                  case RTC_COMMAND_OUTPUT_TIME:
-                  {
-                    pspTime current_time;
-                    sceRtcGetCurrentClockLocalTime(&current_time);
-
-                    rtc_state = RTC_OUTPUT_DATA;
-                    rtc_data_bytes = 3;
-                    rtc_data[0] = encode_bcd(current_time.hour);
-                    rtc_data[1] = encode_bcd(current_time.minutes);
-                    rtc_data[2] = encode_bcd(current_time.seconds);
-                    break;
-                  }
+                  rtc_bit_count = 0;
                 }
-                rtc_bit_count = 0;
-              }
               break;
 
-            // Receive parameters from the game as input to the RTC
-            // for a given command. Read one bit at a time.
+              // Receive parameters from the game as input to the RTC
+              // for a given command. Read one bit at a time.
             case RTC_INPUT_DATA:
               // Bit 1 of parameter A must be high for input
               if(rtc_registers[1] & 0x02)
-              {
-                // Read next bit for input
-                if(!(value & 0x01))
                 {
-                  rtc_data[rtc_bit_count >> 3] |=
-                   ((value & 0x01) << (7 - (rtc_bit_count & 0x07)));
-                }
-                else
-                {
-                  rtc_bit_count++;
-
-                  if(rtc_bit_count == (rtc_data_bytes * 8))
-                  {
-                    rtc_state = RTC_IDLE;
-                    switch(rtc_write_mode)
+                  // Read next bit for input
+                  if(!(value & 0x01))
                     {
-                      case RTC_WRITE_STATUS:
-                        rtc_status = rtc_data[0];
-                        break;
-
-                      default:
-                        ;
-                        break;
+                      rtc_data[rtc_bit_count >> 3] |=
+                        ((value & 0x01) << (7 - (rtc_bit_count & 0x07)));
                     }
-                  }
+                  else
+                    {
+                      rtc_bit_count++;
+
+                      if(rtc_bit_count == (rtc_data_bytes * 8))
+                        {
+                          rtc_state = RTC_IDLE;
+                          switch(rtc_write_mode)
+                          {
+                          case RTC_WRITE_STATUS:
+                            rtc_status = rtc_data[0];
+                            break;
+
+                          default:
+                            ;
+                            break;
+                          }
+                        }
+                    }
                 }
-              }
               break;
 
             case RTC_OUTPUT_DATA:
               // Bit 1 of parameter A must be low for output
               if(!(rtc_registers[1] & 0x02))
-              {
-                // Write next bit to output, on bit 1 of parameter B
-                if(!(value & 0x01))
                 {
-                  u8 current_output_byte = rtc_registers[2];
+                  // Write next bit to output, on bit 1 of parameter B
+                  if(!(value & 0x01))
+                    {
+                      u8 current_output_byte = rtc_registers[2];
 
-                  current_output_byte =
-                   (current_output_byte & ~0x02) |
-                   (((rtc_data[rtc_bit_count >> 3] >>
-                   (rtc_bit_count & 0x07)) & 0x01) << 1);
+                      current_output_byte =
+                        (current_output_byte & ~0x02) |
+                        (((rtc_data[rtc_bit_count >> 3] >>
+                            (rtc_bit_count & 0x07)) & 0x01) << 1);
 
-                  write_rtc_register(0, current_output_byte);
+                      write_cart_io_register(0, current_output_byte);
 
+                    }
+                  else
+                    {
+                      rtc_bit_count++;
+
+                      if(rtc_bit_count == (rtc_data_bytes * 8))
+                        {
+                          rtc_state = RTC_IDLE;
+                          memset(rtc_registers, 0, sizeof(rtc_registers));
+                        }
+                    }
                 }
-                else
-                {
-                  rtc_bit_count++;
-
-                  if(rtc_bit_count == (rtc_data_bytes * 8))
-                  {
-                    rtc_state = RTC_IDLE;
-                    memset(rtc_registers, 0, sizeof(rtc_registers));
-                  }
-                }
-              }
               break;
 
             default:
               ;
               break;
+            }
           }
-        }
       }
-      else
-      {
-        write_rtc_register(2, value);
-      }
-      break;
-
+    else
+    {
+      write_cart_io_register(2, value);
+    }
+#endif
+    break;
     // Write parameter A
-    case 0xC6:
-      write_rtc_register(1, value);
-      break;
+  case 0xC6:
+    write_cart_io_register(1, value);
+    break;
 
     // Write parameter B
-    case 0xC8:
-      write_rtc_register(2, value);
-      break;
+  case 0xC8:
+    write_cart_io_register(2, value);
+    break;
   }
 }
 
-#define write_rtc8()                                                          \
+#define write_cart_io8()                                                      \
 
-#define write_rtc16()                                                         \
-  write_rtc(address & 0xFF, value)                                            \
+#define write_cart_io16()                                                     \
+  write_cart_io(address & 0xFF, value)                                        \
 
-#define write_rtc32()                                                         \
+#define write_cart_io32()                                                     \
 
 // type = 8 / 16 / 32
 #define write_memory(type)                                                    \
@@ -2084,14 +2127,14 @@ void write_rtc(u32 address, u32 value)
       break;                                                                    /* 0x800は0x800ごとにループしている:TODO */ \
                                                                               \
     case 0x05:                                                                \
-      /* palette RAM */                                                       \
+      /* palatte RAM */                                                       \
       write_palette##type(address & 0x3FF, value);                            \
       break;                                                                  \
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
       /*address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                  \
+      if(address >= 0x18000)                                                 \
         address -= 0x8000;*/                                                    \
                                                                               \
       write_vram##type();                                                     \
@@ -2104,7 +2147,7 @@ void write_rtc(u32 address, u32 value)
                                                                               \
     case 0x08:                                                                \
       /* gamepak ROM or RTC */                                                \
-      write_rtc##type();                                                      \
+      write_cart_io##type();                                                      \
       break;                                                                  \
                                                                               \
     case 0x09 ... 0x0C:                                                       \
@@ -2211,8 +2254,8 @@ u32 load_backup(char *name)
   char backup_path[MAX_PATH];
   FILE_ID backup_file;
 
-  if (*DEFAULT_SAVE_DIR != (char)NULL) {
-    sprintf(backup_path, "%s/%s", DEFAULT_SAVE_DIR, name);
+  if (g_default_save_dir[0] != '\0') {
+    sprintf(backup_path, "%s/%s", g_default_save_dir, name);
   }
   else
   {
@@ -2275,8 +2318,8 @@ u32 save_backup(char *name)
 
   if(backup_type != BACKUP_NONE)
   {
-    if (*DEFAULT_SAVE_DIR != (char)NULL) {
-      sprintf(backup_path, "%s/%s", DEFAULT_SAVE_DIR, name);
+    if (g_default_save_dir[0] != '\0') {
+      sprintf(backup_path, "%s/%s", g_default_save_dir, name);
     }
     else
     {
@@ -3605,8 +3648,8 @@ u32 load_state(char *savestate_filename, u32 slot_num)
 
   if (slot_num != MEM_STATE_NUM)
   {
-    if (*DEFAULT_SAVE_DIR != (char)NULL) {
-      sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+    if (g_default_save_dir[0] != '\0') {
+      sprintf(savestate_path, "%s/%s", g_default_save_dir, savestate_filename);
     }
     else
     {
@@ -3665,7 +3708,7 @@ u32 load_state(char *savestate_filename, u32 slot_num)
       {
         reset_gba();
         // Okay, so this takes a while, but for now it works.
-        load_state(savestate_filename, SAVESTATE_SLOT);
+        load_state(savestate_filename, g_savestate_slot_num);
       }
       else
       {
@@ -3715,8 +3758,8 @@ u32 save_state(char *savestate_filename, u16 *screen_capture, u32 slot_num)
   if(yesno_dialog(buf) == 1)
     return 0;
 
-  if (*DEFAULT_SAVE_DIR != (char)NULL) {
-    sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+  if (g_default_save_dir[0] != '\0') {
+    sprintf(savestate_path, "%s/%s", g_default_save_dir, savestate_filename);
   }
   else
   {

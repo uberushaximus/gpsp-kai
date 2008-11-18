@@ -27,8 +27,6 @@
 
 #define MAX_GAMEPAD_CONFIG_MAP 16
 
-
-//
 typedef struct
 {
   u32 screen_scale;
@@ -44,7 +42,8 @@ typedef struct
   u32 emulate_core;
   u32 debug_flag;
   u32 fake_fat;
-} GPSP_CONFIG;
+  u32 solar_level;
+} gpsp_config_t;
 
 typedef struct
 {
@@ -54,11 +53,11 @@ typedef struct
   u32 clock_speed_number;
   u32 audio_buffer_size_number;
   u32 update_backup_flag;
-  CHEAT_TYPE cheats_flag[MAX_CHEATS];
+  cheat_t cheats_flag[MAX_CHEATS];
   u32 gamepad_config_map[MAX_GAMEPAD_CONFIG_MAP];
   u32 use_default_gamepad_map;
   u32 allocate_sensor;
-} GAME_CONFIG;
+} game_config_t;
 
 #define ASM_CORE 0
 #define C_CORE   1
@@ -66,15 +65,15 @@ typedef struct
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/
-extern u32 SAVESTATE_SLOT;
+extern u32 g_savestate_slot_num;
 extern char g_default_rom_dir[MAX_PATH];
-extern char DEFAULT_SAVE_DIR[MAX_PATH];
-extern char DEFAULT_CFG_DIR[MAX_PATH];
-extern char DEFAULT_SS_DIR[MAX_PATH];
-extern char DEFAULT_CHEAT_DIR[MAX_PATH];
+extern char g_default_save_dir[MAX_PATH];
+extern char g_default_cfg_dir[MAX_PATH];
+extern char g_default_ss_dir[MAX_PATH];
+extern char g_default_cheat_dir[MAX_PATH];
 
-extern GPSP_CONFIG gpsp_config;
-extern GAME_CONFIG game_config;
+extern gpsp_config_t g_gpsp_config;
+extern game_config_t g_game_config;
 
 /******************************************************************************
  * グローバル関数の宣言

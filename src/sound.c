@@ -274,7 +274,7 @@
   ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)                \
 
 #define SET_AUDIO_BUFFER_SIZE()                                               \
-    audio_buffer_size = SAMPLE_SIZE * (5 + game_config.audio_buffer_size_number) \
+    audio_buffer_size = SAMPLE_SIZE * (5 + g_game_config.audio_buffer_size_number) \
 
 /******************************************************************************
  * グローバル変数の定義
@@ -662,11 +662,11 @@ static int sound_update_thread(SceSize args, void *argp)
   while(!audio_thread_exit_flag)
   {
     left_buffer = CHECK_BUFFER() / SAMPLE_SIZE;
-    buffer_num = gpsp_config.enable_audio;
+    buffer_num = g_gpsp_config.enable_audio;
 
     if((CHECK_BUFFER() > SAMPLE_SIZE) && (pause_sound_flag == 0))
     {
-      // todo memcopy*2と どっちが速い？
+      // TODO memcopy*2と どっちが速い？
       for(loop = 0; loop < SAMPLE_SIZE; loop++)
       {
         sample = sound_buffer[sound_read_offset];

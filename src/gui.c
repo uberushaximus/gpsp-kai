@@ -40,19 +40,21 @@
 
 #define GPSP_CONFIG_FILENAME "gpsp.cfg"
 
+#define GAMEPAD_MENU_WIDTH 15
+
 // gpSPの設定ファイルのヘッダー
 // ヘッダーは4byteまで
 #define GPSP_CONFIG_HEADER     "gpSP"
 #define GPSP_CONFIG_HEADER_U32 0x50537067
 const u32 gpsp_config_ver = 0x00010000;
-GPSP_CONFIG gpsp_config;
+gpsp_config_t g_gpsp_config;
 
 // GAMEの設定ファイルのヘッダー
 // ヘッダーは4byteまで
 #define GAME_CONFIG_HEADER     "gcfg"
 #define GAME_CONFIG_HEADER_U32 0x67666367
 const u32 game_config_ver = 0x00010000;
-GAME_CONFIG game_config;
+game_config_t g_game_config;
 
 #ifdef TEST_MODE
 #define VER_RELEASE "test"
@@ -105,7 +107,7 @@ GAME_CONFIG game_config;
   NULL,                                                                       \
   cheat_format_str[number],                                                   \
   enable_disable_options,                                                     \
-  &(game_config.cheats_flag[number].cheat_active),                                 \
+  &(g_game_config.cheats_flag[number].cheat_active),                                 \
   2,                                                                          \
   msg[MSG_CHEAT_MENU_HELP_0],                                                 \
   (number) % 10,                                                              \
@@ -201,8 +203,6 @@ GAME_CONFIG game_config;
    display_string, NULL, option_ptr, num_options, help_string,                \
    line_number, NUMBER_SELECTION_TYPE)                                      \
 
-#define GAMEPAD_MENU_WIDTH 15
-
 typedef enum
 {
   NUMBER_SELECTION_TYPE = 0x01,
@@ -252,11 +252,11 @@ typedef enum
  * グローバル変数の定義
  ******************************************************************************/
 char g_default_rom_dir[MAX_PATH];
-char DEFAULT_SAVE_DIR[MAX_PATH];
-char DEFAULT_CFG_DIR[MAX_PATH];
-char DEFAULT_SS_DIR[MAX_PATH];
-char DEFAULT_CHEAT_DIR[MAX_PATH];
-u32 SAVESTATE_SLOT = 0;
+char g_default_save_dir[MAX_PATH];
+char g_default_cfg_dir[MAX_PATH];
+char g_default_ss_dir[MAX_PATH];
+char g_default_cheat_dir[MAX_PATH];
+u32 g_savestate_slot_num = 0;
 
 /******************************************************************************
  * ローカル変数の定義
@@ -764,20 +764,20 @@ const u32 gamepad_config_map_init[MAX_GAMEPAD_CONFIG_MAP] =
 void init_game_config()
 {
   u32 i;
-  game_config.frameskip_type = auto_frameskip;
-  game_config.frameskip_value = 9;
-  game_config.random_skip = NO;
-  game_config.clock_speed_number = 9;
-  game_config.audio_buffer_size_number = 2;
-  game_config.update_backup_flag = NO;
+  g_game_config.frameskip_type = auto_frameskip;
+  g_game_config.frameskip_value = 9;
+  g_game_config.random_skip = NO;
+  g_game_config.clock_speed_number = 9;
+  g_game_config.audio_buffer_size_number = 2;
+  g_game_config.update_backup_flag = NO;
   for(i = 0; i < MAX_CHEATS; i++)
   {
-    game_config.cheats_flag[i].cheat_active = NO;
-    game_config.cheats_flag[i].cheat_name[0] = '\0';
+    g_game_config.cheats_flag[i].cheat_active = NO;
+    g_game_config.cheats_flag[i].cheat_name[0] = '\0';
   }
-  memcpy(game_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
-  game_config.use_default_gamepad_map = YES;
-  game_config.allocate_sensor = NO;
+  memcpy(g_game_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
+  g_game_config.use_default_gamepad_map = YES;
+  g_game_config.allocate_sensor = NO;
 }
 
 /*--------------------------------------------------------
@@ -786,22 +786,23 @@ void init_game_config()
 void init_gpsp_config()
 {
   int temp;
-  gpsp_config.screen_scale = scaled_aspect;
-  gpsp_config.screen_filter = filter_bilinear;
-  gpsp_config.screen_ratio = R4_3;
-  gpsp_config.screen_interlace = PROGRESSIVE;
-  gpsp_config.enable_audio = YES;
-  gpsp_config.enable_analog = YES;
-  gpsp_config.analog_sensitivity_level = 4;
-  gpsp_config.enable_home = NO;
-  memcpy(gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
-  memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
-  temp = gpsp_config.language;
+  g_gpsp_config.screen_scale = scaled_aspect;
+  g_gpsp_config.screen_filter = filter_bilinear;
+  g_gpsp_config.screen_ratio = R4_3;
+  g_gpsp_config.screen_interlace = PROGRESSIVE;
+  g_gpsp_config.enable_audio = YES;
+  g_gpsp_config.enable_analog = YES;
+  g_gpsp_config.analog_sensitivity_level = 4;
+  g_gpsp_config.enable_home = NO;
+  memcpy(g_gpsp_config.gamepad_config_map, gamepad_config_map_init, sizeof(gamepad_config_map_init));
+  memcpy(gamepad_config_map, g_gpsp_config.gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
+  temp = g_gpsp_config.language;
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &temp);
-  gpsp_config.language = temp;
-  gpsp_config.emulate_core = ASM_CORE;
-  gpsp_config.debug_flag = NO;
-  gpsp_config.fake_fat = NO;
+  g_gpsp_config.language = temp;
+  g_gpsp_config.emulate_core = ASM_CORE;
+  g_gpsp_config.debug_flag = NO;
+  g_gpsp_config.fake_fat = NO;
+  g_gpsp_config.solar_level = 0;
 }
 
 /*--------------------------------------------------------
@@ -820,8 +821,8 @@ void load_game_config_file(void)
 
   change_ext(gamepak_filename, game_config_filename, ".cfg");
 
-  if (DEFAULT_CFG_DIR != NULL)
-    sprintf(game_config_path, "%s/%s", DEFAULT_CFG_DIR, game_config_filename);
+  if (g_default_cfg_dir != NULL)
+    sprintf(game_config_path, "%s/%s", g_default_cfg_dir, game_config_filename);
   else
     strcpy(game_config_path, game_config_filename);
 
@@ -838,11 +839,11 @@ void load_game_config_file(void)
       switch(ver)
       {
         case 0x10000: /* 1.0 */
-          FILE_READ_VARIABLE(game_config_file, game_config);
-          if(game_config.use_default_gamepad_map == YES)
-            memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+          FILE_READ_VARIABLE(game_config_file, g_game_config);
+          if(g_game_config.use_default_gamepad_map == YES)
+            memcpy(gamepad_config_map, g_gpsp_config.gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
           else
-            memcpy(gamepad_config_map, game_config.gamepad_config_map, sizeof(game_config.gamepad_config_map));
+            memcpy(gamepad_config_map, g_game_config.gamepad_config_map, sizeof(g_game_config.gamepad_config_map));
           break;
       }
     }
@@ -859,6 +860,8 @@ s32 load_config_file()
   FILE_ID gpsp_config_file;
   u32 header, ver;
 
+  // 初期値の設定
+  init_gpsp_config();
   sprintf(gpsp_config_path, "%s/%s", main_path, GPSP_CONFIG_FILENAME);
 
   FILE_OPEN(gpsp_config_file, gpsp_config_path, READ);
@@ -870,23 +873,19 @@ s32 load_config_file()
     if(header != GPSP_CONFIG_HEADER_U32)
     {
       FILE_CLOSE(gpsp_config_file);
-      // 読み込めなかった場合の初期値の設定
-      init_gpsp_config();
       return -1;
     }
     FILE_READ_VARIABLE(gpsp_config_file, ver);
     switch(ver)
     {
       case 0x10000: /* 1.0 */
-        FILE_READ_VARIABLE(gpsp_config_file, gpsp_config);
+        FILE_READ_VARIABLE(gpsp_config_file, g_gpsp_config);
         break;
     }
     FILE_CLOSE(gpsp_config_file);
-    memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+    memcpy(gamepad_config_map, g_gpsp_config.gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
     return 0;
   }
-  // 読み込めなかった場合の初期値の設定
-  init_gpsp_config();
   FILE_CLOSE(gpsp_config_file);
   return -1;
 }
@@ -983,7 +982,7 @@ u32 menu(u16 *original_screen)
     save_config_file();
     save_game_config_file();
 
-//    if(!gpsp_config.update_backup_flag) // TODO タイミングを検討
+//    if(!g_gpsp_config.update_backup_flag) // TODO タイミングを検討
       update_backup_force();
 
     if(load_file(file_ext, load_filename, g_default_rom_dir) != -1)
@@ -1022,7 +1021,7 @@ u32 menu(u16 *original_screen)
 
   void menu_change_state()
   {
-    get_savestate_filename(SAVESTATE_SLOT, current_savestate_filename);
+    get_savestate_filename(g_savestate_slot_num, current_savestate_filename);
   }
 
   void menu_save_state()
@@ -1030,8 +1029,8 @@ u32 menu(u16 *original_screen)
     menu_change_state();
     if(!first_load)
     {
-      get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
-      save_state(current_savestate_filename, original_screen, SAVESTATE_SLOT);
+      get_savestate_filename_noshot(g_savestate_slot_num, current_savestate_filename);
+      save_state(current_savestate_filename, original_screen, g_savestate_slot_num);
       pause_sound(1);
       clear_screen(COLOR_BG);
       blit_to_screen(original_screen, 240, 160, 230, 40);
@@ -1043,7 +1042,7 @@ u32 menu(u16 *original_screen)
     menu_change_state();
     if(!first_load)
     {
-      if (load_state(current_savestate_filename, SAVESTATE_SLOT) == 1)
+      if (load_state(current_savestate_filename, g_savestate_slot_num) == 1)
       {
         return_value = 1;
         repeat = 0;
@@ -1060,9 +1059,9 @@ u32 menu(u16 *original_screen)
   {
     char *file_ext[] = { ".svs", NULL };
     char load_filename[512];
-    if(load_file(file_ext, load_filename, DEFAULT_SAVE_DIR) != -1)
+    if(load_file(file_ext, load_filename, g_default_save_dir) != -1)
     {
-      if (load_state(load_filename, SAVESTATE_SLOT) == 1)
+      if (load_state(load_filename, g_savestate_slot_num) == 1)
       {
         return_value = 1;
         repeat = 0;
@@ -1086,18 +1085,18 @@ u32 menu(u16 *original_screen)
     char load_filename[MAX_FILE];
     u32 i;
 
-    if(load_file(file_ext, load_filename, DEFAULT_CHEAT_DIR) != -1)
+    if(load_file(file_ext, load_filename, g_default_cheat_dir) != -1)
     {
       add_cheats(load_filename);
       for(i = 0; i < MAX_CHEATS; i++)
       {
-        if(i >= g_num_cheats)
+        if(i >= g_cheats_num)
         {
           sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_NON_LOAD], i);
         }
         else
         {
-          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config.cheats_flag[i].cheat_name);
+          sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, g_game_config.cheats_flag[i].cheat_name);
         }
       }
       choose_menu(current_menu);
@@ -1143,7 +1142,7 @@ u32 menu(u16 *original_screen)
 
   void adhoc_connect_menu()
   {
-    set_cpu_clock(game_config.clock_speed_number);
+    set_cpu_clock(g_game_config.clock_speed_number);
     adhoc_init(gamepak_title);
     adhoc_select();
   }
@@ -1168,7 +1167,7 @@ u32 menu(u16 *original_screen)
 
   void submenu_main()
   {
-    get_savestate_filename_noshot(SAVESTATE_SLOT, current_savestate_filename);
+    get_savestate_filename_noshot(g_savestate_slot_num, current_savestate_filename);
   }
 
   char *yes_no_options[] =
@@ -1268,17 +1267,17 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SCALE], scale_options, &gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
-    /* 01 */ STRING_SELECTION_OPTION(NULL, msg[MSG_FILTER], yes_no_options, &gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
-    /* 02 */ STRING_SELECTION_OPTION(NULL, msg[MSG_RATIO], ratio_options, &gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
-    /* 03 */ STRING_SELECTION_OPTION(NULL, msg[MSG_INTERLACE], interlace_options, &gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),
+    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SCALE], scale_options, &g_gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
+    /* 01 */ STRING_SELECTION_OPTION(NULL, msg[MSG_FILTER], yes_no_options, &g_gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
+    /* 02 */ STRING_SELECTION_OPTION(NULL, msg[MSG_RATIO], ratio_options, &g_gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
+    /* 03 */ STRING_SELECTION_OPTION(NULL, msg[MSG_INTERLACE], interlace_options, &g_gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),
     /* 04 */
-    /* 05 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_TYPE], frameskip_options, &game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
-    /* 06 */ NUMERIC_SELECTION_OPTION(NULL, msg[MSG_SKIP_VALUE], &game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
-    /* 07 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_RANDOM], frameskip_variation_options, &game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
+    /* 05 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_TYPE], frameskip_options, &g_game_config.frameskip_type, 3, msg[MSG_G_S_MENU_HELP_2], 5),
+    /* 06 */ NUMERIC_SELECTION_OPTION(NULL, msg[MSG_SKIP_VALUE], &g_game_config.frameskip_value, 100, msg[MSG_G_S_MENU_HELP_3], 6),
+    /* 07 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SKIP_RANDOM], frameskip_variation_options, &g_game_config.random_skip, 2, msg[MSG_G_S_MENU_HELP_4], 7),
     /* 08 */
-    /* 09 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_ENABLE], yes_no_options, &gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
-    /* 10 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_BUFFER], audio_buffer_options, &game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
+    /* 09 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_ENABLE], yes_no_options, &g_gpsp_config.enable_audio, 2, msg[MSG_G_S_MENU_HELP_5], 9),
+    /* 10 */ STRING_SELECTION_OPTION(NULL, msg[MSG_AUDIO_BUFFER], audio_buffer_options, &g_game_config.audio_buffer_size_number, 11, msg[MSG_G_S_MENU_HELP_6], 11),
     /* 11 */
     /* 12 */ ACTION_OPTION(menu_save_ss, NULL, msg[MSG_SCREEN_SHOT], msg[MSG_G_S_MENU_HELP_7], 12),
     /* 13 */
@@ -1320,20 +1319,21 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE misc_options[] =
   {
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 0),
-    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 1),
-    STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 2),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_2], clock_speed_options, &g_game_config.clock_speed_number, 10, msg[MSG_CHEAT_MENU_HELP_2], 0),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_CHEAT_MENU_3], update_backup_options, &g_game_config.update_backup_flag, 2, msg[MSG_CHEAT_MENU_HELP_3], 1),
+    STRING_SELECTION_OPTION(home_mode, msg[MSG_CHEAT_MENU_6], yes_no_options, &g_gpsp_config.enable_home, 2, msg[MSG_CHEAT_MENU_HELP_6], 2),
 
 #ifdef USE_C_CORE
-    STRING_SELECTION_OPTION(NULL, "Emulate Core : %s", emulate_core_options, &gpsp_config.emulate_core , 2, "Emulate Core", 3),
+    STRING_SELECTION_OPTION(NULL, "Emulate Core : %s", emulate_core_options, &g_gpsp_config.emulate_core , 2, "Emulate Core", 3),
 #endif
 
 #ifdef USE_DEBUG
-    STRING_SELECTION_OPTION(NULL, "Debug mode : %s", yes_no_options, &gpsp_config.debug_flag, 2, "Debug mode", 4),
+    STRING_SELECTION_OPTION(NULL, "Debug mode : %s", yes_no_options, &g_gpsp_config.debug_flag, 2, "Debug mode", 4),
 #endif
 
-    STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &gpsp_config.language, 12, "言語", 5), /* TODO */
-    STRING_SELECTION_OPTION(NULL, "Fake Fat : %s", yes_no_options, &gpsp_config.fake_fat, 2, "Fake Fat", 6), /* TODO */
+    STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &g_gpsp_config.language, 12, "言語", 5), /* TODO */
+    STRING_SELECTION_OPTION(NULL, "Fake Fat : %s", yes_no_options, &g_gpsp_config.fake_fat, 2, "Fake Fat", 6), /* TODO */
+    NUMERIC_SELECTION_OPTION(NULL, "周囲の明るさ : %d", &g_gpsp_config.solar_level, 25, "周囲の明るさ", 8), /* TODO */
 
     SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16)
   };
@@ -1345,12 +1345,12 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE savestate_options[] =
   {
-    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state, menu_change_state, msg[MSG_STATE_MENU_0], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_0], 6),
-    NUMERIC_SELECTION_HIDE_OPTION(menu_save_state, menu_change_state, msg[MSG_STATE_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_1], 7),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state, menu_change_state, msg[MSG_STATE_MENU_0], &g_savestate_slot_num, 11, msg[MSG_STATE_MENU_HELP_0], 6),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_save_state, menu_change_state, msg[MSG_STATE_MENU_1], &g_savestate_slot_num, 11, msg[MSG_STATE_MENU_HELP_1], 7),
 
-    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state_file, menu_change_state, msg[MSG_STATE_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_2], 9),
+    NUMERIC_SELECTION_HIDE_OPTION(menu_load_state_file, menu_change_state, msg[MSG_STATE_MENU_2], &g_savestate_slot_num, 11, msg[MSG_STATE_MENU_HELP_2], 9),
 
-    NUMERIC_SELECTION_OPTION(menu_change_state, msg[MSG_STATE_MENU_3], &SAVESTATE_SLOT, 11, msg[MSG_STATE_MENU_HELP_3], 11),
+    NUMERIC_SELECTION_OPTION(menu_change_state, msg[MSG_STATE_MENU_3], &g_savestate_slot_num, 11, msg[MSG_STATE_MENU_HELP_3], 11),
 
 
 
@@ -1377,7 +1377,7 @@ u32 menu(u16 *original_screen)
     GAMEPAD_CONFIG_OPTION(msg[MSG_PAD_MENU_10], 10),
     GAMEPAD_CONFIG_OPTION(msg[MSG_PAD_MENU_11], 11),
 
-    STRING_SELECTION_OPTION(set_gamepad, msg[MSG_PAD_MENU_13], yes_no_options, &game_config.use_default_gamepad_map, 2, msg[MSG_PAD_MENU_HELP_13], 13),
+    STRING_SELECTION_OPTION(set_gamepad, msg[MSG_PAD_MENU_13], yes_no_options, &g_game_config.use_default_gamepad_map, 2, msg[MSG_PAD_MENU_HELP_13], 13),
 
     SUBMENU_OPTION(NULL, msg[MSG_PAD_MENU_12], msg[MSG_PAD_MENU_HELP_12], 15)
   };
@@ -1396,10 +1396,10 @@ u32 menu(u16 *original_screen)
 
 
 
-    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &gpsp_config.enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
-    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &gpsp_config.analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
-    STRING_SELECTION_OPTION(NULL, "tilt sensor : %s", yes_no_options, &game_config.allocate_sensor, 2, "tilt sensor", 9), /* TODO */
-    STRING_SELECTION_OPTION(set_gamepad, msg[MSG_PAD_MENU_13], yes_no_options, &game_config.use_default_gamepad_map, 2, msg[MSG_PAD_MENU_HELP_13], 10),
+    STRING_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_4], yes_no_options, &g_gpsp_config.enable_analog, 2, msg[MSG_A_PAD_MENU_HELP_0], 7),
+    NUMERIC_SELECTION_OPTION(NULL, msg[MSG_A_PAD_MENU_5], &g_gpsp_config.analog_sensitivity_level, 10, msg[MSG_A_PAD_MENU_HELP_1], 8),
+    STRING_SELECTION_OPTION(NULL, "tilt sensor : %s", yes_no_options, &g_game_config.allocate_sensor, 2, "tilt sensor", 9), /* TODO */
+    STRING_SELECTION_OPTION(set_gamepad, msg[MSG_PAD_MENU_13], yes_no_options, &g_game_config.use_default_gamepad_map, 2, msg[MSG_PAD_MENU_HELP_13], 10),
 
 
 
@@ -1443,8 +1443,8 @@ u32 menu(u16 *original_screen)
   {
     SUBMENU_OPTION(&graphics_sound_menu, msg[MSG_MAIN_MENU_0], msg[MSG_MAIN_MENU_HELP_0], 0),                                         /*  0行目 */
 
-    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_1], 2),  /*  2行目 */
-    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &SAVESTATE_SLOT, 11, msg[MSG_MAIN_MENU_HELP_2], 3),  /*  3行目 */
+    NUMERIC_SELECTION_ACTION_OPTION(menu_load_state, NULL, msg[MSG_MAIN_MENU_1], &g_savestate_slot_num, 11, msg[MSG_MAIN_MENU_HELP_1], 2),  /*  2行目 */
+    NUMERIC_SELECTION_ACTION_OPTION(menu_save_state, NULL, msg[MSG_MAIN_MENU_2], &g_savestate_slot_num, 11, msg[MSG_MAIN_MENU_HELP_2], 3),  /*  3行目 */
     SUBMENU_OPTION(&savestate_menu, msg[MSG_MAIN_MENU_3], msg[MSG_MAIN_MENU_HELP_3], 4),                                              /*  4行目 */
 
     SUBMENU_OPTION(&gamepad_config_menu, msg[MSG_MAIN_MENU_4], msg[MSG_MAIN_MENU_HELP_4], 6),                                         /*  6行目 */
@@ -1484,26 +1484,26 @@ u32 menu(u16 *original_screen)
     for(i = 0; i<10; i++)
     {
       cheats_options[i].display_string = cheat_format_str[(10 * menu_cheat_page) + i];
-      cheats_options[i].current_option = &(game_config.cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
+      cheats_options[i].current_option = &(g_game_config.cheats_flag[(10 * menu_cheat_page) + i].cheat_active);
     }
   }
 
   void home_mode()
   {
-    sceImposeSetHomePopup(gpsp_config.enable_home);
+    sceImposeSetHomePopup(g_gpsp_config.enable_home);
   }
 
   void set_gamepad()
   {
-    if(game_config.use_default_gamepad_map == 1)
+    if(g_game_config.use_default_gamepad_map == 1)
     {
-      memcpy(game_config.gamepad_config_map, gamepad_config_map, sizeof(game_config.gamepad_config_map));
-      memcpy(gamepad_config_map, gpsp_config.gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+      memcpy(g_game_config.gamepad_config_map, gamepad_config_map, sizeof(g_game_config.gamepad_config_map));
+      memcpy(gamepad_config_map, g_gpsp_config.gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
     }
     else
     {
-      memcpy(gpsp_config.gamepad_config_map, gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
-      memcpy(gamepad_config_map, game_config.gamepad_config_map, sizeof(game_config.gamepad_config_map));
+      memcpy(g_gpsp_config.gamepad_config_map, gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
+      memcpy(gamepad_config_map, g_game_config.gamepad_config_map, sizeof(g_game_config.gamepad_config_map));
     }
   }
 
@@ -1534,13 +1534,13 @@ u32 menu(u16 *original_screen)
 
   for(i = 0; i < MAX_CHEATS; i++)
   {
-    if(i >= g_num_cheats)
+    if(i >= g_cheats_num)
     {
       sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_NON_LOAD], i);
     }
     else
     {
-      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, game_config.cheats_flag[i].cheat_name);
+      sprintf(cheat_format_str[i], msg[MSG_CHEAT_MENU_0], i, g_game_config.cheats_flag[i].cheat_name);
     }
   }
 
@@ -1667,7 +1667,7 @@ u32 menu(u16 *original_screen)
       default:
         ;
         break;
-    }  // end swith
+    }  // end switch
     if(current_menu->init_function)
      current_menu->init_function();
     flip_screen();
@@ -1684,7 +1684,7 @@ u32 menu(u16 *original_screen)
 
   video_resolution(FRAME_GAME);
 
-  set_cpu_clock(game_config.clock_speed_number);
+  set_cpu_clock(g_game_config.clock_speed_number);
 
   pause_sound(0);
   real_frame_count = 0;
@@ -1731,7 +1731,7 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
               strcpy(g_default_rom_dir,current_str);
             else
             {
-              *g_default_rom_dir = (char)NULL;
+              g_default_rom_dir[0] = '\0';
               pspDebugScreenInit();
               printf("not open rom dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -1743,10 +1743,10 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 
           case 1:
             if(opendir(current_str) != NULL)
-              strcpy(DEFAULT_SAVE_DIR,current_str);
+              strcpy(g_default_save_dir,current_str);
             else
             {
-              *DEFAULT_SAVE_DIR = (char)NULL;
+              g_default_save_dir[0] = '\0';
               pspDebugScreenInit();
               printf("not open save dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -1758,10 +1758,10 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 
           case 2:
             if(opendir(current_str) != NULL)
-              strcpy(DEFAULT_CFG_DIR,current_str);
+              strcpy(g_default_cfg_dir,current_str);
             else
             {
-              *DEFAULT_CFG_DIR = (char)NULL;
+              g_default_cfg_dir[0] = '\0';
               pspDebugScreenInit();
               printf("not open cfg dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -1773,10 +1773,10 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 
           case 3:
             if(opendir(current_str) != NULL)
-              strcpy(DEFAULT_SS_DIR,current_str);
+              strcpy(g_default_ss_dir,current_str);
             else
             {
-              *DEFAULT_SS_DIR = (char)NULL;
+              g_default_ss_dir[0] = '\0';
               pspDebugScreenInit();
               printf("not open screen shot dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -1788,10 +1788,10 @@ u32 load_dircfg(char *file_name)  // TODO:スマートな実装に書き直す
 
           case 4:
             if(opendir(current_str) != NULL)
-              strcpy(DEFAULT_CHEAT_DIR,current_str);
+              strcpy(g_default_cheat_dir,current_str);
             else
             {
-              *DEFAULT_CHEAT_DIR = (char)NULL;
+              g_default_cheat_dir[0] = '\0';
               pspDebugScreenInit();
               printf("not open cheat dir : %s\n",current_str);
               sceKernelDelayThread(500000*2);
@@ -1951,20 +1951,20 @@ s32 save_game_config_file()
 
   change_ext(gamepak_filename, game_config_filename, ".cfg");
 
-  if (DEFAULT_CFG_DIR != NULL)
-    sprintf(game_config_path, "%s/%s", DEFAULT_CFG_DIR, game_config_filename);
+  if (g_default_cfg_dir != NULL)
+    sprintf(game_config_path, "%s/%s", g_default_cfg_dir, game_config_filename);
   else
     strcpy(game_config_path, game_config_filename);
 
-  if(game_config.use_default_gamepad_map == 0)
-    memcpy(game_config.gamepad_config_map, gamepad_config_map, sizeof(game_config.gamepad_config_map));
+  if(g_game_config.use_default_gamepad_map == 0)
+    memcpy(g_game_config.gamepad_config_map, gamepad_config_map, sizeof(g_game_config.gamepad_config_map));
 
   FILE_OPEN(game_config_file, game_config_path, WRITE);
   if(FILE_CHECK_VALID(game_config_file))
   {
     FILE_WRITE(game_config_file, (int *)GAME_CONFIG_HEADER, sizeof(u32));
     FILE_WRITE_VARIABLE(game_config_file, game_config_ver);
-    FILE_WRITE_VARIABLE(game_config_file, game_config);
+    FILE_WRITE_VARIABLE(game_config_file, g_game_config);
     FILE_CLOSE(game_config_file);
     return 0;
   }
@@ -1984,15 +1984,15 @@ s32 save_config_file()
 
   save_game_config_file();
 
-  if(game_config.use_default_gamepad_map == 1)
-    memcpy(gpsp_config.gamepad_config_map, gamepad_config_map, sizeof(gpsp_config.gamepad_config_map));
+  if(g_game_config.use_default_gamepad_map == 1)
+    memcpy(g_gpsp_config.gamepad_config_map, gamepad_config_map, sizeof(g_gpsp_config.gamepad_config_map));
 
   FILE_OPEN(gpsp_config_file, gpsp_config_path, WRITE);
   if(FILE_CHECK_VALID(gpsp_config_file))
   {
     FILE_WRITE(gpsp_config_file, (int *)GPSP_CONFIG_HEADER, sizeof(u32));
     FILE_WRITE_VARIABLE(gpsp_config_file, gpsp_config_ver);
-    FILE_WRITE_VARIABLE(gpsp_config_file, gpsp_config);
+    FILE_WRITE_VARIABLE(gpsp_config_file, g_gpsp_config);
     FILE_CLOSE(gpsp_config_file);
     return 0;
   }
@@ -2015,8 +2015,8 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
     pspTime current_time;
     u32 valid_flag = 0;
 
-    if (DEFAULT_SAVE_DIR != NULL) {
-      sprintf(savestate_path, "%s/%s", DEFAULT_SAVE_DIR, savestate_filename);
+    if (g_default_save_dir != NULL) {
+      sprintf(savestate_path, "%s/%s", g_default_save_dir, savestate_filename);
     }
     else
       {
@@ -2075,7 +2075,7 @@ static void get_savestate_filename(u32 slot, char *name_buffer)
   sprintf(savestate_ext, "_%d.svs", (int)slot);
   change_ext(gamepak_filename, name_buffer, savestate_ext);
 
-  get_savestate_snapshot(name_buffer, SAVESTATE_SLOT);
+  get_savestate_snapshot(name_buffer, g_savestate_slot_num);
 }
 
 static u32 parse_line(char *current_line, char *current_str)
@@ -2192,8 +2192,8 @@ static void save_ss_bmp(u16 *image)
   get_timestamp_string(timestamp, MSG_SS_FMT_0, current_time.year, current_time.month , current_time.day, 7,
     current_time.hour, current_time.minutes, current_time.seconds, current_time.microseconds);
 
-  if (DEFAULT_SS_DIR != NULL) {
-    sprintf(save_ss_path, "%s/%s%s.bmp", DEFAULT_SS_DIR, ss_filename, timestamp);
+  if (g_default_ss_dir != NULL) {
+    sprintf(save_ss_path, "%s/%s%s.bmp", g_default_ss_dir, ss_filename, timestamp);
   }
   else
   {

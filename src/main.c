@@ -262,7 +262,7 @@ int CallbackThread(SceSize args, void *argp)
 
   // 電源周りのコールバック
   id = sceKernelCreateCallback("Power Callback", (void *)power_callback, NULL);
-  scePowerRegisterCallback(0, id);
+  scePowerRegisterCallback(-1, id); // TODO
 
   sceKernelSleepThreadCB();
 
@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // フォント設定の読込み
-  sprintf(filename,"cfg/%s.fnt",lang[gpsp_config.language]);
+  sprintf(filename,"cfg/%s.fnt",lang[g_gpsp_config.language]);
   if (load_fontcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -402,7 +402,7 @@ int main(int argc, char *argv[])
   update_progress();
 
   // メッセージファイルの読込み
-  sprintf(filename,"cfg/%s.msg",lang[gpsp_config.language]);
+  sprintf(filename,"cfg/%s.msg",lang[g_gpsp_config.language]);
   if (load_msgcfg(filename) != 0)
   {
     pspDebugScreenInit();
@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
   init_gamepak_buffer();
   update_progress();
 
-  sceImposeSetHomePopup(gpsp_config.enable_home);
+  sceImposeSetHomePopup(g_gpsp_config.enable_home);
 
   // ROMファイル名の初期化
   gamepak_filename[0] = 0;
@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
   }
 
   last_frame = 0;
-  set_cpu_clock(game_config.clock_speed_number);
+  set_cpu_clock(g_game_config.clock_speed_number);
 
   pause_sound(0);
   real_frame_count = 0;
@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
 
   // エミュレートの開始
 #ifdef USE_C_CORE
-  if(gpsp_config.emulate_core == ASM_CORE)
+  if(g_gpsp_config.emulate_core == ASM_CORE)
     execute_arm_translate(execute_cycles);
   else
     execute_arm(execute_cycles);
@@ -642,7 +642,7 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
 
-          if(game_config.update_backup_flag == 1)
+          if(g_game_config.update_backup_flag == 1)
             update_backup();
 
           process_cheats();
@@ -650,7 +650,7 @@ u32 update_gba()
           vcount = 0; // TODO vcountを0にするタイミングを検討
 
           //TODO 調整必要
-          if((video_out_mode == 0) || (gpsp_config.screen_interlace == PROGRESSIVE))
+          if((video_out_mode == 0) || (g_gpsp_config.screen_interlace == PROGRESSIVE))
             synchronize();
           else
           {
@@ -727,7 +727,7 @@ void synchronize()
   // 内部フレーム値の増加
   frames++;
 
-  switch(game_config.frameskip_type)
+  switch(g_game_config.frameskip_type)
   {
   // オートフレームスキップ時
     case auto_frameskip:
@@ -736,7 +736,7 @@ void synchronize()
       // 内部フレーム数に遅れが出ている場合
       if(real_frame_count > virtual_frame_count)
       {
-        if(num_skipped_frames < game_config.frameskip_value)  // スキップしたフレームが設定より小さい
+        if(num_skipped_frames < g_game_config.frameskip_value)  // スキップしたフレームが設定より小さい
         {
           // 次のフレームはスキップ
           skip_next_frame_flag = 1;
@@ -783,10 +783,10 @@ void synchronize()
     case manual_frameskip:
       virtual_frame_count++;
       // フレームスキップ数増加
-      num_skipped_frames = (num_skipped_frames + 1) % (game_config.frameskip_value + 1);
-      if(game_config.random_skip)
+      num_skipped_frames = (num_skipped_frames + 1) % (g_game_config.frameskip_value + 1);
+      if(g_game_config.random_skip)
       {
-        if(num_skipped_frames != (rand() % (game_config.frameskip_value + 1)))
+        if(num_skipped_frames != (rand() % (g_game_config.frameskip_value + 1)))
           skip_next_frame_flag = 1;
         else
           frames_drawn_count++;
@@ -957,7 +957,7 @@ void raise_interrupt(IRQ_TYPE irq_raised)
 
 MODEL_TYPE get_model()
 {
-  if((kuKernelGetModel() <= 0 /* original PSP */) || ( gpsp_config.fake_fat == YES))
+  if((kuKernelGetModel() <= 0 /* original PSP */) || ( g_gpsp_config.fake_fat == YES))
   {
     return PSP_1000;
   }

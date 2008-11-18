@@ -32,20 +32,20 @@ typedef enum
   CHEAT_TYPE_DIRECT_V1,
   CHEAT_TYPE_DIRECT_V3,
   CHEAT_TYPE_INVALID
-} CHEAT_VARIANT_ENUM;
+} cheat_variant_t;
 
 typedef struct
 {
   char cheat_name[CHEAT_NAME_LENGTH];
   u32 cheat_active;
-  u32 cheat_codes[256];
+  u32 cheat_codes[256]; /* TODO */
   u32 num_cheat_lines;
-  CHEAT_VARIANT_ENUM cheat_variant;
-} CHEAT_TYPE;
+  cheat_variant_t cheat_variant;
+} cheat_t;
 
 // グローバル変数宣言
 
-extern u32 g_num_cheats;
+extern u32 g_cheats_num;
 
 // 関数宣言
 

@@ -118,7 +118,7 @@ s32 load_file_zip(char *filename)
     else
       write_tmp_flag = NO;
 
-    if(!strcasecmp(ext, "bin") || !strcasecmp(ext, "gba"))
+    if(!strncasecmp(ext, "bin", 3) || !strncasecmp(ext, "gba", 3))
     {
       buffer = gamepak_rom;
 
@@ -166,6 +166,7 @@ s32 load_file_zip(char *filename)
           err = inflateInit2(&stream, -MAX_WBITS);
 
           FILE_READ(fd, cbuffer, zip_buffer_size);
+          sceKernelDcacheWritebackAll();
 
           if(err == Z_OK)
           {
@@ -177,18 +178,17 @@ s32 load_file_zip(char *filename)
                 stream.avail_in = (u32)zip_buffer_size;
                 stream.next_in = (Bytef*)cbuffer;
                 FILE_READ(fd, cbuffer, zip_buffer_size);
+                sceKernelDcacheWritebackAll();
               }
 
               if((write_tmp_flag == YES) && (stream.avail_out == 0)) /* 出力バッファが尽きれば */
                 {
-                  /* まとめて書き出す */
                   FILE_WRITE(tmp_fd, buffer, gamepak_ram_buffer_size);
                   stream.next_out = buffer; /* 出力ポインタを元に戻す */
                   stream.avail_out = gamepak_ram_buffer_size; /* 出力バッファ残量を元に戻す */
                 }
             }
 
-            /* 残りを吐き出す */
             if((write_tmp_flag == YES) && ((gamepak_ram_buffer_size - stream.avail_out) != 0))
                 FILE_WRITE(tmp_fd, buffer, gamepak_ram_buffer_size - stream.avail_out);
 
