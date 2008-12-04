@@ -1,8 +1,8 @@
 #include <pspmoduleexport.h>
 #define NULL ((void *) 0)
 
-void extern module_start;
-void extern module_info;
+extern void module_start;
+extern void module_info;
 static const unsigned int __syslib_exports[4] __attribute__((section(".rodata.sceResident"))) = {
 	0xD632ACDB,
 	0xF01D73A7,
@@ -10,17 +10,17 @@ static const unsigned int __syslib_exports[4] __attribute__((section(".rodata.sc
 	(unsigned int) &module_info,
 };
 
-void extern initSystemButtons;
-void extern readSystemButtons;
-void extern readHomeButton;
-void extern readVolumeButtons;
-void extern readVolUpButton;
-void extern readVolDownButton;
-void extern readNoteButton;
-void extern readScreenButton;
-void extern readHoldSwitch;
-void extern readWLANSwitch;
-void extern readMainVolume;
+extern void initSystemButtons;
+extern void readSystemButtons;
+extern void readHomeButton;
+extern void readVolumeButtons;
+extern void readVolUpButton;
+extern void readVolDownButton;
+extern void readNoteButton;
+extern void readScreenButton;
+extern void readHoldSwitch;
+extern void readWLANSwitch;
+extern void readMainVolume;
 static const unsigned int __SystemButtons_exports[22] __attribute__((section(".rodata.sceResident"))) = {
 	0x494C24C0,
 	0xC3E44941,

@@ -2302,12 +2302,12 @@ typedef struct
     case 0xB0:                                                                \
       if((opcode >> 7) & 0x01)                                                \
       {                                                                       \
-        /* ADD sp, -imm */                                                    \
+        /* SUB sp, imm */                                                     \
         thumb_adjust_sp(-(imm << 2));                                         \
       }                                                                       \
       else                                                                    \
       {                                                                       \
-        /* ADD sp, +imm */                                                    \
+        /* ADD sp, imm */                                                     \
         thumb_adjust_sp((imm << 2));                                          \
       }                                                                       \
       break;                                                                  \

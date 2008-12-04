@@ -82,7 +82,7 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define SYS_CLOCK (16777216.0)
 
 #define ROR(dest, value, shift)                                             \
-  dest = ((value) >> (shift)) | ((value) << (32 - (shift)))                 \
+  dest = ((u32)(value) >> (shift)) | ((u32)(value) << (32 - (shift)))       \
 
 #define PSP_FILE_OPEN_APPEND (PSP_O_CREAT | PSP_O_APPEND | PSP_O_TRUNC)
 
