@@ -111,7 +111,7 @@ void bios_cpuset(u32 b_source, u32 b_dest, u32 b_cnt) /* arm_r0, arm r1, arm_r2 
       load_reg();
       return;
     }
-  
+
   u32 b_count = b_cnt & 0x1FFFFF;
 
   // 32-bit ?
@@ -172,7 +172,7 @@ void bios_cpufastset(u32 b_source, u32 b_dest, u32 b_cnt)
   // needed for 32-bit mode!
   b_source &= 0x0FFFFFFC;
   b_dest &= 0x0FFFFFFC;
-  
+
   u32 b_count = b_cnt & 0x1FFFFF;
   u32 b_i;
 
@@ -229,7 +229,7 @@ void bios_bgaffineset(u32 b_src, u32 b_dest, u32 b_num)
     s16 b_dmx = (b_rx * b_b)>>14;
     s16 b_dy =  (b_ry * b_b)>>14;
     s16 b_dmy = (b_ry * b_a)>>14;
-    
+
     write_memory16(b_dest, b_dx);
     b_dest += 2;
     write_memory16(b_dest, -b_dmx);
@@ -241,14 +241,14 @@ void bios_bgaffineset(u32 b_src, u32 b_dest, u32 b_num)
 
     s32 b_startx = b_cx - b_dx * b_dispx + b_dmx * b_dispy;
     s32 b_starty = b_cy - b_dy * b_dispx - b_dmy * b_dispy;
-    
+
     write_memory32(b_dest, b_startx);
     b_dest += 4;
     write_memory32(b_dest, b_starty);
     b_dest += 4;
   }
   load_reg();
-}  
+}
 
 void bios_objaffineset(u32 b_src, u32 b_dest, u32 b_num, u32 b_offset)
 {
@@ -265,11 +265,11 @@ void bios_objaffineset(u32 b_src, u32 b_dest, u32 b_num, u32 b_offset)
     s32 b_a = (s32)b_sinetable[(b_theta+0x40)&255];
     s32 b_b = (s32)b_sinetable[b_theta];
 
-    s16 b_dx =  ((s32)b_rx * b_a)>>14;
-    s16 b_dmx = ((s32)b_rx * b_b)>>14;
-    s16 b_dy =  ((s32)b_ry * b_b)>>14;
-    s16 b_dmy = ((s32)b_ry * b_a)>>14;
-    
+    s16 b_dx =  (s32)((b_rx * b_a)>>14);
+    s16 b_dmx = (s32)((b_rx * b_b)>>14);
+    s16 b_dy =  (s32)((b_ry * b_b)>>14);
+    s16 b_dmy = (s32)((b_ry * b_a)>>14);
+
     write_memory16(b_dest, b_dx);
     b_dest += b_offset;
     write_memory16(b_dest, -b_dmx);

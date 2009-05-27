@@ -805,28 +805,28 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
     case 0x28:
       access_register8_low(0x28);
       access_register16_low(0x28);
-      affine_reference_x[0] = (s32)(value << 4) >> 4;
+      affine_reference_x[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x28) = value;
       break;
 
     case 0x29:
       access_register8_high(0x28);
       access_register16_low(0x28);
-      affine_reference_x[0] = (s32)(value << 4) >> 4;
+      affine_reference_x[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x28) = value;
       break;
 
     case 0x2A:
       access_register8_low(0x2A);
       access_register16_high(0x28);
-      affine_reference_x[0] = (s32)(value << 4) >> 4;
+      affine_reference_x[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x28) = value;
       break;
 
     case 0x2B:
       access_register8_high(0x2A);
       access_register16_high(0x28);
-      affine_reference_x[0] = (s32)(value << 4) >> 4;
+      affine_reference_x[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x28) = value;
       break;
 
@@ -834,28 +834,28 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
     case 0x2C:
       access_register8_low(0x2C);
       access_register16_low(0x2C);
-      affine_reference_y[0] = (s32)(value << 4) >> 4;
+      affine_reference_y[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x2C) = value;
       break;
 
     case 0x2D:
       access_register8_high(0x2C);
       access_register16_low(0x2C);
-      affine_reference_y[0] = (s32)(value << 4) >> 4;
+      affine_reference_y[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x2C) = value;
       break;
 
     case 0x2E:
       access_register8_low(0x2E);
       access_register16_high(0x2C);
-      affine_reference_y[0] = (s32)(value << 4) >> 4;
+      affine_reference_y[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x2C) = value;
       break;
 
     case 0x2F:
       access_register8_high(0x2E);
       access_register16_high(0x2C);
-      affine_reference_y[0] = (s32)(value << 4) >> 4;
+      affine_reference_y[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x2C) = value;
       break;
 
@@ -863,28 +863,28 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
     case 0x38:
       access_register8_low(0x38);
       access_register16_low(0x38);
-      affine_reference_x[1] = (s32)(value << 4) >> 4;
+      affine_reference_x[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x38) = value;
       break;
 
     case 0x39:
       access_register8_high(0x38);
       access_register16_low(0x38);
-      affine_reference_x[1] = (s32)(value << 4) >> 4;
+      affine_reference_x[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x38) = value;
       break;
 
     case 0x3A:
       access_register8_low(0x3A);
       access_register16_high(0x38);
-      affine_reference_x[1] = (s32)(value << 4) >> 4;
+      affine_reference_x[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x38) = value;
       break;
 
     case 0x3B:
       access_register8_high(0x3A);
       access_register16_high(0x38);
-      affine_reference_x[1] = (s32)(value << 4) >> 4;
+      affine_reference_x[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x38) = value;
       break;
 
@@ -892,28 +892,28 @@ CPU_ALERT_TYPE write_io_register8(u32 address, u32 value)
     case 0x3C:
       access_register8_low(0x3C);
       access_register16_low(0x3C);
-      affine_reference_y[1] = (s32)(value << 4) >> 4;
+      affine_reference_y[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x3C) = value;
       break;
 
     case 0x3D:
       access_register8_high(0x3C);
       access_register16_low(0x3C);
-      affine_reference_y[1] = (s32)(value << 4) >> 4;
+      affine_reference_y[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x3C) = value;
       break;
 
     case 0x3E:
       access_register8_low(0x3E);
       access_register16_high(0x3C);
-      affine_reference_y[1] = (s32)(value << 4) >> 4;
+      affine_reference_y[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x3C) = value;
       break;
 
     case 0x3F:
       access_register8_high(0x3E);
       access_register16_high(0x3C);
-      affine_reference_y[1] = (s32)(value << 4) >> 4;
+      affine_reference_y[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x3C) = value;
       break;
 
@@ -1573,25 +1573,25 @@ CPU_ALERT_TYPE write_io_register32(u32 address, u32 value)
   {
     // BG2 reference X
     case 0x28:
-      affine_reference_x[0] = (s32)(value << 4) >> 4;
+      affine_reference_x[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x28) = value;
       break;
 
     // BG2 reference Y
     case 0x2C:
-      affine_reference_y[0] = (s32)(value << 4) >> 4;
+      affine_reference_y[0] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x2C) = value;
       break;
 
     // BG3 reference X
     case 0x38:
-      affine_reference_x[1] = (s32)(value << 4) >> 4;
+      affine_reference_x[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x38) = value;
       break;
 
     // BG3 reference Y
     case 0x3C:
-      affine_reference_y[1] = (s32)(value << 4) >> 4;
+      affine_reference_y[1] = ((s32)(value << 4) >> 4);
       ADDRESS32(io_registers, 0x3C) = value;
       break;
 
@@ -1875,6 +1875,7 @@ void write_cart_io(u32 address, u32 value)
     // Bit 1: IO, input/output command data
     // Bit 2: CS, select input/output? If high make I/O write only
   case 0xC4:
+#if 0
     if((value & 0x04) == 0)
       {
         value &= 0x07;
@@ -1907,7 +1908,7 @@ void write_cart_io(u32 address, u32 value)
           }
       }
     DBGOUT("OUT : %X\n\n", rtc_registers[0]);
-#if 0
+#else
     if(rtc_state == RTC_DISABLED)
       rtc_state = RTC_IDLE;
     if(!(rtc_registers[0] & 0x04))
@@ -2133,9 +2134,9 @@ void write_cart_io(u32 address, u32 value)
                                                                               \
     case 0x06:                                                                \
       /* VRAM */                                                              \
-      /*address &= 0x1FFFF;                                                     \
-      if(address >= 0x18000)                                                 \
-        address -= 0x8000;*/                                                    \
+      /*address &= 0x1FFFF;*/                                                 \
+      /*if(address >= 0x18000)*/                                              \
+      /*  address -= 0x8000;*/                                                \
                                                                               \
       write_vram##type();                                                     \
       break;                                                                  \
@@ -2147,7 +2148,7 @@ void write_cart_io(u32 address, u32 value)
                                                                               \
     case 0x08:                                                                \
       /* gamepak ROM or RTC */                                                \
-      write_cart_io##type();                                                      \
+      write_cart_io##type();                                                  \
       break;                                                                  \
                                                                               \
     case 0x09 ... 0x0C:                                                       \

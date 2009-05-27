@@ -42,7 +42,10 @@ typedef struct
   u32 emulate_core;
   u32 debug_flag;
   u32 fake_fat;
+  u32 boot_mode;
+#if 0
   u32 solar_level;
+#endif
 } gpsp_config_t;
 
 typedef struct
@@ -61,6 +64,9 @@ typedef struct
 
 #define ASM_CORE 0
 #define C_CORE   1
+
+#define GAME_CART 0
+#define GBA_BIOS  1
 
 /******************************************************************************
  * グローバル変数の宣言

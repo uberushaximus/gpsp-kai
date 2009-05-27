@@ -61,21 +61,21 @@ s32 load_file_zip(char *filename)
   u32 write_tmp_flag = NO;
 
   if(psp_model == PSP_2000)
-    {
-      zip_buffer_size = 16 * 1024 * 1024;
-      cbuffer = malloc(zip_buffer_size);
+  {
+    zip_buffer_size = 16 * 1024 * 1024;
+    cbuffer = malloc(zip_buffer_size);
 
-      while(cbuffer == NULL)
-        {
-          zip_buffer_size -= (1 * 1024 * 1024);
-          cbuffer = malloc(zip_buffer_size);
-        }
-    }
-  else
+    while(cbuffer == NULL)
     {
-      zip_buffer_size = ZIP_BUFFER_SIZE;
-      cbuffer = (u8 *)UNIVERSAL_VRAM_ADDR; // 汎用フレームバッファを使用
+      zip_buffer_size -= (1 * 1024 * 1024);
+      cbuffer = malloc(zip_buffer_size);
     }
+  }
+  else
+  {
+    zip_buffer_size = ZIP_BUFFER_SIZE;
+    cbuffer = (u8 *)UNIVERSAL_VRAM_ADDR; // 汎用フレームバッファを使用
+  }
 
   chdir(rom_path);
   FILE_OPEN(fd, filename, READ);

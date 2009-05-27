@@ -802,7 +802,10 @@ void init_gpsp_config()
   g_gpsp_config.emulate_core = ASM_CORE;
   g_gpsp_config.debug_flag = NO;
   g_gpsp_config.fake_fat = NO;
+  g_gpsp_config.boot_mode = GAME_CART;
+#if 0
   g_gpsp_config.solar_level = 0;
+#endif
 }
 
 /*--------------------------------------------------------
@@ -1254,6 +1257,12 @@ u32 menu(u16 *original_screen)
     lang[11]
   };
 
+  char *boot_mode_options[] =
+  {
+      "GAME CART",
+      "GBA BIOS"
+  };
+
 #ifdef USE_C_CORE
   char *emulate_core_options[] =
   {
@@ -1333,8 +1342,10 @@ u32 menu(u16 *original_screen)
 
     STRING_SELECTION_OPTION(NULL, "言語 : %s", language_options, &g_gpsp_config.language, 12, "言語", 5), /* TODO */
     STRING_SELECTION_OPTION(NULL, "Fake Fat : %s", yes_no_options, &g_gpsp_config.fake_fat, 2, "Fake Fat", 6), /* TODO */
+    STRING_SELECTION_OPTION(NULL, "Boot Mode : %s", boot_mode_options, &g_gpsp_config.boot_mode, 2, "Boot Mode", 8), /* TODO */
+#if 0
     NUMERIC_SELECTION_OPTION(NULL, "周囲の明るさ : %d", &g_gpsp_config.solar_level, 25, "周囲の明るさ", 8), /* TODO */
-
+#endif
     SUBMENU_OPTION(NULL, msg[MSG_CHEAT_MENU_4], msg[MSG_CHEAT_MENU_HELP_4], 16)
   };
 

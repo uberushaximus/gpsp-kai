@@ -139,12 +139,12 @@ typedef enum
       ADDRESS16(io_registers, 0x100 + (timer_number * 4)) =                   \
       0x10000 - timer_reload;                                                 \
                                                                               \
-      if(timer[timer_number].count < execute_cycles)                          \
-        execute_cycles = timer[timer_number].count;                           \
+      if(timer[timer_number].count < g_execute_cycles)                        \
+        g_execute_cycles = timer[timer_number].count;                         \
                                                                               \
       if(timer_number < 2)                                                    \
       {                                                                       \
-        /* 小数点以下を切り捨てていたので、GBCサウンドと同様の処理にした*/   \
+        /* 小数点以下を切り捨てていたので、GBCサウンドと同様の処理にした*/    \
         SOUND_UPDATE_FREQUENCY_STEP(timer_number);                            \
         ADJUST_SOUND_BUFFER(timer_number, 0);                                 \
         ADJUST_SOUND_BUFFER(timer_number, 1);                                 \
@@ -163,9 +163,9 @@ typedef enum
 /******************************************************************************
  * グローバル変数の宣言
  ******************************************************************************/
-extern u32 execute_cycles;
-extern u32 global_cycles_per_instruction;
-extern u32 synchronize_flag;
+extern u32 g_execute_cycles;
+//extern u32 global_cycles_per_instruction;
+extern u32 g_synchronize_flag;
 extern u32 skip_next_frame_flag;
 extern TIMER_TYPE timer[4];
 extern u32 prescale_table[];

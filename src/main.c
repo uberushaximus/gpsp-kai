@@ -39,7 +39,7 @@ TIMER_TYPE timer[4];                              // タイマー
  * グローバル変数の定義
  ******************************************************************************/
 
-u32 global_cycles_per_instruction = 1;
+//u32 global_cycles_per_instruction = 1;
 //u64 frame_count_initial_timestamp = 0;
 //u64 last_frame_interval_timestamp;
 u32 psp_fps_debug = 0;
@@ -49,7 +49,7 @@ u32 skip_next_frame_flag = 0;
 u32 cpu_ticks = 0;
 u32 frame_ticks = 0;
 
-u32 execute_cycles = 960;
+u32 g_execute_cycles = 960;
 s32 video_count = 960;
 //u32 ticks;
 
@@ -57,7 +57,7 @@ s32 video_count = 960;
 //u32 thumb_frame = 0;
 u32 last_frame = 0;
 
-u32 synchronize_flag = 1;
+u32 g_synchronize_flag = 1;
 
 char main_path[MAX_PATH];
 char rom_path[MAX_PATH];
@@ -103,8 +103,8 @@ MODEL_TYPE psp_model;
 
 // エミュレーション サイクルの決定
 #define CHECK_COUNT(count_var)                                                \
-  if((count_var) < execute_cycles)                                            \
-    execute_cycles = count_var;                                               \
+  if((count_var) < g_execute_cycles)                                          \
+    g_execute_cycles = count_var;                                             \
 
 #define CHECK_TIMER(timer_number)                                             \
   if(timer[timer_number].status == TIMER_PRESCALE)                            \
@@ -120,7 +120,7 @@ MODEL_TYPE psp_model;
     {                                                                         \
       /* タイマーがプリスケールモードだった場合 */                            \
       /* タイマー変更 */                                                      \
-      timer[timer_number].count -= execute_cycles;                            \
+      timer[timer_number].count -= g_execute_cycles;                          \
       /* レジスタに書込 */                                                    \
       io_registers[REG_TM##timer_number##D] =                                 \
       0x10000 - (timer[timer_number].count >> timer[timer_number].prescale);  \
@@ -202,7 +202,7 @@ void init_main()
   cpu_ticks = 0;
   frame_ticks = 0;
 
-  execute_cycles = 960;
+  g_execute_cycles = 960;
   video_count = 960;
 
   bios_mode = USE_BIOS;
@@ -323,6 +323,12 @@ int main(int argc, char *argv[])
   getcwd(main_path, MAX_FILE);
   chdir(main_path);
 
+#ifdef USE_DEBUG
+  // デバッグ出力ファイルのオープン
+  g_dbg_file = fopen(DBG_FILE_NAME, "awb");
+  DBGOUT("\nStart gpSP\n");
+#endif
+
   // 設定ファイルの読込み
   load_config_file();
 
@@ -349,13 +355,7 @@ int main(int argc, char *argv[])
   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
-#ifdef USE_DEBUG
-  // デバッグ出力ファイルのオープン
-  g_dbg_file = fopen(DBG_FILE_NAME, "awb");
-  DBGOUT("\nStart gpSP\n");
-#endif
-
-#ifdef USE_ADHOC
+  #ifdef USE_ADHOC
   // adhoc用モジュールのロード
   if (load_adhoc_modules() != 0)
     error_msg("not load adhoc modules!!\n");
@@ -508,11 +508,11 @@ int main(int argc, char *argv[])
   // エミュレートの開始
 #ifdef USE_C_CORE
   if(g_gpsp_config.emulate_core == ASM_CORE)
-    execute_arm_translate(execute_cycles);
+    execute_arm_translate(g_execute_cycles);
   else
-    execute_arm(execute_cycles);
+    execute_arm(g_execute_cycles);
 #else
-  execute_arm_translate(execute_cycles);
+  execute_arm_translate(g_execute_cycles);
 #endif
 
   return 0;
@@ -545,7 +545,7 @@ u32 update_gba()
 
   do
     {
-      cpu_ticks += execute_cycles;
+      cpu_ticks += g_execute_cycles;
 
       reg[CHANGED_PC_STATUS] = 0;
 
@@ -560,7 +560,7 @@ u32 update_gba()
     update_timer(2);
     update_timer(3);
 
-    video_count -= execute_cycles;
+    video_count -= g_execute_cycles;
 
     if(video_count <= 0)
     { // 状態移行の発生
@@ -610,10 +610,10 @@ u32 update_gba()
           if(dispstat & 0x8)
             irq_raised |= IRQ_VBLANK;
 
-          affine_reference_x[0] = (s32)(ADDRESS32(io_registers, 0x28) << 4) >> 4;
-          affine_reference_y[0] = (s32)(ADDRESS32(io_registers, 0x2C) << 4) >> 4;
-          affine_reference_x[1] = (s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4;
-          affine_reference_y[1] = (s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4;
+          affine_reference_x[0] = ((s32)(ADDRESS32(io_registers, 0x28) << 4) >> 4);
+          affine_reference_y[0] = ((s32)(ADDRESS32(io_registers, 0x2C) << 4) >> 4);
+          affine_reference_x[1] = ((s32)(ADDRESS32(io_registers, 0x38) << 4) >> 4);
+          affine_reference_y[1] = ((s32)(ADDRESS32(io_registers, 0x3C) << 4) >> 4);
 
           if(dma[0].start_type == DMA_START_VBLANK)
             dma_transfer(dma);
@@ -683,7 +683,7 @@ u32 update_gba()
       io_registers[REG_DISPSTAT] = dispstat;
     }
 
-    execute_cycles = video_count;
+    g_execute_cycles = video_count;
 
     if(irq_raised)
       raise_interrupt(irq_raised);
@@ -696,7 +696,7 @@ u32 update_gba()
     // 画面のシンクロ・フリップ・ウェイト処理はここで行うべきでは？
 
   } while(reg[CPU_HALT_STATE] != CPU_ACTIVE);
-  return execute_cycles;
+  return g_execute_cycles;
 }
 
 void vblank_interrupt_handler(u32 sub, u32 *parg)
@@ -769,7 +769,7 @@ void synchronize()
       }
 
       // 内部フレーム数が実機を上回る場合
-      if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
+      if((real_frame_count < virtual_frame_count) && (g_synchronize_flag) && (skip_next_frame_flag == 0))
       {
         // VBANK待ち
         synchronize_sound();
@@ -801,7 +801,7 @@ void synchronize()
       }
 
       // 内部フレーム数が実機を上回る場合
-      if((real_frame_count < virtual_frame_count) && (synchronize_flag) && (skip_next_frame_flag == 0))
+      if((real_frame_count < virtual_frame_count) && (g_synchronize_flag) && (skip_next_frame_flag == 0))
       {
         // VBANK待ち
         synchronize_sound();
@@ -815,7 +815,7 @@ void synchronize()
     case no_frameskip:
       frames_drawn_count++;
       virtual_frame_count++;
-      if((real_frame_count < virtual_frame_count) && (synchronize_flag))
+      if((real_frame_count < virtual_frame_count) && (g_synchronize_flag))
       {
         // 内部フレーム数が実機を上回る場合
         // VBANK待ち
@@ -838,7 +838,7 @@ void synchronize()
     frames_drawn_count = 0;
   }
 
-  if(!synchronize_flag)
+  if(!g_synchronize_flag)
     PRINT_STRING_BG("--FF--", 0xFFFF, 0x000, 0, 10);
 }
 
@@ -871,7 +871,7 @@ void change_ext(char *src, char *buffer, char *extension)
 #define MAIN_SAVESTATE_BODY(type)                                             \
 {                                                                             \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, cpu_ticks);                      \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, execute_cycles);                 \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, g_execute_cycles);               \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, video_count);                    \
   FILE_##type##_ARRAY(g_state_buffer_ptr, timer);                             \
 }                                                                             \
@@ -957,17 +957,20 @@ void raise_interrupt(IRQ_TYPE irq_raised)
 
 MODEL_TYPE get_model()
 {
-  if((kuKernelGetModel() <= 0 /* original PSP */) || ( g_gpsp_config.fake_fat == YES))
+  if((kuKernelGetModel() <= 0) || ( g_gpsp_config.fake_fat == YES))
   {
+    DBGOUT("PSP_1000\n");
     return PSP_1000;
   }
   else
-    if(sceKernelDevkitVersion() < 0x03070110 || sctrlSEGetVersion() < 0x00001012)
+    if(sceKernelDevkitVersion() < 0x03070110 /* Ver3.71以上を対象 */)
     {
+      DBGOUT("PSP_1000\n");
       return PSP_1000;
     }
     else
     {
+      DBGOUT("PSP_2000\n");
       return PSP_2000;
     }
 }

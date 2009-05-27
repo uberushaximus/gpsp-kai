@@ -1976,7 +1976,7 @@ void render_scanline_obj_##alpha_op##_##map_space(u32 priority,               \
     obj_attribute_2 = oam_ptr[2];                                             \
     obj_size = ((obj_attribute_0 >> 12) & 0x0C) | (obj_attribute_1 >> 14);    \
                                                                               \
-    obj_x = (s32)(obj_attribute_1 << 23) >> 23;                               \
+    obj_x = ((s32)(obj_attribute_1 << 23) >> 23);                               \
     obj_width = (s32)obj_width_table[obj_size];                                    \
                                                                               \
     render_scanline_obj_prologue_##combine_op(alpha_op);                      \
@@ -2054,7 +2054,7 @@ void order_obj(u32 video_mode)
 
       if(((obj_y + obj_height) > 0) && (obj_y < 160))
       {
-        obj_x = (s32)(obj_attribute_1 << 23) >> 23;
+        obj_x = ((s32)(obj_attribute_1 << 23) >> 23);
 
         if(((obj_x + obj_width) > 0) && (obj_x < 240))
         {

@@ -346,7 +346,7 @@ u32 update_input()
 
       case BUTTON_ID_FASTFORWARD:
 //        PRINT_STRING_BG("FASTFORWARD", 0xFFFF, 0x0000, 0, 50);
-        synchronize_flag ^= 1;
+        g_synchronize_flag ^= 1;
         break;
 //        return 0;
 

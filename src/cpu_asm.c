@@ -123,8 +123,8 @@ typedef struct
 #define arm_decode_data_proc_imm()                                            \
   u32 rn = (opcode >> 16) & 0x0F;                                             \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
-  u32 imm;                                                                    \
-  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E)                               \
+  u32 imm;                                       DBGOUT("imm %d\n",opcode & 0xFF);                             \
+  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E); DBGOUT("ror %d\n",imm);                              \
 
 #define arm_decode_psr_reg()                                                  \
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
@@ -182,7 +182,7 @@ typedef struct
   u32 reg_list = opcode & 0xFFFF                                              \
 
 #define arm_decode_branch()                                                   \
-  s32 offset = (s32)(opcode << 8) >> 6                                        \
+  s32 offset = ((s32)(opcode << 8) >> 6);                                      \
 
 #define thumb_decode_shift()                                                  \
   u32 imm = (opcode >> 6) & 0x1F;                                             \
@@ -256,7 +256,7 @@ typedef struct
   check_pc_region(pc);                                                        \
   opcode = ADDRESS32(pc_address_block, (pc & 0x7FFF));                        \
   condition = block_data[block_data_position].condition;                      \
-                                                                              \
+  DBGOUT("PC %0X:CODE %0X:PTR %0X\n",pc,opcode,translation_ptr);                                              \
   if((condition != last_condition) || (condition >= 0x20))                    \
   {                                                                           \
                                                                               \
@@ -2797,7 +2797,7 @@ u32 translation_flush_count = 0;
     translation_flush_count = 0;                                              \
   /* modeにあわせてPCの位置を調整 */                                          \
   block_lookup_address_pc_##type();                                           \
-                                                                              \
+  DBGOUT("PC:%0X\n",pc);                                                                            \
   switch(pc >> 24)                                                            \
   {                                                                           \
     case 0x0:                                                                 \
@@ -2880,6 +2880,8 @@ u32 translation_flush_count = 0;
       if(translation_recursion_level == 0)                                    \
       {                                                                       \
         char buffer[256];                                                     \
+        u16 *current_screen = copy_screen(); \
+        save_state("dump", current_screen, 0);\
         video_resolution(FRAME_MENU);                                         \
         sprintf(buffer, "bad jump %x (%x)\n", (int)pc, (int)reg[REG_PC]);     \
         PRINT_STRING_BG(buffer, COLOR_WHITE, COLOR_BLACK, 0, 10);             \
@@ -2938,7 +2940,7 @@ block_lookup_address_body(dual);
   block_end_pc += 4                                                           \
 
 #define arm_branch_target()                                                   \
-  branch_target = (block_end_pc + 4 + ((s32)(opcode << 8) >> 6))              \
+  branch_target = (block_end_pc + 4 + ((s32)(opcode << 8) >> 6));             \
 
 // Contiguous conditional block flags modification - it will set 0x20 in the
 // condition's bits if this instruction modifies flags. Taken from the CPU
@@ -3565,7 +3567,7 @@ void init_cpu()
   }
 
   reg[REG_SP] = 0x03007F00;
-  reg[REG_PC] = 0x08000000;
+  reg[REG_PC] = (g_gpsp_config.boot_mode?0x00000000:0x08000000);
   reg[REG_CPSR] = 0x0000001F;
   reg[CPU_HALT_STATE] = CPU_ACTIVE;
   reg[CPU_MODE] = MODE_USR;

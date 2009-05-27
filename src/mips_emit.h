@@ -448,7 +448,7 @@ u32 arm_to_mips_reg[] =
   }                                                                           \
   else                                                                        \
   {                                                                           \
-    if(((u32)imm >> 16) == 0x0000)                                            \
+    if((u32)(imm >> 16) == 0x0000)                                            \
     {                                                                         \
       mips_emit_ori(ireg, reg_zero, imm);                                     \
     }                                                                         \
@@ -456,7 +456,7 @@ u32 arm_to_mips_reg[] =
     {                                                                         \
       mips_emit_lui(ireg, imm >> 16);                                         \
                                                                               \
-      if(((u32)imm & 0x0000FFFF) != 0x00000000)                               \
+      if((u32)(imm & 0x0000FFFF) != 0x00000000)                               \
       {                                                                       \
         mips_emit_ori(ireg, ireg, imm & 0xFFFF);                              \
       }                                                                       \
@@ -2405,7 +2405,7 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask, u32 address)
   generate_indirect_branch_dual()                                             \
 
 #define arm_swi()                                                             \
-  if (((opcode >> 16) &0xFF) >= 0x2B) break;                                  \
+  if (((opcode >> 16) & 0xFF) >= 0x2B) break;                                 \
   generate_swi_hle_handler((opcode >> 16) & 0xFF);                            \
   generate_load_pc(reg_a0, (pc + 4));                                         \
   generate_function_call_swap_delay(execute_swi);                             \
@@ -2507,7 +2507,7 @@ u8 swi_hle_handle[256][2] =
     {                                                                         \
       generate_function_call(bios_halt);                                      \
     }                                                                         \
-    \
+                                                                              \
     /* Div */                                                                 \
     if(swi_number == 0x06)                                                    \
     {                                                                         \

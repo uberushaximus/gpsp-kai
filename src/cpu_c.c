@@ -113,7 +113,7 @@ u32 reg_tmp;
   u32 reg_list = opcode & 0xFFFF                                              \
 
 #define arm_decode_branch()                                                   \
-  s32 offset = ((s32)(opcode & 0xFFFFFF) << 8) >> 6                           \
+  s32 offset = ((s32)((opcode & 0xFFFFFF) << 8) >> 6)                           \
 
 #define calculate_z_flag(dest)                                                \
   z_flag = ((dest) == 0)                                                      \
@@ -190,9 +190,9 @@ u32 reg_tmp;
       reg_sh = reg[rm];                                                       \
                                                                               \
       if(imm == 0)                                                            \
-        reg_sh = (s32)reg_sh >> 31;                                           \
+        reg_sh = (s32)(reg_sh >> 31);                                           \
       else                                                                    \
-        reg_sh = (s32)reg_sh >> imm;                                          \
+        reg_sh = (s32)(reg_sh >> imm);                                          \
       break;                                                                  \
     }                                                                         \
                                                                               \
@@ -201,9 +201,9 @@ u32 reg_tmp;
     {                                                                         \
       get_shift_register(reg_sh);                                             \
       if(shift <= 31)                                                         \
-        reg_sh = (s32)reg_sh >> shift;                                        \
+        reg_sh = (s32)(reg_sh >> shift);                                        \
       else                                                                    \
-        reg_sh = (s32)reg_sh >> 31;                                           \
+        reg_sh = (s32)(reg_sh >> 31);                                           \
       break;                                                                  \
     }                                                                         \
                                                                               \
@@ -318,13 +318,13 @@ u32 reg_tmp;
       reg_sh = reg[rm];                                                       \
       if(imm == 0)                                                            \
       {                                                                       \
-        reg_sh = (s32)reg_sh >> 31;                                           \
+        reg_sh = (s32)(reg_sh >> 31);                                           \
         c_flag = reg_sh & 0x01;                                               \
       }                                                                       \
       else                                                                    \
       {                                                                       \
         c_flag = (reg_sh >> (imm - 1)) & 0x01;                                \
-        reg_sh = (s32)reg_sh >> imm;                                          \
+        reg_sh = (s32)(reg_sh >> imm);                                          \
       }                                                                       \
       break;                                                                  \
     }                                                                         \
@@ -337,13 +337,13 @@ u32 reg_tmp;
       {                                                                       \
         if(shift > 31)                                                        \
         {                                                                     \
-          reg_sh = (s32)reg_sh >> 31;                                         \
+          reg_sh = (s32)(reg_sh >> 31);                                         \
           c_flag = reg_sh & 0x01;                                             \
         }                                                                     \
         else                                                                  \
         {                                                                     \
           c_flag = (reg_sh >> (shift - 1)) & 0x01;                            \
-          reg_sh = (s32)reg_sh >> shift;                                      \
+          reg_sh = (s32)(reg_sh >> shift);                                      \
         }                                                                     \
       }                                                                       \
       break;                                                                  \
@@ -408,9 +408,9 @@ u32 reg_tmp;
     {                                                                         \
       u32 imm = (opcode >> 7) & 0x1F;                                         \
       if(imm == 0)                                                            \
-        reg_offset = (s32)reg[rm] >> 31;                                      \
+        reg_offset = (s32)(reg[rm] >> 31);                                      \
       else                                                                    \
-        reg_offset = (s32)reg[rm] >> imm;                                     \
+        reg_offset = (s32)(reg[rm] >> imm);                                     \
       break;                                                                  \
     }                                                                         \
                                                                               \
@@ -1152,13 +1152,13 @@ u32 high_frequency_branch_targets = 0;
   {                                                                           \
     if(shift > 31)                                                            \
     {                                                                         \
-      dest = (s32)dest >> 31;                                                 \
+      dest = (s32)(dest >> 31);                                                 \
       c_flag = dest & 0x01;                                                   \
     }                                                                         \
     else                                                                      \
     {                                                                         \
       c_flag = (dest >> (shift - 1)) & 0x01;                                  \
-      dest = (s32)dest >> shift;                                              \
+      dest = (s32)(dest >> shift);                                              \
     }                                                                         \
   }                                                                           \
 
@@ -1197,14 +1197,14 @@ u32 high_frequency_branch_targets = 0;
   u32 dest;                                                                   \
   if(imm == 0)                                                                \
   {                                                                           \
-    dest = (s32)reg[rs] >> 31;                                                \
+    dest = (s32)(reg[rs] >> 31);                                                \
     c_flag = dest & 0x01;                                                     \
   }                                                                           \
   else                                                                        \
   {                                                                           \
     dest = reg[rs];                                                           \
     c_flag = (dest >> (imm - 1)) & 0x01;                                      \
-    dest = (s32)dest >> imm;                                                  \
+    dest = (s32)(dest >> imm);                                                  \
   }                                                                           \
 
 #define thumb_shift_ror_imm()                                                 \
@@ -3803,7 +3803,7 @@ void execute_arm(u32 cycles)
   u8 *pc_address_block = memory_map_read[pc_region];
   u32 new_pc_region;
   s32 cycles_remaining;
-  u32 cycles_per_instruction = global_cycles_per_instruction;
+//  u32 cycles_per_instruction = global_cycles_per_instruction;
   CPU_ALERT_TYPE cpu_alert;
 
   if(pc_address_block == NULL)
@@ -3823,10 +3823,11 @@ void execute_arm(u32 cycles)
       arm_loop:
 
       collapse_flags();
-      cycles_per_instruction = global_cycles_per_instruction;
+//      cycles_per_instruction = global_cycles_per_instruction;
 
       execute_arm_instruction();
-      cycles_remaining -= cycles_per_instruction;
+//      cycles_remaining -= cycles_per_instruction;
+      cycles_remaining--;
     } while(cycles_remaining > 0);
 
     collapse_flags();
@@ -3840,7 +3841,8 @@ void execute_arm(u32 cycles)
       collapse_flags();
 
       execute_thumb_instruction();
-      cycles_remaining -= cycles_per_instruction;
+//      cycles_remaining -= cycles_per_instruction;
+      cycles_remaining--;
     } while(cycles_remaining > 0);
 
     collapse_flags();
