@@ -191,9 +191,11 @@ for $target (@chars) {
 
 # generate output file name
 if ($fsource =~ /^(.*).bdf$/i) {
-    $fout = $1 . "-iso10646-1.bdf";
+#    $fout = $1 . "-iso10646-1.bdf";
+    $fout = $1 . "_u.bdf";
 } else {
-    $fout = $fsource . "-iso10646-1";
+#    $fout = $fsource . "-iso10646-1";
+    $fout = $fsource . "_u";
 }
 $fout =~ s/^(.*\/)?([^\/]+)$/$2/;  # remove path prefix
 
