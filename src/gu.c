@@ -193,6 +193,7 @@ void init_video()
   gecb.finish_arg = NULL;
   gecbid = sceGeSetCallback(&gecb);
 
+  // TODO %指定調整
   memcpy(screen_vertex, &screen_parameter_psp_game_init, sizeof(float) * 20);
   // Set framebuffer to PSP VRAM
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
@@ -322,6 +323,7 @@ void video_resolution(u32 frame)
       }
     }
 
+    // TODO %指定調整
     memcpy(screen_vertex, &current_parameter->screen_setting_1, sizeof(float) * 20);
 
     video_draw_frame = frame;
@@ -406,17 +408,17 @@ void blit_to_screen(u16 *src, u32 w, u32 h, u32 dest_x, u32 dest_y)
   }
 }
 
-#define video_savestate_body(type)                                            \
-{                                                                             \
+#define video_savestate_body(type, ver)                                   \
+{                                                                         \
   FILE_##type##_ARRAY(g_state_buffer_ptr, affine_reference_x);            \
   FILE_##type##_ARRAY(g_state_buffer_ptr, affine_reference_y);            \
-}                                                                             \
+}                                                                         \
 
-void video_read_mem_savestate()
-video_savestate_body(READ_MEM);
+void video_read_mem_savestate(u32 ver)
+video_savestate_body(READ_MEM, ver);
 
-void video_write_mem_savestate()
-video_savestate_body(WRITE_MEM);
+void video_write_mem_savestate(u32 ver)
+video_savestate_body(WRITE_MEM, ver);
 
 #define LOAD_PARAMETER_NUMBER (SCREEN_SCALE + 1 + (SCREEN_RATIO*SCREEN_INTERLACE*SCREEN_SCALE + SCREEN_RATIO*SCREEN_INTERLACE) * 2)
 

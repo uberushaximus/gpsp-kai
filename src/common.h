@@ -120,8 +120,11 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
   ptr += size;                                                              \
 }                                                                           \
 
+#define FILE_GET_SIZE(ptr, buffer, size)                                    \
+  ptr += size                                                               \
+
 #define FILE_SEEK(filename_tag, offset, type)                               \
-  sceIoLseek(filename_tag, offset, PSP_##type)                              \
+  sceIoLseek(filename_tag, offset, type)                                    \
 
 // These must be variables, not constants.
 
@@ -137,6 +140,9 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 #define FILE_WRITE_MEM_VARIABLE(ptr, variable)                              \
   FILE_WRITE_MEM(ptr, &variable, sizeof(variable))                          \
 
+#define FILE_GET_SIZE_VARIABLE(ptr, variable)                               \
+  ptr += sizeof(variable)                                                   \
+
 // These must be statically declared arrays (ie, global or on the stack,
 // not dynamically allocated on the heap)
 
@@ -151,6 +157,9 @@ typedef u32 FIXED8_24;     // 整数部 8bit 実数部24bit の固定小数点
 
 #define FILE_WRITE_MEM_ARRAY(ptr, array)                                    \
   FILE_WRITE_MEM(ptr, array, sizeof(array))                                 \
+
+#define FILE_GET_SIZE_ARRAY(ptr, array)                                     \
+  ptr += sizeof(array)                                                      \
 
 #define FLOAT_TO_FP16_16(value)                                             \
   (FIXED16_16)((value) * 65536.0)                                           \

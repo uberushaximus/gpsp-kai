@@ -161,8 +161,11 @@ extern u32 oam_update;
 extern u32 gbc_sound_update;
 extern DMA_TRANSFER_TYPE dma[4];
 
+extern const char g_state_str[4];
+extern const u32 g_state_ver;
 extern u8 savestate_write_buffer[];
 extern u8 *g_state_buffer_ptr;
+extern u32 g_state_size;
 
 //#define USE_VRAM
 

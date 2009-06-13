@@ -168,18 +168,20 @@ int fbm_getwidth(char *str)
 
   for (i = 0; i < len; i++)
   {
-    index = fbm_issubfont(ucs[i]);
+    index = fbm_ismainfont(ucs[i]);
 
     if (index >= 0)
-      font_num = 1;
+      font_num = 0;
     else
     {
-      index = fbm_ismainfont(ucs[i]);
-      font_num = 0;
+      index = fbm_issubfont(ucs[i]);
       if (index < 0)
       {
+        font_num = 0;
         index = fbmControl[0].defaultchar;
       }
+      else
+        font_num = 1;
     }
     font = fbm_getfont(index, font_num);
     width += *(font->width);
@@ -223,16 +225,18 @@ int fbm_printVRAM(void *vram, int bufferwidth, int x, int y, char *str, u32 colo
     }
     else
     {
-      index = fbm_issubfont(ucs[i]);
-      issub = 1;
+      index = fbm_ismainfont(ucs[i]);
+      issub = 0;
       if (index < 0)
       {
-        index = fbm_ismainfont(ucs[i]);
-        issub = 0;
+        index = fbm_issubfont(ucs[i]);
         if (index < 0)
         {
+          issub = 0;
           index = fbmControl[0].defaultchar;
         }
+        else
+          issub = 1;
       }
       fbm_printSUB(vram, bufferwidth, index, issub, fbmControl[issub].height, fbmControl[issub].byteperchar / fbmControl[issub].height, color, back, fill);
     }

@@ -123,8 +123,8 @@ typedef struct
 #define arm_decode_data_proc_imm()                                            \
   u32 rn = (opcode >> 16) & 0x0F;                                             \
   u32 rd = (opcode >> 12) & 0x0F;                                             \
-  u32 imm;                                       DBGOUT("imm %d\n",opcode & 0xFF);                             \
-  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E); DBGOUT("ror %d\n",imm);                              \
+  u32 imm;                                                                    \
+  ROR(imm, opcode & 0xFF, (opcode >> 7) & 0x1E)                               \
 
 #define arm_decode_psr_reg()                                                  \
   u32 psr_field = (opcode >> 16) & 0x0F;                                      \
@@ -3579,15 +3579,15 @@ void init_cpu()
   reg_mode[MODE_SVC][5] = 0x03007FE0;
 }
 
-#define cpu_savestate_body(type)                                              \
-{                                                                             \
-  FILE_##type(g_state_buffer_ptr,reg, 0x100);                             \
-  FILE_##type##_ARRAY(g_state_buffer_ptr,spsr);                           \
-  FILE_##type##_ARRAY(g_state_buffer_ptr,reg_mode);                       \
-}                                                                             \
+#define cpu_savestate_body(type, ver)                                     \
+{                                                                         \
+  FILE_##type(g_state_buffer_ptr, reg, 0x100);                            \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, spsr);                          \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, reg_mode);                      \
+}                                                                         \
 
-void cpu_read_mem_savestate()
-cpu_savestate_body(READ_MEM);
+void cpu_read_mem_savestate(u32 ver)
+cpu_savestate_body(READ_MEM, ver);
 
-void cpu_write_mem_savestate()
-cpu_savestate_body(WRITE_MEM);
+void cpu_write_mem_savestate(u32 ver)
+cpu_savestate_body(WRITE_MEM, ver);

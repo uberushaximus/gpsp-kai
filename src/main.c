@@ -868,7 +868,7 @@ void change_ext(char *src, char *buffer, char *extension)
 }
 
 // type = READ / WRITE_MEM
-#define MAIN_SAVESTATE_BODY(type)                                             \
+#define MAIN_SAVESTATE_BODY(type, ver)                                        \
 {                                                                             \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, cpu_ticks);                      \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, g_execute_cycles);               \
@@ -876,11 +876,11 @@ void change_ext(char *src, char *buffer, char *extension)
   FILE_##type##_ARRAY(g_state_buffer_ptr, timer);                             \
 }                                                                             \
 
-void main_read_mem_savestate()
-MAIN_SAVESTATE_BODY(READ_MEM);
+void main_read_mem_savestate(u32 ver)
+MAIN_SAVESTATE_BODY(READ_MEM, ver);
 
-void main_write_mem_savestate()
-MAIN_SAVESTATE_BODY(WRITE_MEM);
+void main_write_mem_savestate(u32 ver)
+MAIN_SAVESTATE_BODY(WRITE_MEM, ver);
 
 void error_msg(char *text)
 {

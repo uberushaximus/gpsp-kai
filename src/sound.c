@@ -254,22 +254,6 @@
     wave_bank[i2 + 1] = ((current_sample & 0x0F) - 8);                        \
   }                                                                           \
 
-#define sound_savestate_body(type)                                            \
-{                                                                             \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_on);                       \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_read_offset);              \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_last_cpu_ticks);           \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_buffer_index);         \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_last_cpu_ticks);       \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_partial_ticks);        \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_left);   \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_right);  \
-  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume);        \
-  FILE_##type##_ARRAY(g_state_buffer_ptr, wave_samples);                      \
-  FILE_##type##_ARRAY(g_state_buffer_ptr, direct_sound_channel);              \
-  FILE_##type##_ARRAY(g_state_buffer_ptr, gbc_sound_channel);                 \
-}                                                                             \
-
 #define CHECK_BUFFER()                                                        \
   ((gbc_sound_buffer_index - sound_read_offset) % BUFFER_SIZE)                \
 
@@ -290,7 +274,7 @@ u32 left_buffer;
  ******************************************************************************/
 static u32 audio_buffer_size;
 static s16 sound_buffer[BUFFER_SIZE]; // サウンド バッファ 2n = Left / 2n+1 = Right
-volatile static u32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
+static u32 sound_read_offset = 0; // サウンドバッファの読み込みオフセット
 static SceUID sound_thread;
 static u32 sound_last_cpu_ticks = 0;
 static FIXED16_16 gbc_sound_tick_step;
@@ -446,7 +430,7 @@ u32 gbc_sound_envelope_volume_table[16] =
     FIXED_DIV(14, 15, 14),
     FIXED_DIV(15, 15, 14) };
 
-volatile /*static*/ u32 gbc_sound_buffer_index = 0;
+u32 gbc_sound_buffer_index = 0;
 
 u32 gbc_sound_last_cpu_ticks = 0;
 u32 gbc_sound_partial_ticks = 0;
@@ -629,11 +613,27 @@ void sound_exit()
     audio_thread_exit_flag = 1;
   }
 
-void sound_read_mem_savestate()
-  sound_savestate_body(READ_MEM);
+#define sound_savestate_body(type, ver)                                       \
+{                                                                             \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_on);                       \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_read_offset);              \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, sound_last_cpu_ticks);           \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_buffer_index);         \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_last_cpu_ticks);       \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_partial_ticks);        \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_left);   \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume_right);  \
+  FILE_##type##_VARIABLE(g_state_buffer_ptr, gbc_sound_master_volume);        \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, wave_samples);                      \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, direct_sound_channel);              \
+  FILE_##type##_ARRAY(g_state_buffer_ptr, gbc_sound_channel);                 \
+}                                                                             \
 
-void sound_write_mem_savestate()
-  sound_savestate_body(WRITE_MEM);
+void sound_read_mem_savestate(u32 ver)
+  sound_savestate_body(READ_MEM, ver);
+
+void sound_write_mem_savestate(u32 ver)
+  sound_savestate_body(WRITE_MEM, ver);
 
 /******************************************************************************
  * ローカル関数の定義

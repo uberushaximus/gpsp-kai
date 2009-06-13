@@ -4,9 +4,10 @@ UnOfficial gpSP kai
 インストール方法
 
 動作に必要な環境
-	PSP-1000 CFW3.52 M33-4 以上
-	PSP-2000 CFW3.60 M33以上(ただし、TV出力/追加メモリを使用するにはCFW3.71が必須)
-	その他の環境(FW1.0/FW1.5など)では、動作しない可能性があります
+	PSP-1000 CFW5.00 M33 以上
+	PSP-2000 CFW5.00 M33 以上
+	PSP-3000 CFW5.03 HEN 以上
+	その他の環境では、動作しない可能性があります
 
 新規インストール
 	配布ファイルを解凍し、ms0の中にあるPSPを、フォルダごとメモリースティックにコピーする
@@ -15,7 +16,7 @@ UnOfficial gpSP kai
 	GBAのROMファイルを\PSP\GAME\gpSP\GBA\ROM\にコピーする
 
 ネットワークインストール
-	PSPのブラウザから http://www.tfact.jp/psp/gpsp/ にアクセスし、アップデート3ヶ所と新規インストール1ヶ所のリンクからインストールする
+	PSPのブラウザから http://www.tfact.net/psp/gpsp/ にアクセスし、アップデート3ヶ所と新規インストール1ヶ所のリンクからインストールする
 	GBAのBIOSファイルをGBA_BIOS.BINにリネームし、メモリースティックの\PSP\GAME\gpSP\にコピーする
 	GBAのROMファイルを\PSP\GAME\gpSP\GBA\ROM\にコピーする
 
@@ -24,7 +25,7 @@ UnOfficial gpSP kai
 	そのほかのファイルが更新されているバージョンもあるので、添付のファイルやリリース時の説明を確認すること
 
 ネットワークアップデート（ブラウザ利用）
-	PSPのブラウザから http://www.tfact.jp/psp/gpsp/ にアクセスし、アップデート3ヶ所のリンクからアップデートする
+	PSPのブラウザから http://www.tfact.net/psp/gpsp/ にアクセスし、アップデート3ヶ所のリンクからアップデートする
 
 ネットワークアップデート（ネットラジオ利用）
 	事前にgpSP Update.prs（アルファ版はgpSP Update alpha.prs）を、\MS\PSP\RADIOPLAYER\にコピーしておき、

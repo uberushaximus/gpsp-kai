@@ -420,16 +420,16 @@ void init_input()
 }
 
 // type = READ / WRITE_MEM
-#define input_savestate_body(type)                                            \
+#define input_savestate_body(type, ver)                                       \
 {                                                                             \
   FILE_##type##_VARIABLE(g_state_buffer_ptr, key);                            \
 }                                                                             \
 
-void input_read_mem_savestate()
-input_savestate_body(READ_MEM);
+void input_read_mem_savestate(u32 ver)
+  input_savestate_body(READ_MEM, ver);
 
-void input_write_mem_savestate()
-input_savestate_body(WRITE_MEM);
+void input_write_mem_savestate(u32 ver)
+  input_savestate_body(WRITE_MEM, ver);
 
 // 以降OSK用のコード
 #ifdef OSK

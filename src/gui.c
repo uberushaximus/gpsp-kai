@@ -2016,15 +2016,16 @@ s32 save_config_file()
  ******************************************************************************/
 static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
   {
-    u16 snapshot_buffer[240 * 160];
+    static u16 snapshot_buffer[240 * 160];
     char savestate_timestamp_string[80];
-    char savestate_path[1024];
+    char savestate_path[MAX_PATH];
+    static char old_savestate_path[MAX_PATH];
     FILE_ID savestate_file;
-    u64 savestate_time_flat;
+    static u64 savestate_time_flat;
     u64 local_time;
     int wday;
     pspTime current_time;
-    u32 valid_flag = 0;
+    static u32 valid_flag;
 
     if (g_default_save_dir != NULL) {
       sprintf(savestate_path, "%s/%s", g_default_save_dir, savestate_filename);
@@ -2035,26 +2036,44 @@ static void get_savestate_snapshot(char *savestate_filename, u32 slot_num)
       }
 
     if (slot_num != MEM_STATE_NUM)
+    {
+      if(strcmp(savestate_path, old_savestate_path) != 0)
       {
         FILE_OPEN(savestate_file, savestate_path, READ);
+        strcpy(old_savestate_path, savestate_path);
         if(FILE_CHECK_VALID(savestate_file))
-          {
-            FILE_READ_ARRAY(savestate_file, snapshot_buffer);
-            FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
-            FILE_CLOSE(savestate_file);
-            valid_flag = 1;
-          }
+        {
+          char str[4];
+          FILE_READ_ARRAY(savestate_file, str);
+          if(memcmp(str, g_state_str, 4) == 0)
+            FILE_SEEK(savestate_file, 8, SEEK_SET);
+          else
+            FILE_SEEK(savestate_file, 0, SEEK_SET);
+          FILE_READ_ARRAY(savestate_file, snapshot_buffer);
+          FILE_READ_VARIABLE(savestate_file, savestate_time_flat);
+          FILE_CLOSE(savestate_file);
+          valid_flag = 1;
+        }
+        else
+          valid_flag = 0;
       }
+    }
     else
+    {
+      if (mem_save_flag == 1)
       {
-        if (mem_save_flag == 1)
-          {
-            g_state_buffer_ptr = savestate_write_buffer;
-            FILE_READ_MEM_ARRAY(g_state_buffer_ptr, snapshot_buffer);
-            FILE_READ_MEM_VARIABLE(g_state_buffer_ptr, savestate_time_flat);
-            valid_flag = 1;
-          }
+        g_state_buffer_ptr = savestate_write_buffer;
+        if(memcmp(g_state_buffer_ptr, g_state_str, 4) == 0)
+        {
+          g_state_buffer_ptr += 8;
+          FILE_READ_MEM_ARRAY(g_state_buffer_ptr, snapshot_buffer);
+          FILE_READ_MEM_VARIABLE(g_state_buffer_ptr, savestate_time_flat);
+          valid_flag = 1;
+        }
       }
+      else
+        valid_flag = 0;
+    }
 
     if (valid_flag == 1)
       {

@@ -105,8 +105,9 @@ void execute_arm_translate(u32 cycles);
 void execute_arm(u32 cycles);
 
 void init_translater();
-void cpu_read_mem_savestate();
-void cpu_write_mem_savestate();
+void cpu_read_mem_savestate(u32 ver);
+void cpu_write_mem_savestate(u32 ver);
+void cpu_get_size_savestate(u32 ver);
 
 void invalidate_all_cache();
 void invalidate_icache_region(u8* addr, u32 length);

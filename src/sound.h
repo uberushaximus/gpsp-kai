@@ -301,15 +301,17 @@ extern u32 sound_on;
 extern u32 left_buffer;
 extern u32 gbc_sound_wave_volume[4];
 
-extern volatile u32 gbc_sound_buffer_index;
+extern u32 gbc_sound_buffer_index;
 
 void sound_timer_queue32(u8 channel);
 void sound_timer(FIXED16_16 frequency_step, u32 channel);
 void sound_reset_fifo(u32 channel);
 void update_gbc_sound(u32 cpu_ticks);
 void init_sound();
-void sound_read_mem_savestate();
-void sound_write_mem_savestate();
+void sound_read_mem_savestate(u32 ver);
+void sound_write_mem_savestate(u32 ver);
+void sound_get_size_savestate(u32 ver);
+
 void pause_sound(u32 flag);
 void reset_sound();
 void sound_exit();
