@@ -29,9 +29,10 @@
 
 typedef struct
 {
-  u32 screen_scale;
+  u32 screen_mode;
   u32 screen_filter;
   u32 screen_ratio;
+  u32 screen_scale;
   u32 screen_interlace;
   u32 enable_audio;
   u32 enable_analog;

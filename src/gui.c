@@ -786,7 +786,7 @@ void init_game_config()
 void init_gpsp_config()
 {
   int temp;
-  g_gpsp_config.screen_scale = scaled_aspect;
+  g_gpsp_config.screen_mode = scaled_aspect;
   g_gpsp_config.screen_filter = filter_bilinear;
   g_gpsp_config.screen_ratio = R4_3;
   g_gpsp_config.screen_interlace = PROGRESSIVE;
@@ -1276,7 +1276,7 @@ u32 menu(u16 *original_screen)
   --------------------------------------------------------*/
   MENU_OPTION_TYPE graphics_sound_options[] =
   {
-    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SCALE], scale_options, &g_gpsp_config.screen_scale, 5, msg[MSG_G_S_MENU_HELP_0], 0),
+    /* 00 */ STRING_SELECTION_OPTION(NULL, msg[MSG_SCALE], scale_options, &g_gpsp_config.screen_mode, 5, msg[MSG_G_S_MENU_HELP_0], 0),
     /* 01 */ STRING_SELECTION_OPTION(NULL, msg[MSG_FILTER], yes_no_options, &g_gpsp_config.screen_filter, 2, msg[MSG_G_S_MENU_HELP_1], 1),
     /* 02 */ STRING_SELECTION_OPTION(NULL, msg[MSG_RATIO], ratio_options, &g_gpsp_config.screen_ratio, 2, msg[MSG_G_S_MENU_HELP_9], 2),
     /* 03 */ STRING_SELECTION_OPTION(NULL, msg[MSG_INTERLACE], interlace_options, &g_gpsp_config.screen_interlace, 2, msg[MSG_G_S_MENU_HELP_10], 3),

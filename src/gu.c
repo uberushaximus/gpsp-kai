@@ -193,7 +193,6 @@ void init_video()
   gecb.finish_arg = NULL;
   gecbid = sceGeSetCallback(&gecb);
 
-  // TODO %指定調整
   memcpy(screen_vertex, &screen_parameter_psp_game_init, sizeof(float) * 20);
   // Set framebuffer to PSP VRAM
   GE_CMD(FBP, ((u32)psp_gu_vram_base & 0x00FFFFFF));
@@ -290,19 +289,19 @@ void video_resolution(u32 frame)
     switch(((video_out_mode << 1) | frame))
     {
       case ((PSP_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_psp_game[g_gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_psp_game[g_gpsp_config.screen_mode];
         break;
       case ((PSP_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_psp_menu;
         break;
       case ((ANALOG_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_composite_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_composite_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_mode];
         break;
       case ((ANALOG_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_composite_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_GAME):
-        current_parameter = &screen_parameter_component_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_scale];
+        current_parameter = &screen_parameter_component_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_mode];
         break;
       case ((DIGITAL_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_component_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
@@ -324,6 +323,16 @@ void video_resolution(u32 frame)
     }
 
     // TODO %指定調整
+    /*
+     * (x1,y1)-(x2,y2) r(0...1) (x2>x1,y2>y1)
+     * 中心を計算
+     * x = x2 - x1, y = y2 - y1
+     * cx = x1 + x / 2 , cy = y1 + y / 2
+     * x' = x * r, y' = y * r
+     * x1 = cx - x'/ 2, y1 = cy - x'/ 2
+     * x2 = cx + x'/ 2, y2 = cy + x'/ 2
+     */
+
     memcpy(screen_vertex, &current_parameter->screen_setting_1, sizeof(float) * 20);
 
     video_draw_frame = frame;
