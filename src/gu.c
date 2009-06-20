@@ -290,6 +290,8 @@ void video_resolution(u32 frame)
     {
       case ((PSP_OUT << 1) | FRAME_GAME):
         current_parameter = &screen_parameter_psp_game[g_gpsp_config.screen_mode];
+        current_parameter->screen_setting_1.x1 = 16;
+
         break;
       case ((PSP_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_psp_menu;
