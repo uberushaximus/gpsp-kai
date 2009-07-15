@@ -337,8 +337,9 @@ int main(int argc, char *argv[])
   // HOMEボタンを読取り可能にする
   if(pspSdkLoadStartModule("homehook.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
   {
-    error_msg("Error in load/start homehook module.\n");
-    quit(1);
+    // TODO:GEN-B
+//    error_msg("Error in load/start homehook module.\n");
+//    quit(1);
   }
 
   // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む

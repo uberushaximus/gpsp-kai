@@ -96,8 +96,9 @@ gui_action_type get_gui_input()
 //    quit(0);
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
-  ctrl_buttons = readHomeButton();
-  ctrl_data.Buttons |= ctrl_buttons;
+// TODO:GEN-B
+//  ctrl_buttons = readHomeButton();
+//  ctrl_data.Buttons |= ctrl_buttons;
 
   if((g_gpsp_config.enable_analog) && !(ctrl_data.Buttons & PSP_CTRL_HOLD))
   {
@@ -266,8 +267,9 @@ u32 update_input()
 //  sensorR = 0x650;
 
   sceCtrlPeekBufferPositive(&ctrl_data, 1);
-  ctrl_buttons = readHomeButton();
-  buttons = ctrl_data.Buttons | ctrl_buttons;
+// TODO:GEN-B
+//  ctrl_buttons = readHomeButton();
+  buttons = ctrl_data.Buttons /*| ctrl_buttons*/;
 
   if((g_gpsp_config.enable_analog) && !(buttons & PSP_CTRL_HOLD))
   {
@@ -403,7 +405,8 @@ void init_input()
   int button_swap;
   sceCtrlSetSamplingCycle(0);
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
-  initHomeButton(sceKernelDevkitVersion());
+// TODO:GEN-B
+//  initHomeButton(sceKernelDevkitVersion());
   tilt_sensor_x = 0x800;
   tilt_sensor_y = 0x800;
   sceUtilityGetSystemParamInt(9, &button_swap);
