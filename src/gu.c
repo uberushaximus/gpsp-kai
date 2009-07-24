@@ -264,6 +264,8 @@ void video_resolution(u32 frame)
 {
   static u32 first_load = 0;
   static SCREEN_PARAMETER *old_parameter = NULL;
+  float x, y, cx, cy, xx, yy;
+  SCREEN_PARAMETER sp; // TODO:変数名
 
   if(first_load == 0)
   {
@@ -290,23 +292,38 @@ void video_resolution(u32 frame)
     {
       case ((PSP_OUT << 1) | FRAME_GAME):
         current_parameter = &screen_parameter_psp_game[g_gpsp_config.screen_mode];
-        current_parameter->screen_setting_1.x1 = 16;
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
 
+        x = (sp.screen_setting_1.x2 - sp.screen_setting_1.x1) / 2;
+        y = (sp.screen_setting_1.y2 - sp.screen_setting_1.y1) / 2;
+        cx = sp.screen_setting_1.x1 + x;
+        cy = sp.screen_setting_1.y1 + y;
+        xx = x * g_gpsp_config.screen_scale / 100;
+        yy = y * g_gpsp_config.screen_scale / 100;
+        sp.screen_setting_1.x1 = cx - xx;
+        sp.screen_setting_1.x2 = cx + xx;
+        sp.screen_setting_1.y1 = cy - yy;
+        sp.screen_setting_1.y2 = cy + yy;
         break;
       case ((PSP_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_psp_menu;
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
         break;
       case ((ANALOG_OUT << 1) | FRAME_GAME):
         current_parameter = &screen_parameter_composite_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_mode];
-        break;
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
+       break;
       case ((ANALOG_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_composite_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
         break;
       case ((DIGITAL_OUT << 1) | FRAME_GAME):
         current_parameter = &screen_parameter_component_game[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace][g_gpsp_config.screen_mode];
-        break;
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
+       break;
       case ((DIGITAL_OUT << 1) | FRAME_MENU):
         current_parameter = &screen_parameter_component_menu[g_gpsp_config.screen_ratio][g_gpsp_config.screen_interlace];
+        memcpy(&sp.screen_setting_1, &current_parameter->screen_setting_1, sizeof(float) * 20);
         break;
     }
 
@@ -324,18 +341,8 @@ void video_resolution(u32 frame)
       }
     }
 
-    // TODO %指定調整
-    /*
-     * (x1,y1)-(x2,y2) r(0...1) (x2>x1,y2>y1)
-     * 中心を計算
-     * x = x2 - x1, y = y2 - y1
-     * cx = x1 + x / 2 , cy = y1 + y / 2
-     * x' = x * r, y' = y * r
-     * x1 = cx - x'/ 2, y1 = cy - x'/ 2
-     * x2 = cx + x'/ 2, y2 = cy + x'/ 2
-     */
-
     memcpy(screen_vertex, &current_parameter->screen_setting_1, sizeof(float) * 20);
+    memcpy(screen_vertex, &sp.screen_setting_1, sizeof(float) * 20);
 
     video_draw_frame = frame;
     screen_address = (u16 *)flip_address[frame][0];

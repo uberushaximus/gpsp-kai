@@ -256,7 +256,6 @@ typedef struct
   check_pc_region(pc);                                                        \
   opcode = ADDRESS32(pc_address_block, (pc & 0x7FFF));                        \
   condition = block_data[block_data_position].condition;                      \
-  DBGOUT("PC %0X:CODE %0X:PTR %0X\n",pc,opcode,translation_ptr);                                              \
   if((condition != last_condition) || (condition >= 0x20))                    \
   {                                                                           \
                                                                               \
@@ -2797,7 +2796,6 @@ u32 translation_flush_count = 0;
     translation_flush_count = 0;                                              \
   /* modeにあわせてPCの位置を調整 */                                          \
   block_lookup_address_pc_##type();                                           \
-  DBGOUT("PC:%0X\n",pc);                                                                            \
   switch(pc >> 24)                                                            \
   {                                                                           \
     case 0x0:                                                                 \

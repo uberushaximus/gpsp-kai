@@ -1911,7 +1911,6 @@ void write_cart_io(u32 address, u32 value)
               }
           }
       }
-    DBGOUT("OUT : %X\n\n", rtc_registers[0]);
 #else
     if(rtc_state == RTC_DISABLED)
       rtc_state = RTC_IDLE;
@@ -1947,7 +1946,6 @@ void write_cart_io(u32 address, u32 value)
               // Have we received a full RTC command? If so execute it.
               if(rtc_bit_count < 0)
                 {
-                  DBGOUT("%X\n",rtc_command);
                   switch(rtc_command)
                   {
                     // Resets RTC

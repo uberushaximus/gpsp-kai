@@ -1291,7 +1291,7 @@ u32 menu(u16 *original_screen)
     /* 11 */
     /* 12 */ ACTION_OPTION(menu_save_ss, NULL, msg[MSG_SCREEN_SHOT], msg[MSG_G_S_MENU_HELP_7], 12),
     /* 13 */
-    /* 14 */NUMERIC_SELECTION_OPTION(NULL, "ratio %d", &g_gpsp_config.screen_scale, 201, "ratio", 14),
+    /* 14 */NUMERIC_SELECTION_OPTION(NULL, "scale %d", &g_gpsp_config.screen_scale, 201, "scale", 14),
     /* 15 */
     /* 16 */ SUBMENU_OPTION(NULL, msg[MSG_MENU_RETURN_MAIN], msg[MSG_G_S_MENU_HELP_8], 16)
   };
