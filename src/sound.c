@@ -442,6 +442,7 @@ u32 gbc_sound_master_volume;
 void update_gbc_sound(u32 cpu_ticks)
   {
     // TODO 実数部のビット数を多くした方がいい？
+  // cpu_ticks - gbc_sound_last_cpu_ticks の最大値は389566まで、それ以上はu64が必要
 //    FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
 //    DBGOUT("%d\n", cpu_ticks - gbc_sound_last_cpu_ticks); /* 272 - 280896 */
     // a * 44100.0  / 16777216.0            (1*2*3*5*7)^2 / (2^24)
@@ -462,7 +463,7 @@ void update_gbc_sound(u32 cpu_ticks)
 //    gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks); /* 実数部 */
 //    buffer_ticks = FP16_16_TO_U32(buffer_ticks); /* 整数部 */
 
-    u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * 44100/4;
+    u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * (44100/4);
     gbc_sound_partial_ticks += buffer_ticks & 0x3FFFFF;
     buffer_ticks = buffer_ticks >> 22 /* 16777216  0x0100_0000*/;
 
