@@ -1708,8 +1708,8 @@ void button_up_wait()
 {
   SceCtrlData ctrl_data;
   sceKernelDelayThread(10);
-// TODO:GEN-B
-  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), ((ctrl_data.Buttons /*| readHomeButton()*/) & 0x1F3F9) != 0)
+
+  while(sceCtrlPeekBufferPositive(&ctrl_data, 1), (((g_use_home == 1) ? (ctrl_data.Buttons | readHomeButton()) : (ctrl_data.Buttons)) & 0x1F3F9) != 0)
   {
     sceKernelDelayThread(10);
   }

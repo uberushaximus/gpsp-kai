@@ -176,6 +176,7 @@ extern u32 virtual_frame_count;
 extern int date_format;
 extern MODEL_TYPE psp_model;
 extern char *lang[12];
+extern u32 g_use_home;
 
 /******************************************************************************
  * グローバル関数の宣言

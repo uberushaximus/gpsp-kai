@@ -96,6 +96,7 @@ char *file_ext[] = { ".gba", ".bin", ".zip", NULL };
 
 // PSPの種類
 MODEL_TYPE psp_model;
+u32 g_use_home;
 
 /******************************************************************************
  * マクロ等の定義
@@ -333,14 +334,11 @@ int main(int argc, char *argv[])
   load_config_file();
 
   psp_model = get_model();
+  g_use_home = 1;
 
   // HOMEボタンを読取り可能にする
   if(pspSdkLoadStartModule("homehook.prx", PSP_MEMORY_PARTITION_KERNEL) < 0)
-  {
-    // TODO:GEN-B
-//    error_msg("Error in load/start homehook module.\n");
-//    quit(1);
-  }
+    g_use_home = 0;
 
   // PSP-2000(CFW3.71)なら、外部出力用のモジュールを読込む
   if(psp_model == PSP_2000)

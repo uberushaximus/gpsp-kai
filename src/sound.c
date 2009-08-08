@@ -442,8 +442,8 @@ u32 gbc_sound_master_volume;
 void update_gbc_sound(u32 cpu_ticks)
   {
     // TODO 実数部のビット数を多くした方がいい？
-    FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
-    DBGOUT("%d\n", cpu_ticks - gbc_sound_last_cpu_ticks); /* 272 - 280896 */
+//    FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
+//    DBGOUT("%d\n", cpu_ticks - gbc_sound_last_cpu_ticks); /* 272 - 280896 */
     // a * 44100.0  / 16777216.0            (1*2*3*5*7)^2 / (2^24)
     // 380.435737
     u32 i, i2;
@@ -459,13 +459,18 @@ void update_gbc_sound(u32 cpu_ticks)
     s8 *wave_bank;
     u8 *wave_ram = ((u8 *)io_registers) + 0x90;
 
-    gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks); /* 実数部 */
-    buffer_ticks = FP16_16_TO_U32(buffer_ticks); /* 整数部 */
+//    gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks); /* 実数部 */
+//    buffer_ticks = FP16_16_TO_U32(buffer_ticks); /* 整数部 */
 
-    if (gbc_sound_partial_ticks > 0xFFFF)
+    u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * 44100/4;
+    gbc_sound_partial_ticks += buffer_ticks & 0x3FFFFF;
+    buffer_ticks = buffer_ticks >> 22 /* 16777216  0x0100_0000*/;
+
+
+    if (gbc_sound_partial_ticks > 0x3FFFFF)
     {
       buffer_ticks += 1;
-      gbc_sound_partial_ticks &= 0xFFFF;
+      gbc_sound_partial_ticks &= 0x3FFFFF;
     }
 
     if (sound_on == 1)
