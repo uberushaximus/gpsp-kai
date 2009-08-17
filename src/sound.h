@@ -98,7 +98,7 @@ typedef struct
 
 #define BUFFER_SIZE (0xffff)                        // バッファのバイト数。変更しないこと
 
-#define SOUND_FREQUENCY (44100.0)
+#define SOUND_FREQUENCY (44100)
 
 #define GBC_SOUND_TONE_CONTROL_LOW(channel, address)                          \
 {                                                                             \

@@ -34,6 +34,7 @@
  ******************************************************************************/
 // TODO:パラメータの調整が必要(サウンドバッファの設定は現在無視されている/調整必要)
 #define SAMPLE_COUNT        PSP_AUDIO_SAMPLE_ALIGN(256) // サンプル数
+//#define SAMPLE_COUNT        256
 #define SAMPLE_SIZE         (SAMPLE_COUNT * 2)          // 1サンプルあたりのバッファ数
 #define GBC_NOISE_WRAP_FULL 32767
 #define GBC_NOISE_WRAP_HALF 126
@@ -284,6 +285,7 @@ volatile static u32 pause_sound_flag;
 /******************************************************************************
  * ローカル関数の宣言
  ******************************************************************************/
+static void init_sound_thread();
 static void init_noise_table(u32 *table, u32 period, u32 bit_length);
 static int sound_update_thread(SceSize args, void *argp);
 
@@ -441,12 +443,6 @@ u32 gbc_sound_master_volume;
 
 void update_gbc_sound(u32 cpu_ticks)
   {
-    // TODO 実数部のビット数を多くした方がいい？
-  // cpu_ticks - gbc_sound_last_cpu_ticks の最大値は389566まで、それ以上はu64が必要
-//    FIXED16_16 buffer_ticks= FLOAT_TO_FP16_16(((float)(cpu_ticks - gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY) / SYS_CLOCK);
-//    DBGOUT("%d\n", cpu_ticks - gbc_sound_last_cpu_ticks); /* 272 - 280896 */
-    // a * 44100.0  / 16777216.0            (1*2*3*5*7)^2 / (2^24)
-    // 380.435737
     u32 i, i2;
     GBC_SOUND_STRUCT *gs = gbc_sound_channel;
     FIXED16_16 sample_index, frequency_step;
@@ -460,12 +456,9 @@ void update_gbc_sound(u32 cpu_ticks)
     s8 *wave_bank;
     u8 *wave_ram = ((u8 *)io_registers) + 0x90;
 
-//    gbc_sound_partial_ticks += FP16_16_FRACTIONAL_PART(buffer_ticks); /* 実数部 */
-//    buffer_ticks = FP16_16_TO_U32(buffer_ticks); /* 整数部 */
-
     u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * (44100/4);
     gbc_sound_partial_ticks += buffer_ticks & 0x3FFFFF;
-    buffer_ticks = buffer_ticks >> 22 /* 16777216  0x0100_0000*/;
+    buffer_ticks = buffer_ticks >> 22 /* (16777216 / 4) */;
 
 
     if (gbc_sound_partial_ticks > 0x3FFFFF)
@@ -546,6 +539,22 @@ void update_gbc_sound(u32 cpu_ticks)
     gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks << 1)) % BUFFER_SIZE;
   }
 
+void init_sound_thread()
+{
+  int audio_handle; // オーディオチャンネルのハンドル。
+
+  // オーディオチャンネルの取得。
+  audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
+//  sceAudioSRCChReserve(SAMPLE_COUNT, SOUND_FREQUENCY, 2);
+
+  // サウンド スレッドの作成
+  sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 0x8000, 0, NULL);
+  if (sound_thread < 0) quit(1);
+
+  //スレッドの開始
+  sceKernelStartThread(sound_thread, 0, 0);
+}
+
 void init_sound()
   {
     SET_AUDIO_BUFFER_SIZE();
@@ -558,15 +567,8 @@ void init_sound()
     // 変数等の初期化
     reset_sound();
 
-    // サウンド スレッドの作成
-    sound_thread = sceKernelCreateThread("Sound thread", sound_update_thread, 0x8, 0x1000, 0, NULL);
-    if (sound_thread < 0)
-    {
-      quit(1);
-    }
-
-    //スレッドの開始
-    sceKernelStartThread(sound_thread, 0, 0);
+    // サウンド スレッドの初期化
+    init_sound_thread();
 
   }
 
@@ -653,14 +655,11 @@ void sound_write_mem_savestate(u32 ver)
  --------------------------------------------------------*/
 static int sound_update_thread(SceSize args, void *argp)
 {
-  int audio_handle; // オーディオチャンネルのハンドル。
   s16 buffer[2][SAMPLE_SIZE];
   u32 loop;
   u32 buffer_num = 0;
   s16 sample;
 
-  // オーディオチャンネルの取得。
-  audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
 
   // TODO:初期設定に移動
   sound_read_offset = 0;
@@ -696,10 +695,11 @@ static int sound_update_thread(SceSize args, void *argp)
         buffer_num = 1;  // 前回のデーターをそのまま再生
     }
     sceAudioOutputPannedBlocking(audio_handle, PSP_AUDIO_VOLUME_MAX, PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
-    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.5);
+//    sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, &buffer[buffer_num][0]);
+//    sceKernelDelayThread((SAMPLE_COUNT * 1000 * 1000 * 0.25) / SOUND_FREQUENCY);
   }
 
-  sceAudioChRelease(audio_handle);
+  sceAudioSRCChRelease();
   sceKernelExitThread(0);
   return 0;
 }
@@ -740,5 +740,5 @@ void init_noise_table(u32 *table, u32 period, u32 bit_length)
 void synchronize_sound()
 {
   while(CHECK_BUFFER() >= audio_buffer_size) // TODO:調整必要
-    sceKernelDelayThread(SAMPLE_COUNT / 44100 * 1000 * 1000 * 0.25);
+    sceKernelDelayThread((SAMPLE_COUNT * 1000) / SOUND_FREQUENCY);
 }
