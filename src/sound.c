@@ -456,16 +456,9 @@ void update_gbc_sound(u32 cpu_ticks)
     s8 *wave_bank;
     u8 *wave_ram = ((u8 *)io_registers) + 0x90;
 
-    u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * (44100/4);
-    gbc_sound_partial_ticks += buffer_ticks & 0x3FFFFF;
+    u32 buffer_ticks = (cpu_ticks - gbc_sound_last_cpu_ticks) * (44100/4) + gbc_sound_partial_ticks;
+    gbc_sound_partial_ticks = buffer_ticks & 0x3FFFFF;
     buffer_ticks = buffer_ticks >> 22 /* (16777216 / 4) */;
-
-
-    if (gbc_sound_partial_ticks > 0x3FFFFF)
-    {
-      buffer_ticks += 1;
-      gbc_sound_partial_ticks &= 0x3FFFFF;
-    }
 
     if (sound_on == 1)
     {
@@ -539,10 +532,10 @@ void update_gbc_sound(u32 cpu_ticks)
     gbc_sound_buffer_index =(gbc_sound_buffer_index + (buffer_ticks << 1)) % BUFFER_SIZE;
   }
 
+int audio_handle; // オーディオチャンネルのハンドル。
+
 void init_sound_thread()
 {
-  int audio_handle; // オーディオチャンネルのハンドル。
-
   // オーディオチャンネルの取得。
   audio_handle = sceAudioChReserve( PSP_AUDIO_NEXT_CHANNEL, SAMPLE_COUNT, PSP_AUDIO_FORMAT_STEREO);
 //  sceAudioSRCChReserve(SAMPLE_COUNT, SOUND_FREQUENCY, 2);

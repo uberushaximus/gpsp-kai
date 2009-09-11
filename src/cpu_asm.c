@@ -274,7 +274,7 @@ typedef struct
     }                                                                         \
   }                                                                           \
                                                                               \
-  switch((opcode >> 20) & 0xFF) /* 0xXXX0 0000 -> 0xXXX */                    \
+  switch((opcode >> 20) & 0xFF) /* 20～27 bit */                              \
   {                                                                           \
     case 0x00:                                                                \
       if((opcode & 0x90) == 0x90)                                             \
